@@ -10,7 +10,8 @@ const regexes = [
 /\s*showLineNumbers=\{(?:true|false)\}/g,
 /\{\s*\};\s*/g,
 /,\s*\};\s*/g,
-/\}(?:\s|\n)*$/g
+/\}(?:\s|\n)*$/g,
+/^\s*\}\s*$/gm
 ];
 
 async function getFiles(dir) {
