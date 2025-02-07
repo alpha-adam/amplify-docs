@@ -8,7 +8,9 @@ const regexes = [
 /export\s+function\s+getStaticProps\s*\([^)]*\)\s*\{[\s\S]*?\}\s*/g,
 /\s*title="[^"]*"/g,
 /\s*showLineNumbers=\{(?:true|false)\}/g,
-/\{\s*\};\s*/g
+/\{\s*\};\s*/g,
+/,\s*\};\s*/g,
+/\}(?:\s|\n)*$/g
 ];
 
 async function getFiles(dir) {
