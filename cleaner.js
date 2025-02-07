@@ -7,8 +7,10 @@ const regexes = [
 /export\s+const\s+getStaticPaths\s*=\s*async\s*\(\)\s*=>\s*\{[\s\S]*?\};\s*/g,
 /export\s+function\s+getStaticProps\s*\([^)]*\)\s*\{[\s\S]*?\}\s*/g,
 /\s*title="[^"]*"/g,
-/\s*showLineNumbers=\{(?:true|false)\}/g
+/\s*showLineNumbers=\{(?:true|false)\}/g,
+/\{\s*\};\s*/g
 ];
+
 async function getFiles(dir) {
   let files = [];
   let entries = await fs.readdir(dir, { withFileTypes: true });
@@ -24,6 +26,7 @@ async function getFiles(dir) {
   }
   return files;
 }
+
 async function processFile(file) {
   let content = await fs.readFile(file, "utf8");
   let newContent = content;
@@ -34,6 +37,7 @@ async function processFile(file) {
     await fs.writeFile(file, newContent, "utf8");
   }
 }
+
 async function main() {
   let cwd = process.cwd();
   let files = await getFiles(cwd);
@@ -41,4 +45,5 @@ async function main() {
     await processFile(file);
   }
 }
+
 await main();
