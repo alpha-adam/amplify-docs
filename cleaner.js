@@ -2,16 +2,9 @@ import fs from "fs/promises";
 import path from "path";
 
 const regexes = [
-/import\s+{ *getCustomStaticPath *}\s+from\s+['"]@\/utils\/getCustomStaticPath['"];\s*/g,
-/export\s+const\s+meta\s*=\s*\{[\s\S]*?\};\s*/g,
-/export\s+const\s+getStaticPaths\s*=\s*async\s*\(\)\s*=>\s*\{[\s\S]*?\};\s*/g,
-/export\s+function\s+getStaticProps\s*\([^)]*\)\s*\{[\s\S]*?\}\s*/g,
-/\s*title="[^"]*"/g,
-/\s*showLineNumbers=\{(?:true|false)\}/g,
-/\{\s*\};\s*/g,
-/,\s*\};\s*/g,
-/\}(?:\s|\n)*$/g,
-/^\s*\}\s*$/gm
+  /^import\s+\{\s*getCustomStaticPath\s*\}\s+from\s+['"]@\/utils\/getCustomStaticPath['"];\s*\n?/m,
+  /^export\s+const\s+meta\s*=\s*\{[\s\S]*?\}\s*;?\s*\n?/m,
+  /^export\s+(?:const\s+getStaticPaths\s*=\s*async\s*\(\)\s*=>\s*\{[\s\S]*?\}\s*;?|function\s+getStaticProps\s*\([^)]*\)\s*\{[\s\S]*?\}\s*;?)\s*\n?/m,
 ];
 
 async function getFiles(dir) {
