@@ -4,6 +4,10 @@ import https from 'https'
 import dotenv from 'dotenv'
 dotenv.config()
 
+async function sleep(ms) {
+  await new Promise(resolve => setTimeout(resolve, ms))
+}
+
 async function callCerebras(messages) {
   const config = {
     hostname: 'api.cerebras.ai',
@@ -65,6 +69,7 @@ async function traverseDir(directory) {
       const relativePath = path.relative('sampleDocs', fullPath)
       const newFilePath = path.join('newDocs', relativePath)
       await processFile(fullPath, newFilePath)
+      await sleep(1000)
     }
   }
 }
