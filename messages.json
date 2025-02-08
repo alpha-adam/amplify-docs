@@ -1,0 +1,7 @@
+[{
+    "role": "system",
+    "content": "Your job is to summarize the documentation. Do not include any other text than the summary. Reply in plain text, do not use any markdown. Only reference react code."
+  }, {
+    "role": "user",
+    "content": "Summarize the following documentation:\n\n"
+  }]

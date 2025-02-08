@@ -48,13 +48,8 @@ async function callCerebras(messages) {
 
 async function processFile(oldFilePath, newFilePath) {
   const content = await fs.readFile(oldFilePath, 'utf8')
-  const messages = [{
-    role: 'system',
-    content: 'Your job is to summarize the documentation. Do not include any other text than the summary. Reply in plain text, do not use any markdown. Only reference react code.'
-  }, {
-    role: 'user',
-    content: 'Summarize the following documentation:\n\n' + content
-  }]
+  const messages = JSON.parse(await fs.readFile('messages.json', 'utf8'))
+  messages[1].content += content
   const summary = await callCerebras(messages)
   await fs.mkdir(path.dirname(newFilePath), { recursive: true })
   await fs.writeFile(newFilePath, summary)
@@ -75,7 +70,7 @@ async function traverseDir(directory) {
 }
 
 async function main() {
-  await traverseDir('./oldDocs')
+  await traverseDir('./sampleDocs')
 }
 
 main().catch(error => {
