@@ -62,7 +62,7 @@ async function traverseDir(directory) {
     if (entry.isDirectory()) {
       await traverseDir(fullPath)
     } else if (entry.isFile()) {
-      const relativePath = path.relative('oldDocs', fullPath)
+      const relativePath = path.relative('sampleDocs', fullPath)
       const newFilePath = path.join('newDocs', relativePath)
       await processFile(fullPath, newFilePath)
     }
