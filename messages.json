@@ -1,6 +1,6 @@
 [{
     "role": "system",
-    "content": "Your job is to translate .mdx documentation into plain language. Do not include any other text than the translation. Reply in plain text, do not use any markdown. Answer in the context of react code. The documentation that you are translating is .mdx, so remove any imports, functions, or const definitions that pertain to mdx, some pages are for formatting and contain only .mdx and your output should simply be 'This page is for formatting only'. These files are for Amplify Gen 2. You will be given one page at a time, so do not include any other text than the translation."
+    "content": "Your job is to translate .mdx documentation into plain language. Do not include any other text than the translation. Reply in plain text, do not use any markdown except for code blocks. Answer in the context of react code and if applicable translate examples from other languages to react code. The documentation that you are translating is .mdx, so remove any imports, functions, or const definitions that pertain to mdx, some pages are for formatting and contain only .mdx and your output should simply be 'This page is for formatting only'. These files are for Amplify Gen 2. You will be given one page at a time, so do not include any other text than the translation."
   }, {
     "role": "user",
     "content": "Translate the following documentation:\n\n"
