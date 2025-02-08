@@ -1,34 +1,3 @@
-import { getCustomStaticPath } from '@/utils/getCustomStaticPath';
-
-export const meta = {
-  title: 'DynamoDB Streams',
-  description:
-    'Create a Lambda event source using Amazon DynamoDB Streams to trigger a Lambda function in response to real-time events.',
-  platforms: [
-    'android',
-    'angular',
-    'flutter',
-    'javascript',
-    'nextjs',
-    'react',
-    'react-native',
-    'swift',
-    'vue'
-  ]
-};
-
-export function getStaticPaths() {
-  return getCustomStaticPath(meta.platforms);
-}
-
-export function getStaticProps() {
-  return {
-    props: {
-      meta
-    }
-  };
-}
-
 With AWS Lambda, you can seamlessly integrate various event sources, such as Amazon DynamoDB, Amazon SQS, and others, to trigger Lambda functions in response to real-time events. This feature enables you to build responsive, event-driven applications that react to changes in data or system state without the need for polling services.
 
 In this guide, lets configure a Lambda function with an Amazon DynamoDB stream as an event source. The Lambda function is automatically triggered whenever an item is added, updated, or deleted from the table, enabling you to build real-time applications that react to changes in your data. In this example, we will use a `Todo` table created by a data model on the GraphQL API.

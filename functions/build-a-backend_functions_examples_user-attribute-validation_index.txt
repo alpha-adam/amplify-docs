@@ -1,34 +1,3 @@
-import { getCustomStaticPath } from '@/utils/getCustomStaticPath';
-
-export const meta = {
-  title: 'User attribute validation',
-  description:
-    'Validate user attributes with an Auth trigger',
-  platforms: [
-    'android',
-    'angular',
-    'flutter',
-    'javascript',
-    'nextjs',
-    'react',
-    'react-native',
-    'swift',
-    'vue'
-  ]
-};
-
-export function getStaticPaths() {
-  return getCustomStaticPath(meta.platforms);
-}
-
-export function getStaticProps() {
-  return {
-    props: {
-      meta
-    }
-  };
-}
-
 You can use `defineAuth` and `defineFunction` to create a [Cognito pre sign-up Lambda trigger](https://docs.aws.amazon.com/cognito/latest/developerguide/user-pool-lambda-pre-sign-up.html) that extends the behavior of sign-up to validate attribute values.
 
 To get started, create a new directory and a resource file, `amplify/auth/pre-sign-up/resource.ts`. Then, define the function with `defineFunction`:

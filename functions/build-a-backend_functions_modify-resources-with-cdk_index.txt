@@ -1,35 +1,3 @@
-import { getCustomStaticPath } from '@/utils/getCustomStaticPath';
-
-export const meta = {
-  title: 'Modify Amplify-generated Lambda resources with CDK',
-  description:
-    'Learn how to extend the underlying Function resources',
-  platforms: [
-    'android',
-    'angular',
-    'flutter',
-    'javascript',
-    'nextjs',
-    'react',
-    'react-native',
-    'swift',
-    'vue'
-  ]
-};
-
-export function getStaticPaths() {
-  return getCustomStaticPath(meta.platforms);
-}
-
-export function getStaticProps(context) {
-  return {
-    props: {
-      platform: context.params.platform,
-      meta
-    }
-  };
-}
-
 Amplify Functions utilize the [`NodejsFunction`](https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_lambda_nodejs.NodejsFunction.html) construct from the [AWS Cloud Development Kit (CDK)](https://aws.amazon.com/cdk/). The underlying resources can be modified, overridden, or extended using CDK after setting the resource on your backend.
 
 ```ts title="amplify/backend.ts"

@@ -1,34 +1,3 @@
-import { getCustomStaticPath } from '@/utils/getCustomStaticPath';
-
-export const meta = {
-  title: 'Add user to group',
-  description:
-    'Use an Auth Post Authentication trigger to automatically add new users to a group',
-  platforms: [
-    'android',
-    'angular',
-    'flutter',
-    'javascript',
-    'nextjs',
-    'react',
-    'react-native',
-    'swift',
-    'vue'
-  ]
-};
-
-export function getStaticPaths() {
-  return getCustomStaticPath(meta.platforms);
-}
-
-export function getStaticProps() {
-  return {
-    props: {
-      meta
-    }
-  };
-}
-
 You can use `defineAuth` and `defineFunction` to create a [Cognito post confirmation Lambda trigger](https://docs.aws.amazon.com/cognito/latest/developerguide/user-pool-lambda-post-confirmation.html) that extends the behavior to perform some action when a user is confirmed.
 
 <Callout info>

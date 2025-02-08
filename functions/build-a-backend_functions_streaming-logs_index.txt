@@ -1,35 +1,3 @@
-import { getCustomStaticPath } from '@/utils/getCustomStaticPath';
-
-export const meta = {
-  title: 'Streaming logs',
-  description:
-    'Stream execution logs directly to your terminal while Sandbox is running',
-  platforms: [
-    'android',
-    'angular',
-    'flutter',
-    'javascript',
-    'nextjs',
-    'react',
-    'react-native',
-    'swift',
-    'vue'
-  ]
-};
-
-export function getStaticPaths() {
-  return getCustomStaticPath(meta.platforms);
-}
-
-export function getStaticProps(context) {
-  return {
-    props: {
-      platform: context.params.platform,
-      meta
-    }
-  };
-}
-
 Amplify enables you to stream logs from your Function directly to your terminal while running [`ampx sandbox`](/[platform]/reference/cli-commands/#npx-ampx-sandbox). To get started, specify the `--stream-function-logs` option when starting sandbox:
 
 ```bash title="Terminal" showLineNumbers={false}

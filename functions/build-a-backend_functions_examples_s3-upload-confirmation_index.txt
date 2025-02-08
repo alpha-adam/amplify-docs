@@ -1,34 +1,3 @@
-import { getCustomStaticPath } from '@/utils/getCustomStaticPath';
-
-export const meta = {
-  title: 'S3 Upload confirmation',
-  description:
-    'Use a trigger to confirm uploading files',
-  platforms: [
-    'android',
-    'angular',
-    'flutter',
-    'javascript',
-    'nextjs',
-    'react',
-    'react-native',
-    'swift',
-    'vue'
-  ]
-};
-
-export function getStaticPaths() {
-  return getCustomStaticPath(meta.platforms);
-}
-
-export function getStaticProps() {
-  return {
-    props: {
-      meta
-    }
-  };
-}
-
 You can use `defineStorage` and `defineFunction` to create a function trigger to confirm uploading a file.
 
 To get started, install the `@types/aws-lambda` [package](https://www.npmjs.com/package/@types/aws-lambda), which contains types for different kinds of Lambda handlers, events, and responses.

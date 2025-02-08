@@ -1,34 +1,3 @@
-import { getCustomStaticPath } from '@/utils/getCustomStaticPath';
-
-export const meta = {
-  title: 'Scheduling Functions',
-  description:
-    'Learn how to schedule functions to run at specific intervals',
-  platforms: [
-    'android',
-    'angular',
-    'flutter',
-    'javascript',
-    'nextjs',
-    'react',
-    'react-native',
-    'swift',
-    'vue'
-  ]
-};
-
-export function getStaticPaths() {
-  return getCustomStaticPath(meta.platforms);
-}
-
-export function getStaticProps() {
-  return {
-    props: {
-      meta
-    }
-  };
-}
-
 Amplify offers the ability to schedule Functions to run on specific intervals using natural language or [cron expressions](https://en.wikipedia.org/wiki/Cron). To get started, specify the `schedule` property in `defineFunction`:
 
 <Callout info>

@@ -1,34 +1,3 @@
-import { getCustomStaticPath } from '@/utils/getCustomStaticPath';
-
-export const meta = {
-  title: 'Grant access to other resources',
-  description:
-    'Extend the capabilities of your Function by granting access to other resources',
-  platforms: [
-    'android',
-    'angular',
-    'flutter',
-    'javascript',
-    'nextjs',
-    'react',
-    'react-native',
-    'swift',
-    'vue'
-  ]
-};
-
-export function getStaticPaths() {
-  return getCustomStaticPath(meta.platforms);
-}
-
-export function getStaticProps() {
-  return {
-    props: {
-      meta
-    }
-  };
-}
-
 In order for Amplify Functions to interact with other resources they must be given access. There are two ways to grant Amplify Functions access to other resources:
 
 1. [Using the `access` property](#using-the-access-property)

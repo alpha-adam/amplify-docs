@@ -1,35 +1,3 @@
-import { getCustomStaticPath } from '@/utils/getCustomStaticPath';
-
-export const meta = {
-  title: 'Configure Functions',
-  description:
-    'Learn how to configure functions',
-    route: '/gen2/build-a-backend/functions/configure-functions',
-  platforms: [
-    'android',
-    'angular',
-    'flutter',
-    'javascript',
-    'nextjs',
-    'react',
-    'react-native',
-    'swift',
-    'vue'
-  ]
-};
-
-export function getStaticPaths() {
-  return getCustomStaticPath(meta.platforms);
-}
-
-export function getStaticProps() {
-  return {
-    props: {
-      meta
-    }
-  };
-}
-
 `defineFunction` comes out-of-the-box with sensible but minimal defaults. The following options are provided to tweak the function configuration.
 
 <Callout info>

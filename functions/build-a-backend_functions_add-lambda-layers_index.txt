@@ -1,34 +1,3 @@
-import { getCustomStaticPath } from '@/utils/getCustomStaticPath';
-
-export const meta = {
-  title: 'Lambda Layers',
-  description:
-    'Learn how to add layers to your function',
-  platforms: [
-    'android',
-    'angular',
-    'flutter',
-    'javascript',
-    'nextjs',
-    'react',
-    'react-native',
-    'swift',
-    'vue'
-  ]
-};
-
-export function getStaticPaths() {
-  return getCustomStaticPath(meta.platforms);
-}
-
-export function getStaticProps() {
-  return {
-    props: {
-      meta
-    }
-  };
-}
-
 Amplify offers the ability to add layers to your functions which contain your library dependencies. Lambda layers allow you to separate your function code from its dependencies, enabling easier management of shared components across multiple functions and reducing deployment package sizes.
 
 <Callout info>

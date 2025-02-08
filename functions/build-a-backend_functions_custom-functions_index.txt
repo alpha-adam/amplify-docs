@@ -1,35 +1,3 @@
-import { getCustomStaticPath } from '@/utils/getCustomStaticPath';
-
-export const meta = {
-  title: 'Custom functions',
-  description:
-    'Use another AWS Lambda runtimes like Python, Golang to perform tasks and customize workflows.',
-  platforms: [
-    'android',
-    'angular',
-    'flutter',
-    'javascript',
-    'nextjs',
-    'react',
-    'react-native',
-    'swift',
-    'vue'
-  ]
-};
-
-export function getStaticPaths() {
-  return getCustomStaticPath(meta.platforms);
-}
-
-export function getStaticProps(context) {
-  return {
-    props: {
-      platform: context.params.platform,
-      meta
-    }
-  };
-}
-
 AWS Amplify Gen 2 functions are AWS Lambda functions that can be used to perform tasks and customize workflows in your Amplify app. Functions can be written in Node.js, Python, Go, or any [other language supported by AWS Lambda](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html).
 
 <Callout warning>
