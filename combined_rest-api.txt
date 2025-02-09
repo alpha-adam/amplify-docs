@@ -1,0 +1,362 @@
+When determining the authorization mode for your REST endpoint, you can customize it in a few ways.
+
+By default, the API uses IAM authorization, which has two modes: unauthenticated and authenticated. When the user is not signed in, the unauthenticated role is used, but once the user signs in, the authenticated role is used instead.
+
+You can also configure a public REST API by setting an API key in Amazon API Gateway. To do this, you would set the API key header in the API configuration, which will be applied to all requests. This can be done by configuring Amplify, for example:
+```
+Amplify.configure({
+  API: {
+    REST: {
+      headers: async () => {
+        return { 'X-Api-Key': 'your-api-key' };
+      }
+    }
+  }
+});
+```
+Another option is to use the access token from a configured Cognito User Pool to authenticate against the REST endpoint. You can retrieve the JWT token from the Auth category, like this:
+```
+import { Auth } from 'aws-amplify';
+const session = await Auth.currentSession();
+const token = session.getAccessToken().getJwtToken();
+```
+Then, you can set the Authorization header in the API category configuration, like this:
+```
+Amplify.configure({
+  API: {
+    REST: {
+      headers: async () => {
+        return { Authorization: token };
+      }
+    }
+  }
+});
+```
+For more information on configuring API Gateway with custom authorization, you can refer to the AWS documentation.
+
+It's also worth noting that you can use either the ID Token or the Access Token for authentication. The ID Token contains claims about the user's identity, while the Access Token contains scopes and groups. You can retrieve the ID Token like this:
+```
+import { Auth } from 'aws-amplify';
+const session = await Auth.currentSession();
+const token = session.getIdToken().getJwtToken();
+```
+And you can retrieve the Access Token like this:
+```
+import { Auth } from 'aws-amplify';
+const session = await Auth.currentSession();
+const token = session.getAccessToken().getJwtToken();
+```
+If you want to use a custom authorization token, you can set it in the API category configuration, like this:
+```
+Amplify.configure({
+  API: {
+    REST: {
+      headers: async () => {
+        return { Authorization: 'your-custom-token' };
+      }
+    }
+  }
+});
+```
+Finally, you can also set the authorization headers per request, rather than globally. For example, you could set a custom header named `Authorization` for a specific REST request, like this:
+```javascript
+import { API } from 'aws-amplify';
+async function updateItem() {
+  await API.del('myRestApi', 'items/1', {
+    headers: {
+      Authorization: 'your-token'
+    }
+  });
+}
+```
+
+To delete data using the Delete API in AWS Amplify, you can make a DELETE request to the API endpoint. 
+
+In React, you can use the `del` function from `aws-amplify/api` to send a DELETE request. Here's an example:
+```javascript
+import { del } from 'aws-amplify/api';
+
+async function deleteItem() {
+  try {
+    const restOperation = del({
+      apiName: 'myRestApi',
+      path: 'items/1'
+    });
+    await restOperation.response;
+    console.log('DELETE call succeeded');
+  } catch (e) {
+    console.log('DELETE call failed: ', JSON.parse(e.response.body));
+  }
+}
+```
+This code sends a DELETE request to the `myRestApi` API at the `items/1` path. If the request is successful, it logs 'DELETE call succeeded' to the console. If the request fails, it logs the error response to the console.
+
+To use existing AWS resources with the Amplify Libraries, you need to configure the libraries to reference the existing Amazon API Gateway resources. This can be done by calling `Amplify.configure()` with the API Gateway API name and options.
+
+You will need to provide the full resource configuration and library options objects when calling `Amplify.configure()`. Here is an example of how to do this in a React application:
+
+```javascript
+import Amplify from 'aws-amplify';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure(outputs);
+
+const existingConfig = Amplify.getConfig();
+
+Amplify.configure({
+ ...existingConfig,
+  API: {
+   ...existingConfig.API,
+    endpoints: [
+      {
+        name: 'YourAPIName',
+        endpoint: 'https://abcdefghij1234567890.execute-api.us-east-1.amazonaws.com/stageName',
+        region: 'us-east-1' // Optional
+      }
+    ]
+  }
+});
+```
+
+In this example, replace `YourAPIName` with a friendly name for your API, and `https://abcdefghij1234567890.execute-api.us-east-1.amazonaws.com/stageName` with the HTTPS endpoint of your API. The `region` field is optional, and if not specified, the region will be inferred from the endpoint.
+
+Note that before you can add an AWS resource to your application, you must have the Amplify libraries installed. If you need to install the Amplify libraries, you can find instructions on how to do so in the Amplify documentation.
+
+To invoke an endpoint, you need to set an input object with the required apiName option and optional headers, queryParams, and body options. API status code responses greater than 299 are thrown as an ApiError instance. The error instance provides name and message properties parsed from the response.
+
+For GET requests, you can use the get function from aws-amplify/api. Here is an example of how to use it in a React application:
+```javascript
+import { get } from 'aws-amplify/api';
+
+async function getItem() {
+  try {
+    const restOperation = get({ 
+      apiName: 'myRestApi',
+      path: 'items' 
+    });
+    const response = await restOperation.response;
+    console.log('GET call succeeded: ', response);
+  } catch (error) {
+    console.log('GET call failed: ', JSON.parse(error.response.body));
+  }
+}
+```
+You can consume the response payload by accessing the body property of the response object. Depending on the use case and the content type of the body, you can consume the payload as a string, blob, or JSON:
+```javascript
+const { body } = await restOperation.response;
+// consume as a string:
+const str = await body.text();
+// OR consume as a blob:
+const blob = await body.blob();
+// OR consume as a JSON:
+const json = await body.json();
+```
+Note that you cannot consume the response payload more than once.
+
+If the REST API handler throws an ApiError error instance, you can access the HTTP response from the error instance. The error instance will provide a response property if the error is caused by an HTTP response with a non-2xx status code:
+```javascript
+import { ApiError, get } from 'aws-amplify/api';
+
+try {
+  const restOperation = get({ 
+    apiName: 'myRestApi',
+    path: 'items' 
+  });
+  await restOperation.response;
+} catch (error) {
+  if (error instanceof ApiError) {
+    if (error.response) {
+      const { 
+        statusCode, 
+        headers, 
+        body 
+      } = error.response;
+      console.error(`Received ${statusCode} error response with payload: ${body}`);
+    }
+    // Handle API errors not caused by HTTP response.
+  }
+  // Handle other errors.
+}
+```
+
+To send a POST request with a JSON body in a React application using AWS Amplify, you can use the post method from the aws-amplify/api module. This method allows you to specify the API name, path, and options such as the request body.
+
+Here's an example of how to use the post method:
+```javascript
+import { post } from 'aws-amplify/api';
+
+async function postItem() {
+  try {
+    const restOperation = post({
+      apiName: 'myRestApi',
+      path: 'items',
+      options: {
+        body: {
+          message: 'Mow the lawn'
+        }
+      }
+    });
+
+    const { body } = await restOperation.response;
+    const response = await body.json();
+
+    console.log('POST call succeeded');
+    console.log(response);
+  } catch (error) {
+    console.log('POST call failed: ', JSON.parse(error.response.body));
+  }
+}
+```
+This code sends a POST request to the 'items' path of the 'myRestApi' API with a JSON body containing the message 'Mow the lawn'. The response from the server is then logged to the console. If the request fails, the error message is also logged to the console.
+
+To set up an Amplify HTTP API, you can use the AWS Cloud Development Kit (AWS CDK) to configure Amplify Functions as resolvers for routes of an HTTP API powered by Amazon API Gateway.
+
+First, create a new directory and a resource file, `amplify/functions/api-function/resource.ts`. Define the function with `defineFunction`. Then, create the corresponding handler file, `amplify/functions/api-function/handler.ts`, with the following contents:
+
+```typescript
+import type { APIGatewayProxyHandlerV2 } from "aws-lambda";
+
+export const handler: APIGatewayProxyHandlerV2 = async (event) => {
+  console.log("event", event);
+  return {
+    statusCode: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*", 
+      "Access-Control-Allow-Headers": "*", 
+    },
+    body: JSON.stringify("Hello from api-function!"),
+  };
+};
+```
+
+Next, using the AWS CDK, create an HTTP API in your backend file. Create a new API stack, IAM authorizer, User Pool authorizer, and HTTP Lambda integration. Create a new HTTP API with IAM as the default authorizer and add routes to the API with a IAM authorizer and different methods.
+
+To install the Amplify library for a React application, use npm to install the Amplify JavaScript library:
+
+```bash
+npm add aws-amplify
+```
+
+To initialize the Amplify API category, configure Amplify with `Amplify.configure()`. Import and load the configuration file in your app. Add the Amplify configuration step to your app's root entry point. For example:
+
+```typescript
+import { Amplify } from 'aws-amplify';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure(outputs);
+const existingConfig = Amplify.getConfig();
+Amplify.configure({
+ ...existingConfig,
+  API: {
+   ...existingConfig.API,
+    REST: outputs.custom.API,
+  },
+});
+```
+
+Make sure to call `Amplify.configure` as early as possible in your application’s life-cycle to avoid a missing configuration or `NoCredentials` error.
+
+To set up an Amplify REST API, you can use the AWS Cloud Development Kit (AWS CDK) to configure Amplify Functions as resolvers for routes of a REST API powered by Amazon API Gateway. 
+
+To set up a REST API with a Lambda function, create a new directory and a resource file, then define the function with the defineFunction method. Create a corresponding handler file with the APIGatewayProxyHandler. 
+
+Use the AWS CDK to create a REST API resource powered by Amazon API Gateway. Define the backend, create a new API stack, and a new REST API. Create a new Lambda integration and a new resource path with IAM authorization. Add methods to the resource path and create a new Cognito User Pools authorizer. Create a new resource path with Cognito authorization and add a new IAM policy to allow Invoke access to the API. Attach the policy to the authenticated and unauthenticated IAM roles.
+
+To install Amplify libraries, use the package manager of your choice to install the Amplify JavaScript library. For example, with npm: 
+```bash
+npm add aws-amplify
+```
+
+To initialize the Amplify API, configure Amplify with Amplify.configure(). Import and load the configuration file in your app, and add the Amplify configuration step to your app's root entry point. For example, in React: 
+```javascript
+import { Amplify } from 'aws-amplify';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure(outputs);
+const existingConfig = Amplify.getConfig();
+Amplify.configure({
+ ...existingConfig,
+  API: {
+   ...existingConfig.API,
+    REST: outputs.custom.API,
+  },
+});
+``` 
+
+Make sure to call Amplify.configure as early as possible in your application’s life-cycle to avoid missing configuration or NoCredentials errors. 
+
+Here's an example of calling Amplify.configure in a React app: 
+```javascript
+import React from 'react';
+import ReactDOM from 'react-dom';
+import { Amplify } from 'aws-amplify';
+import outputs from '../amplify_outputs.json';
+import App from './App';
+
+Amplify.configure(outputs);
+const existingConfig = Amplify.getConfig();
+Amplify.configure({
+ ...existingConfig,
+  API: {
+   ...existingConfig.API,
+    REST: outputs.custom.API,
+  },
+});
+
+ReactDOM.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+  document.getElementById('root')
+);
+```
+
+To test your REST API, you can use the terminal with the curl command-line tool. If you don't have curl installed, you can follow the installation instructions on the official curl documentation website.
+
+To test your API using curl, replace `<your-api-endpoint>` and `<your-api-stage>` with your actual API endpoint and stage. 
+
+For a GET request, use the following command:
+```
+curl <your-api-endpoint>/<your-api-stage>/items
+```
+For a POST request, use the following command:
+```
+curl -H "Content-Type: application/json" -d '{"name":"item-1"}' <your-api-endpoint>/<your-api-stage>/items
+```
+If you're using Windows, make sure to use double quotes around the JSON data:
+```
+curl -H "Content-Type: application/json" -d "{\"name\":\"item-1\"}" <your-api-endpoint>/<your-api-stage>/items
+```
+Alternatively, you can test your API using the API Gateway console. To do this, follow these steps:
+
+1. Sign in to the API Gateway console.
+2. Choose your REST API.
+3. In the Resources pane, choose the method you want to test.
+4. Select the `GET` method and add any query string parameters you want to test.
+5. Choose **Test** to run the test.
+
+The API Gateway console will display the request, status, latency, response body, response headers, and logs for the test.
+
+To update data using Amplify, you can use HTTP methods such as PUT. Here's how you can create or update an item via an API endpoint in a React application:
+
+To update an item, you would use the `put` method from `aws-amplify/api`. 
+
+Here's an example of how to do it:
+```javascript
+import { API } from 'aws-amplify';
+
+async function updateItems() {
+  try {
+    const item = { name: 'My first Item', message: 'Hello world!' };
+    const restOperation = API.put('items/1', {
+      body: item
+    }, {
+      apiName: 'myRestApi'
+    });
+    const response = await restOperation;
+    console.log('PUT call succeeded: ', response);
+  } catch (error) {
+    console.log('PUT call failed: ', error);
+  }
+}
+```

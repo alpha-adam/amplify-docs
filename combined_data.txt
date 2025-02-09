@@ -1,0 +1,4164 @@
+AWS AppSync Apollo Extensions provide a seamless way to connect to your AWS AppSync backend using Apollo client, an open-source GraphQL client. 
+
+To learn more about Apollo, see https://www.apollographql.com/docs/. 
+
+## Features
+
+AWS AppSync Apollo Extensions provide AWS AppSync authorizers to be used with the Apollo client to make it simple to apply the correct authorization payloads to your GraphQL operations.
+
+Additionally, the included Amplify components allow Amplify to provide auth tokens and signing logic for the corresponding Authorizers.
+
+## Install the AWS AppSync Apollo Extensions library
+
+To install the library in a React application, you can use npm or yarn to add the `apollo-appsync-amplify` dependency. 
+
+```bash
+npm install apollo-appsync-amplify
+```
+
+or 
+
+```bash
+yarn add apollo-appsync-amplify
+```
+
+Alternatively, if you are not using Amplify, you can install the `apollo-appsync` dependency.
+
+```bash
+npm install apollo-appsync
+```
+
+or 
+
+```bash
+yarn add apollo-appsync
+```
+
+## Connecting to AWS AppSync with Apollo client
+
+To connect to AWS AppSync with Apollo client in a React application, you need to create an Apollo client instance and pass it to the ApolloProvider component.
+
+Here is an example of how you can create an Apollo client instance:
+
+```javascript
+import { ApolloClient, InMemoryCache } from '@apollo/client';
+import { AppSyncAuthTransformer } from 'apollo-appsync-amplify';
+
+const client = new ApolloClient({
+  uri: 'https://your-appsync-endpoint.com/graphql',
+  cache: new InMemoryCache(),
+  transformResponse: AppSyncAuthTransformer,
+});
+```
+
+You can then pass the client to the ApolloProvider component:
+
+```javascript
+import { ApolloProvider } from '@apollo/client';
+
+function App() {
+  return (
+    <ApolloProvider client={client}>
+      // your application code here
+    </ApolloProvider>
+  );
+}
+```
+
+## Providing AppSync Authorizers
+
+To provide AppSync authorizers, you need to create an instance of the AppSyncAuth class and pass it to the Apollo client.
+
+Here is an example of how you can create an AppSyncAuth instance:
+
+```javascript
+import { AppSyncAuth } from 'apollo-appsync-amplify';
+
+const appSyncAuth = new AppSyncAuth({
+  apikey: 'your-api-key',
+});
+```
+
+You can then pass the appSyncAuth instance to the Apollo client:
+
+```javascript
+const client = new ApolloClient({
+  uri: 'https://your-appsync-endpoint.com/graphql',
+  cache: new InMemoryCache(),
+  transformResponse: AppSyncAuthTransformer,
+  auth: appSyncAuth,
+});
+```
+
+## Connecting Amplify Data to Apollo client
+
+To connect Amplify Data to Apollo client, you need to create an instance of the AmplifyAuth class and pass it to the Apollo client.
+
+Here is an example of how you can create an AmplifyAuth instance:
+
+```javascript
+import { AmplifyAuth } from 'aws-amplify';
+
+const amplifyAuth = new AmplifyAuth({
+  // your amplify configuration here
+});
+```
+
+You can then pass the amplifyAuth instance to the Apollo client:
+
+```javascript
+const client = new ApolloClient({
+  uri: 'https://your-appsync-endpoint.com/graphql',
+  cache: new InMemoryCache(),
+  transformResponse: AppSyncAuthTransformer,
+  auth: amplifyAuth,
+});
+```
+
+## Downloading the AWS AppSync schema
+
+To download the AWS AppSync schema, you can use the AWS AppSync console or the Amplify CLI.
+
+Here is an example of how you can download the schema using the Amplify CLI:
+
+```bash
+amplify pull --schema
+```
+
+This will download the schema and save it to a file named `schema.json`.
+
+## Generating Queries, Mutations, and Subscriptions for Apollo client
+
+To generate queries, mutations, and subscriptions for Apollo client, you can use the Amplify CLI.
+
+Here is an example of how you can generate queries, mutations, and subscriptions using the Amplify CLI:
+
+```bash
+amplify codegen --graphql
+```
+
+This will generate the queries, mutations, and subscriptions based on your schema and save them to a file named `graphql.ts`.
+
+## Connecting to AWS AppSync real-time endpoint
+
+To connect to the AWS AppSync real-time endpoint, you need to create an instance of the AppSyncRealTimeClient class and pass it to the Apollo client.
+
+Here is an example of how you can create an AppSyncRealTimeClient instance:
+
+```javascript
+import { AppSyncRealTimeClient } from 'apollo-appsync-amplify';
+
+const realTimeClient = new AppSyncRealTimeClient({
+  endpoint: 'https://your-appsync-endpoint.com/graphql',
+  auth: appSyncAuth,
+});
+```
+
+You can then pass the realTimeClient instance to the Apollo client:
+
+```javascript
+const client = new ApolloClient({
+  uri: 'https://your-appsync-endpoint.com/graphql',
+  cache: new InMemoryCache(),
+  transformResponse: AppSyncAuthTransformer,
+  realTime: realTimeClient,
+});
+```
+
+Note: The above examples are for React applications, and you may need to adjust them according to your specific use case. Additionally, you will need to replace the placeholders (e.g. `https://your-appsync-endpoint.com/graphql`) with your actual AWS AppSync endpoint and credentials.
+
+To connect to AWS AppSync Events using the Amplify library, you need to create a secure and performant serverless WebSocket API that can broadcast real-time event data to millions of subscribers. This feature allows you to build multi-user features such as collaborative document editors, chat apps, and live polling systems.
+
+First, if you don't have an existing Amplify backend, you'll need to create an Event API via the AWS Console and take note of the HTTP endpoint, region, and API Key. Then, you can configure the Amplify library in your React application by providing the Event API endpoint, region, and API Key.
+
+Here's an example of how to configure the Amplify library in a React application:
+
+```jsx
+import { Amplify } from 'aws-amplify';
+import { events } from 'aws-amplify/data';
+
+Amplify.configure({
+  API: {
+    Events: {
+      endpoint: 'https://your-event-api-endpoint.us-east-1.amazonaws.com/event',
+      region: 'us-east-1',
+      defaultAuthMode: 'apiKey',
+      apiKey: 'your-api-key'
+    }
+  }
+});
+```
+
+Next, you can connect to the Event API and subscribe to a channel to receive events in real-time. Here's an example of how to do this in a React application:
+
+```jsx
+import { useState, useEffect } from 'react';
+import { events } from 'aws-amplify/data';
+
+export default function App() {
+  const [myEvents, setMyEvents] = useState([]);
+
+  useEffect(() => {
+    let channel;
+
+    const connectAndSubscribe = async () => {
+      channel = await events.connect('default/channel');
+
+      channel.subscribe({
+        next: (data) => {
+          console.log('received', data);
+          setMyEvents((prev) => [data,...prev]);
+        },
+        error: (err) => console.error('error', err)
+      });
+    };
+
+    connectAndSubscribe();
+
+    return () => channel && channel.close();
+  }, []);
+
+  async function publishEvent() {
+    await events.post('default/channel', { some: 'data' });
+  }
+
+  return (
+    <>
+      <button onClick={publishEvent}>Publish Event</button>
+      <ul>
+        {myEvents.map((data) => (
+          <li key={data.id}>{JSON.stringify(data.event)}</li>
+        ))}
+      </ul>
+    </>
+  );
+}
+```
+
+If you have an existing Amplify backend, you can add an Event API to it by updating the backend definition. First, you need to add a new Event API to your backend definition using the Amplify CLI. Then, you can deploy the updated backend and connect your frontend application to the Event API.
+
+To add an Event API to an existing Amplify backend, you need to update the backend definition by creating a new stack for the Event API resources and adding a new Event API to the stack. You also need to configure the User Pool as the auth provider for the Event API and attach a policy to the authenticated user role to grant access to the Event API.
+
+Here's an example of how to update the backend definition to add an Event API:
+
+```typescript
+import { defineBackend } from '@aws-amplify/backend';
+import { auth } from './auth/resource';
+import {
+  CfnApi,
+  CfnChannelNamespace,
+  AuthorizationType,
+} from 'aws-cdk-lib/aws-appsync';
+import { Policy, PolicyStatement } from 'aws-cdk-lib/aws-iam';
+
+const backend = defineBackend({
+  auth,
+});
+
+const customResources = backend.createStack('custom-resources');
+
+const cfnEventAPI = new CfnApi(customResources, 'CfnEventAPI', {
+  name: 'my-event-api',
+  eventConfig: {
+    authProviders: [
+      {
+        authType: AuthorizationType.USER_POOL,
+        cognitoConfig: {
+          awsRegion: customResources.region,
+          userPoolId: backend.auth.resources.userPool.userPoolId,
+        },
+      },
+    ],
+    connectionAuthModes: [{ authType: AuthorizationType.USER_POOL }],
+    defaultPublishAuthModes: [{ authType: AuthorizationType.USER_POOL }],
+    defaultSubscribeAuthModes: [{ authType: AuthorizationType.USER_POOL }],
+  },
+});
+
+const namespace = new CfnChannelNamespace(
+  customResources,
+  'CfnEventAPINamespace',
+  {
+    apiId: cfnEventAPI.attrApiId,
+    name: 'default',
+  }
+);
+
+backend.auth.resources.authenticatedUserIamRole.attachInlinePolicy(
+  new Policy(customResources, 'AppSyncEventPolicy', {
+    statements: [
+      new PolicyStatement({
+        actions: [
+          'appsync:EventConnect',
+          'appsync:EventSubscribe',
+          'appsync:EventPublish',
+        ],
+        resources: [`${cfnEventAPI.attrApiArn}/*`, `${cfnEventAPI.attrApiArn}`],
+      }),
+    ],
+  })
+);
+
+backend.addOutput({
+  custom: {
+    events: {
+      url: `https://${cfnEventAPI.getAtt('Dns.Http').toString()}/event`,
+      aws_region: customResources.region,
+      default_authorization_type: AuthorizationType.USER_POOL,
+    },
+  },
+});
+```
+
+After deploying the updated backend, you can connect your frontend application to the Event API using the Amplify Authenticator component to sign in to the Cognito User Pool.
+
+Here's an example of how to connect your frontend application to the Event API:
+
+```jsx
+import { Amplify } from 'aws-amplify';
+import { events, type EventsChannel } from 'aws-amplify/data';
+import { Authenticator } from '@aws-amplify/ui-react';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure(outputs);
+
+export default function App() {
+  const [myEvents, setMyEvents] = useState([]);
+
+  useEffect(() => {
+    let channel;
+
+    const connectAndSubscribe = async () => {
+      channel = await events.connect('default/channel');
+
+      channel.subscribe({
+        next: (data) => {
+          console.log('received', data);
+          setMyEvents((prev) => [data,...prev]);
+        },
+        error: (err) => console.error('error', err),
+      });
+    };
+
+    connectAndSubscribe();
+
+    return () => channel && channel.close();
+  }, []);
+
+  async function publishEvent() {
+    await events.post('default/channel', { some: 'data' });
+  }
+
+  return (
+    <Authenticator>
+      {({ signOut, user }) => (
+        <>
+          <div>
+            <h1>Welcome, {user.username}</h1>
+            <button onClick={signOut}>Sign Out</button>
+          </div>
+          <div>
+            <button onClick={publishEvent}>Publish Event</button>
+            <ul>
+              {myEvents.map((data) => (
+                <li key={data.id}>{JSON.stringify(data.event)}</li>
+              ))}
+            </ul>
+          </div>
+        </>
+      )}
+    </Authenticator>
+  );
+}
+```
+
+To connect to Amplify Data from a Next.js server runtime, you need to follow these steps:
+
+First, make sure you have a Next.js application created, Amplify libraries installed and configured for Next.js, and Amplify Data resources deployed or set up using AWS AppSync.
+
+There are two types of data clients for Next.js server runtimes: one that uses cookies and another that uses NextRequest and NextResponse. The choice of data client depends on your Next.js Router and use case.
+
+For the App Router, use the `generateServerClientUsingCookies()` function for React Server Components, Server Actions, and Route Handlers, and `generateServerClientUsingReqRes()` for Middleware.
+
+For the Pages Router, use `generateServerClientUsingReqRes()` for server-side component code, API Routes, and Middleware.
+
+To generate a Data client using cookies, provide your Amplify configuration and the cookies function from Next.js. 
+
+```javascript
+import { generateServerClientUsingCookies } from '@aws-amplify/adapter-nextjs/data';
+import outputs from './amplify_outputs.json';
+import { cookies } from 'next/headers';
+
+const cookieBasedClient = generateServerClientUsingCookies({
+  config: outputs,
+  cookies,
+});
+```
+
+To generate a Data client using NextRequest and NextResponse, provide your Amplify configuration. 
+
+```javascript
+import { generateServerClientUsingReqRes } from '@aws-amplify/adapter-nextjs/data';
+import outputs from './amplify_outputs.json';
+
+const reqResBasedClient = generateServerClientUsingReqRes({
+  config: outputs,
+});
+```
+
+Then, import the generated client in your Next.js React Server Components, Server Actions, or Route Handlers, and make API requests using the client.
+
+```javascript
+const fetchTodos = async () => {
+  const { data: todos, errors } = await cookieBasedClient.models.Todo.list();
+
+  if (!errors) {
+    return todos;
+  }
+};
+```
+
+For NextRequest/NextResponse-based clients, import the client in your Next.js server runtime code and make API requests within the `runWithAmplifyServerContext` function.
+
+```javascript
+import { runWithAmplifyServerContext, reqResBasedClient } from './amplifyServerUtils';
+
+type ResponseData = {
+  todos: any[];
+};
+
+export default async function handler(
+  request: any,
+  response: any
+) {
+  const todos = await runWithAmplifyServerContext({
+    nextServerContext: { request, response },
+    operation: async (contextSpec) => {
+      const { data: todos } = await reqResBasedClient.models.Todo.list(
+        contextSpec
+      );
+      return todos;
+    },
+  });
+
+  response.status(200).json({ todos });
+}
+```
+
+To connect to Amplify Data from a React application, you will need to set up the Amplify APIs plugin and use the `runWithAmplifyServerContext` adapter. Here's how you can do it:
+
+First, you need to have a React application created and Amplify Data resources deployed. 
+
+To set up the AmplifyAPIs plugin, you will need to create a plugin that registers both client-specific and server-specific Amplify APIs. You can then access these APIs via a context.
+
+Here is an example of how to set up the Amplify APIs plugin in a React application using Next.js:
+
+```javascript
+// amplify-apis.js
+import Amplify from 'aws-amplify';
+import { createClient } from '@aws-amplify/datastore';
+import { withSSRContext } from 'aws-amplify';
+
+export const AmplifyAPI = {
+  async getAuthSession() {
+    const { Auth } = withSSRContext();
+    return Auth.currentSession();
+  },
+};
+
+export default AmplifyAPI;
+```
+
+Next, you need to use the `useContext` hook to access the Amplify APIs in your React components.
+
+```javascript
+// App.js
+import React, { useState, useEffect } from 'react';
+import AmplifyAPI from './amplify-apis';
+
+function App() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    AmplifyAPI.getAuthSession().then((session) => {
+      setUser(session);
+    });
+  }, []);
+
+  return (
+    <div>
+      {user? <p>Welcome, {user.username}!</p> : <p>Please login</p>}
+    </div>
+  );
+}
+
+export default App;
+```
+
+For server-side rendering, you can use the `getServerSideProps` function in Next.js to pre-render pages on the server.
+
+```javascript
+// pages/index.js
+import AmplifyAPI from '../amplify-apis';
+
+export const getServerSideProps = async ({ req }) => {
+  const session = await AmplifyAPI.getAuthSession(req);
+  return {
+    props: {
+      user: session,
+    },
+  };
+};
+
+function HomePage({ user }) {
+  return (
+    <div>
+      {user? <p>Welcome, {user.username}!</p> : <p>Please login</p>}
+    </div>
+  );
+}
+
+export default HomePage;
+```
+
+To call Amplify APIs in an isolated server context, you can create a helper function that uses the `runWithAmplifyServerContext` function from the `aws-amplify/adapter-core` package.
+
+```javascript
+// amplify-utils.js
+import { runWithAmplifyServerContext } from 'aws-amplify/adapter-core';
+import Amplify from 'aws-amplify';
+
+const amplifyConfig = Amplify.configure();
+
+export const runAmplifyApi = async (operation) => {
+  return runWithAmplifyServerContext(amplifyConfig, operation);
+};
+```
+
+You can then use this helper function to call Amplify APIs in your React components.
+
+```javascript
+// App.js
+import React, { useState, useEffect } from 'react';
+import { runAmplifyApi } from './amplify-utils';
+
+function App() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    runAmplifyApi(async (contextSpec) => {
+      const session = await contextSpec.Auth.currentSession();
+      setUser(session);
+    });
+  }, []);
+
+  return (
+    <div>
+      {user? <p>Welcome, {user.username}!</p> : <p>Please login</p>}
+    </div>
+  );
+}
+
+export default App;
+```
+
+To connect your React application code to a backend API using the Amplify Libraries, you need to have a cloud sandbox with an Amplify Data resource up and running, a frontend application set up with the Amplify library installed, and npm installed.
+
+First, configure the Amplify Library by adding the following code to your app's entry point to initialize and configure the Amplify client library:
+```typescript
+import { Amplify } from 'aws-amplify';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure(outputs);
+```
+
+Next, generate a "Data client" for your frontend code to make fully-typed API requests to your backend. To do this, use the following code:
+```typescript
+import { generateClient } from 'aws-amplify/data';
+import type { Schema } from '../amplify/data/resource';
+
+const client = generateClient<Schema>();
+```
+
+You can now use the Data client to make CRUDL operations. For example, to fetch a list of todos, you can use the following code:
+```typescript
+const fetchTodos = async () => {
+  const { data: todos, errors } = await client.models.Todo.list();
+};
+```
+
+To configure authorization mode, you need to determine how a request should be authorized with the backend. Amplify Data uses the "userPool" authorization by default, which uses the signed-in user credentials to sign an API request. If you use a `allow.publicApiKey()` authorization rule for your data models, you need to use "apiKey" as an authorization mode.
+
+You can set the authorization mode on a per-client basis by specifying the `authMode` parameter on the `generateClient` function. For example:
+```typescript
+const client = generateClient<Schema>({
+  authMode: 'apiKey',
+});
+```
+
+Alternatively, you can set the authorization mode on each individual API request. For example:
+```typescript
+const { data: todos, errors } = await client.models.Todo.list({
+  authMode: 'apiKey',
+});
+```
+
+You can also set custom request headers for authorization purposes or to pass additional metadata from your frontend to the backend API. To do this, you can specify a `headers` parameter in the configuration. For example:
+```typescript
+const client = generateClient<Schema>({
+  headers: {
+    'My-Custom-Header': 'my value',
+  },
+});
+```
+
+If you have an additional Data endpoint that you're managing with a different Amplify project or through other means, you can utilize that endpoint in your frontend code by specifying the `endpoint` parameter on the `generateClient` function. For example:
+```typescript
+const client = generateClient({
+  endpoint: 'https://my-other-endpoint.com/graphql',
+});
+```
+
+To connect to an external Amazon DynamoDB data source, you can follow these steps:
+
+First, you need to set up your Amazon DynamoDB table. This involves defining a custom type in your schema and creating an external DynamoDB table to store records for it. 
+
+Next, you need to add your Amazon DynamoDB table as a data source for your API. This can be done in your `amplify/backend.ts` file by creating a new stack and adding the external DynamoDB table as a data source.
+
+After that, you can define custom queries and mutations using the `a.handler.custom()` modifier, which accepts the name of the data source and an entry point for your resolvers. 
+
+You will then need to configure custom business logic handler code for your resolvers. This involves creating JavaScript files that define the custom resolvers for the custom queries and mutations added to your schema.
+
+Finally, you can invoke custom queries or mutations from your generated Data client. The client will have APIs for all your custom queries and mutations under the client.queries and client.mutations properties respectively.
+
+The available DynamoDB operations include GetItem, PutItem, UpdateItem, DeleteItem, Query, Scan, Sync, BatchGetItem, BatchDeleteItem, BatchPutItem, TransactGetItems, and TransactWriteItems. Each operation has its own set of parameters and configurations that can be specified in the request object.
+
+Here's an example of how you might define a custom query in your schema:
+```javascript
+addPost: a
+ .mutation()
+ .arguments({
+    id: a.id(),
+    author: a.string().required(),
+    title: a.string(),
+    content: a.string(),
+    url: a.string(),
+  })
+ .returns(a.ref("Post"))
+ .authorization(allow => [allow.publicApiKey()])
+ .handler(
+    a.handler.custom({
+      dataSource: "ExternalPostTableDataSource",
+      entry: "./addPost.js",
+    })
+  ),
+```
+And here's an example of how you might invoke this custom query from your Data client:
+```javascript
+const { data, errors } = await client.mutations.addPost({
+  title: "My Post",
+  content: "My Content",
+  author: "Chris",
+});
+```
+
+To connect your React app to an existing MySQL or PostgreSQL database using AWS Amplify Gen 2, follow these steps:
+
+First, you need to create a connection string using your database information, including hostname, port, username, user password, and database name.
+
+To get started, set secrets for your database connection using the Amplify sandbox's secret functionality or the Amplify console. You can use the following command to set secrets:
+```
+npx ampx sandbox secret set SQL_CONNECTION_STRING
+```
+The connection string format for MySQL is:
+```
+mysql://user:password@hostname:port/db-name
+```
+And for PostgreSQL:
+```
+postgres://user:password@hostname:port/db-name
+```
+Next, generate a TypeScript representation of your database schema using the following command:
+```
+npx ampx generate schema-from-database --connection-uri-secret SQL_CONNECTION_STRING --out amplify/data/schema.sql.ts
+```
+This will create a new schema.sql.ts file with a schema reflecting the types of your database. Do not edit this file directly. Instead, import the schema to your amplify/data/resource.ts file and apply any additive changes there.
+
+To fine-grain authorization rules, use the `.setAuthorization()` modifier to set model-level and field-level authorization rules for your SQL-backed data models.
+
+You can also deploy your Data resources using the cloud sandbox and make create, read, update, delete, and subscribe requests to your SQL-backed data models.
+
+Additionally, you can rename generated models and fields, add relationships between tables, and add custom queries, mutations, and subscriptions to your auto-generated SQL data schema.
+
+To configure the database connection for production, add the database connection string as a secret and make sure to add the appropriate database connection string with the same secret name used in the sandbox environment.
+
+To troubleshoot issues, you can enable debug mode by setting the `DEBUG_MODE` environment variable to `true` on the Amplify-generated SQL Lambda function.
+
+Note that if your table doesn't have a designated primary key, it may not get generated when running `npx ampx generate schema-from-database`. A primary key is required for `npx ampx generate schema-from-database` to infer the table structure and create a create, read, update, and delete API.
+
+Here is an example of how to use the generated schema in your React app:
+```typescript
+import { schema as generatedSqlSchema } from './schema.sql';
+
+const sqlSchema = generatedSqlSchema.authorization(allow => allow.guest());
+
+const combinedSchema = a.combine([schema, sqlSchema]);
+
+export type Schema = ClientSchema<typeof combinedSchema>;
+
+export const data = defineData({
+  schema: combinedSchema
+});
+```
+You can then use the `data` object to make requests to your SQL-backed data models. For example:
+```typescript
+const { data: events } = await client.models.event.list();
+```
+
+Batch DynamoDB operations allow you to add multiple items in a single mutation.
+
+To perform batch operations, you first need to define a custom mutation. This involves defining a return type as a custom type or model, and then defining the mutation itself with the return type and any optional arguments.
+
+For example, let's say we want to create a custom mutation called `BatchCreatePost` that accepts an array of post contents and returns an array of post objects. In React, this can be achieved by defining a schema using the `@aws-amplify/backend` module.
+
+Next, we need to configure a custom business logic handler code for our mutation. This involves defining a custom handler using the `a.handler.custom` function and specifying the data source and entry point for the handler.
+
+The handler code itself will be responsible for mapping the request to the data source's input parameters and then mapping the data source's response back to the query or mutation's return type. Amplify provides a `stash` object that contains useful information such as the AppSync API ID and Amplify API environment name, which can be used to construct the DynamoDB table name.
+
+Finally, once our custom mutation is defined and configured, we can invoke it from our React application using the generated Data client. We can pass in the required arguments, such as an array of post contents, and receive an array of post objects in response.
+
+Here's an example of how we might invoke the `BatchCreatePost` mutation from our React application:
+```javascript
+const { data, errors } = await client.mutations.BatchCreatePost({
+  contents: ['Post 1', 'Post 2', 'Post 3']
+});
+```
+This code will create three new posts in our DynamoDB table with the specified contents and return an array of post objects.
+
+Amazon Polly is a text-to-speech service offered by Amazon Web Services. It uses advanced deep learning technologies to convert written text into lifelike speech, enabling you to create applications with speech capabilities in various languages and voices.
+
+With Amazon Polly, you can easily add voice interactions and accessibility features to your applications. The service supports a wide range of use cases, such as providing audio content for the visually impaired, enhancing e-learning experiences, creating interactive voice response systems, and more.
+
+Key features of Amazon Polly include multiple voices and languages, high-quality speech, speech marks and speech synthesis markup language, and scalable and cost-effective pricing.
+
+To integrate Amazon Polly into your React application using AWS Amplify, follow these steps:
+
+1. Set up your project by following the instructions in the Quickstart guide.
+2. Install the Amazon Polly SDK by running the command `npm add @aws-sdk/client-polly` in your project's root folder.
+3. Create a file named `amplify/storage/resource.ts` and add the necessary content to configure a storage resource.
+4. Configure IAM roles by updating the `amplify/backend.ts` file with the necessary permissions to access Amazon Polly.
+5. Define the function handler by creating a new file, `amplify/data/convertTextToSpeech.ts`, which converts text into speech using Amazon Polly and stores the synthesized speech as an MP3 file in an S3 bucket.
+6. Define the custom mutation and function in your `amplify/data/resource.ts` file.
+7. Update storage permissions by modifying the `amplify/storage/resource.ts` file to provide access to the `convertTextToSpeech` resource.
+8. Configure the frontend by importing and loading the configuration file in your app.
+
+To invoke the API, use the following example frontend code to create an audio buffer for playback using a text input:
+```typescript
+import "./App.css";
+import { generateClient } from "aws-amplify/api";
+import type { Schema } from "../amplify/data/resource";
+import { getUrl } from "aws-amplify/storage";
+import { useState } from "react";
+
+const client = generateClient<Schema>();
+
+type PollyReturnType = Schema["convertTextToSpeech"]["returnType"];
+
+function App() {
+  const [src, setSrc] = useState("");
+  const [file, setFile] = useState<PollyReturnType>("");
+  return (
+    <div className="flex flex-col">
+      <button
+        onClick={async () => {
+          const { data, errors } = await client.mutations.convertTextToSpeech({
+            text: "Hello World!",
+          });
+
+          if (!errors && data) {
+            setFile(data);
+          } else {
+            console.log(errors);
+          }
+        }}
+      >
+        Synth
+      </button>
+      <button
+        onClick={async () => {
+          const res = await getUrl({
+            path: "public/" + file,
+          });
+
+          setSrc(res.url.toString());
+        }}
+      >
+        Fetch audio
+      </button>
+      <a href={src}>Get audio file</a>
+    </div>
+  );
+}
+
+export default App;
+```
+
+Amazon Rekognition is a machine learning service provided by Amazon Web Services (AWS) that allows developers to incorporate image and video analysis into their applications. It uses state-of-the-art machine learning models to analyze images and videos, providing valuable insights such as object and scene detection, text recognition, face analysis, and more.
+
+Key features of Amazon Rekognition include object and scene detection, text detection and recognition, facial analysis, facial recognition, and content moderation. 
+
+To integrate Amazon Rekognition into your React application, follow these steps:
+
+1. Set up your project by following the instructions in the Quickstart guide.
+
+2. Install the Amazon Rekognition SDK by running the command npm add @aws-sdk/client-rekognition in your project's root folder.
+
+3. Create a new file named amplify/storage/resource.ts and add the content to configure a storage resource.
+
+```typescript
+import { defineStorage } from '@aws-amplify/backend';
+export const storage = defineStorage({
+  name: 'predictions_gen2'
+});
+```
+
+4. Add Amazon Rekognition as an HTTP Data Source and configure the proper IAM policy for Lambda to effectively utilize the desired feature and grant permission to access the storage. Update the amplify/backend.ts file as shown below.
+
+```typescript
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import { defineBackend } from '@aws-amplify/backend';
+import { auth } from './auth/resource';
+import { data } from './data/resource';
+import { storage } from './storage/resource';
+const backend = defineBackend({
+  auth,
+  data,
+  storage
+});
+const rekognitionDataSource = backend.data.addHttpDataSource(
+  "RekognitionDataSource",
+  `https://rekognition.${backend.data.stack.region}.amazonaws.com`,
+  {
+    authorizationConfig: {
+      signingRegion: backend.data.stack.region,
+      signingServiceName: "rekognition",
+    },
+  }
+);
+rekognitionDataSource.grantPrincipal.addToPrincipalPolicy(
+  new PolicyStatement({
+    actions: ["rekognition:DetectText", "rekognition:DetectLabels"],
+    resources: ["*"],
+  })
+);
+backend.storage.resources.bucket.grantReadWrite(
+  rekognitionDataSource.grantPrincipal
+);
+```
+
+5. Define the function handler by creating a new file, amplify/data/identifyText.ts. This function analyzes the image and extracts text using the Amazon Rekognition DetectText service.
+
+```typescript
+export function request(ctx) {
+  return {
+    method: "POST",
+    resourcePath: "/",
+    params: {
+      body: {
+        Image: {
+          S3Object: {
+            Bucket: ctx.env.S3_BUCKET_NAME,
+            Name: ctx.arguments.path,
+          },
+        },
+      },
+      headers: {
+        "Content-Type": "application/x-amz-json-1.1",
+        "X-Amz-Target": "RekognitionService.DetectText",
+      },
+    },
+  };
+}
+export function response(ctx) {
+  return JSON.parse(ctx.result.body)
+   .TextDetections.filter((item) => item.Type === "LINE")
+   .map((item) => item.DetectedText)
+   .join("\n")
+   .trim();
+}
+```
+
+6. Define the custom query using the a.handler.custom() modifier, which takes the name of the data source and an entry point for your resolvers. In your amplify/data/resource.ts file, specify RekognitionDataSource as the data source and identifyText.js as the entry point.
+
+```typescript
+import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
+const schema = a.schema({
+  identifyText: a
+   .query()
+   .arguments({
+      path: a.string(),
+    })
+   .returns(a.string())
+   .authorization((allow) => [allow.publicApiKey()])
+   .handler(
+      a.handler.custom({
+        entry: "./identifyText.js",
+        dataSource: "RekognitionDataSource",
+      })
+    ),
+});
+export type Schema = ClientSchema<typeof schema>;
+export const data = defineData({
+  schema,
+  authorizationModes: {
+    defaultAuthorizationMode: "apiKey",
+    apiKeyAuthorizationMode: {
+      expiresInDays: 30,
+    },
+  },
+});
+```
+
+7. Update Storage permissions to manage access to various paths within your storage bucket. Modify the file amplify/storage/resource.ts as shown below.
+
+```typescript
+import { defineStorage } from "@aws-amplify/backend"
+export const storage = defineStorage({
+  name: "predictions_gen2",
+  access: allow => ({
+    'public/*': [
+      allow.guest.to(['list', 'write', 'get'])
+    ]
+  })
+})
+```
+
+8. Configure the frontend by importing and loading the configuration file in your app. It's recommended you add the Amplify configuration step to your app's root entry point.
+
+```typescript
+import { Amplify } from "aws-amplify";
+import outputs from "../amplify_outputs.json";
+Amplify.configure(outputs);
+```
+
+To invoke the Text Recognition API in a React app, you can use the following code:
+
+```typescript
+import { type ChangeEvent, useState } from "react";
+import { generateClient } from "aws-amplify/api";
+import { uploadData } from "aws-amplify/storage";
+import { Schema } from "@/amplify/data/resource";
+const client = generateClient<Schema>();
+type IdentifyTextReturnType = Schema["identifyText"]["returnType"];
+function App() {
+  const [path, setPath] = useState<string>("");
+  const [textData, setTextData] = useState<IdentifyTextReturnType>();
+  const handleTranslate = async (event: ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) {
+      const file = event.target.files[0];
+      const s3Path = "public/" + file.name;
+      try {
+        uploadData({
+          path: s3Path,
+          data: file,
+        });
+        setPath(s3Path);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  };
+  const recognizeText = async () => {
+    const { data } = await client.queries.identifyText({
+      path, 
+    });
+    setTextData(data);
+  };
+  return (
+    <div>
+      <h1>Amazon Rekognition Text Recognition</h1>
+      <div>
+        <input type="file" onChange={handleTranslate} />
+        <button onClick={recognizeText}>Recognize Text</button>
+        <div>
+          <h3>Recognized Text:</h3>
+          {textData}
+        </div>
+      </div>
+    </div>
+  );
+}
+export default App;
+```
+
+Amazon Translate is a neural machine translation service provided by Amazon Web Services (AWS) that uses advanced deep learning technologies to deliver fast and high-quality language translation. With Amazon Translate, you can easily add multilingual support to your applications and services, enabling users to communicate and interact in their preferred language.
+
+The key features of Amazon Translate include accurate and fluent translations, support for multiple languages, real-time and batch translation, and cost-effective and scalable pricing. 
+
+To integrate Amazon Translate into your React application using AWS Amplify, follow these steps:
+
+1. Set up your project by following the instructions in the Quickstart guide.
+
+2. Install the Amazon Translate SDK by running the command `npm add @aws-sdk/client-translate` in your project's root folder.
+
+3. Add Amazon Translate as an HTTP Data Source and configure the proper IAM policy for AWS Lambda to utilize the desired feature effectively. 
+
+4. Create a custom business logic handler by defining custom resolvers in a file named `translate.js` in your `amplify/data` folder.
+
+5. Define the custom query by referencing the Amazon Translate data source in a custom query using the `a.handler.custom()` modifier.
+
+6. Configure the frontend by importing and loading the configuration file in your app and invoking the API to translate text from one language to another.
+
+Here is an example of how to invoke the API in a React application:
+```typescript
+import { generateClient } from 'aws-amplify/data';
+import { type Schema } from '../amplify/data/resource';
+
+const client = generateClient<Schema>();
+
+const translateText = async () => {
+  const { data } = await client.queries.translate({
+    sourceLanguage: "en",
+    targetLanguage: "es",
+    text: "Hello World!",
+  });
+  console.log(data);
+};
+```
+This code generates a client using the `generateClient` function from `aws-amplify/data` and then invokes the `translate` query with the source language, target language, and text to be translated. The translated text is then logged to the console. 
+
+You can call the `translateText` function from any React component to translate text from one language to another using Amazon Translate.
+
+Amazon Bedrock is a fully managed service that simplifies the use of foundation models for generative AI development. It offers a curated selection of high-performing models from leading AI companies and provides a unified API for access and use. With Amazon Bedrock, you can streamline generative AI development by choosing from a range of models, integrating them easily, and benefiting from built-in security and privacy features.
+
+To connect to Amazon Bedrock from your AWS Amplify app, you can follow these steps:
+
+1. Add Amazon Bedrock as a data source to your app. You can do this by using a Lambda function or a custom resolver powered by AppSync JavaScript resolvers.
+
+2. Define a custom query that will be used to invoke the generative AI model in Amazon Bedrock. This query will take a prompt as an argument and return the generated text.
+
+3. Configure custom business logic handler code that will be used to invoke the generative AI model. This code will take the user's prompt, invoke the model, and return the generated text.
+
+4. Invoke the custom query to prompt the generative AI model. You can do this by calling the query from your app's frontend code and passing in the user's prompt.
+
+Here's an example of how you might invoke the custom query from a React app:
+
+```tsx
+const { data, errors } = await client.queries.generateHaiku({
+  prompt: "Frank Herbert's Dune",
+});
+```
+
+You can also create a simple UI that prompts a generative AI model to create a haiku based on user input. For example:
+
+```tsx
+import type { Schema } from '@/amplify/data/resource';
+import type { FormEvent } from 'react';
+import { useState } from 'react';
+import { Amplify } from 'aws-amplify';
+import { generateClient } from 'aws-amplify/api';
+import outputs from '@/amplify_outputs.json';
+
+Amplify.configure(outputs);
+
+const client = generateClient<Schema>();
+
+export default function App() {
+  const [prompt, setPrompt] = useState<string>('');
+  const [answer, setAnswer] = useState<string | null>(null);
+
+  const sendPrompt = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const { data, errors } = await client.queries.generateHaiku({
+      prompt
+    });
+
+    if (!errors) {
+      setAnswer(data);
+      setPrompt('');
+    } else {
+      console.log(errors);
+    }
+  };
+
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-center p-24 dark:text-white">
+      <div>
+        <h1 className="text-3xl font-bold text-center mb-4">Haiku Generator</h1>
+        <form className="mb-4 self-center max-w-[500px]" onSubmit={sendPrompt}>
+          <input
+            className="text-black p-2 w-full"
+            placeholder="Enter a prompt..."
+            name="prompt"
+            value={prompt}
+            onChange={(event) => setPrompt(event.target.value)}
+          />
+        </form>
+        <div className="text-center">
+          <pre>{answer}</pre>
+        </div>
+      </div>
+    </main>
+  );
+}
+```
+
+By following these steps and using Amazon Bedrock with your AWS Amplify app, you can leverage the power of generative AI models to create innovative and engaging user experiences.
+
+Amazon EventBridge is a serverless event bus that simplifies how applications communicate with each other. It acts as a central hub for events generated by various sources, including AWS services, custom applications, and third-party SaaS providers. EventBridge delivers event data in real-time, allowing you to build applications that react swiftly to changes. You define rules to filter and route these events to specific destinations, known as targets.
+
+By adopting an event-driven architecture with EventBridge, you can achieve loose coupling, increased resilience, and simplified integration. Loose coupling means applications become independent and communicate through events, improving scalability and maintainability. Increased resilience means system failures are isolated as events are delivered asynchronously, ensuring overall application availability. Simplified integration means EventBridge provides a unified interface for integrating diverse event sources, streamlining development.
+
+To connect to Amazon EventBridge, you need to set up your API, add your Amazon EventBridge event bus as a data source, define custom queries and mutations, configure custom business logic handler code, invoke custom mutations to send events to EventBridge, subscribe to mutations invoked by EventBridge, and invoke mutations and trigger subscriptions from EventBridge.
+
+First, set up your API by defining a custom type that represents an order status change event. This type includes fields for the order ID, status, and message. 
+
+```typescript
+const schema = a.schema({
+  OrderStatus: a.enum(["OrderPending", "OrderShipped", "OrderDelivered"]),
+  OrderStatusChange: a.customType({
+    orderId: a.id().required(),
+    status: a.ref("OrderStatus").required(),
+    message: a.string().required(),
+  }),
+});
+```
+
+Next, add your Amazon EventBridge event bus as a data source for your API. You can do this by using the `addEventBridgeDataSource` method.
+
+```typescript
+backend.data.addEventBridgeDataSource("MyEventBridgeDataSource", eventBus);
+```
+
+Then, define custom queries and mutations. For example, you can add `publishOrderToEventBridge` and `publishOrderFromEventBridge` custom mutations, and an `onOrderStatusChange` custom subscription to your schema.
+
+```typescript
+const schema = a.schema({
+  publishOrderToEventBridge: a
+   .mutation()
+   .arguments({
+      orderId: a.id().required(),
+      status: a.string().required(),
+      message: a.string().required(),
+    })
+   .returns(a.ref("OrderStatusChange"))
+   .authorization((allow) => [allow.publicApiKey()])
+   .handler(
+      a.handler.custom({
+        dataSource: "EventBridgeDataSource",
+        entry: "./publishOrderToEventBridge.js",
+      })
+    ),
+  publishOrderFromEventBridge: a
+   .mutation()
+   .arguments({
+      orderId: a.id().required(),
+      status: a.string().required(),
+      message: a.string().required(),
+    })
+   .returns(a.ref("OrderStatusChange"))
+   .authorization((allow) => [allow.publicApiKey(), allow.guest()])
+   .handler(
+      a.handler.custom({
+        entry: "./publishOrderFromEventBridge.js",
+      })
+    ),
+  onOrderFromEventBridge: a
+   .subscription()
+   .for(a.ref("publishOrderFromEventBridge"))
+   .authorization((allow) => [allow.publicApiKey()])
+   .handler(
+      a.handler.custom({
+        entry: "./onOrderFromEventBridge.js",
+      })
+    ),
+});
+```
+
+After that, configure custom business logic handler code. For example, you can create a file called `publishOrderToEventBridge.js` with the following code:
+
+```javascript
+export function request(ctx) {
+  return {
+    operation: "PutEvents",
+    events: [
+      {
+        source: "amplify.orders",
+        ["detail-type"]: "OrderStatusChange",
+        detail: {...ctx.args },
+      },
+    ],
+  };
+}
+
+export function response(ctx) {
+  return ctx.args;
+}
+```
+
+You can then invoke custom mutations to send events to EventBridge. For example:
+
+```typescript
+await client.mutations.publishOrderToEventBridge({
+  orderId: "12345",
+  status: "SHIPPED",
+  message: "Order has been shipped",
+});
+```
+
+You can also subscribe to mutations invoked by EventBridge. For example:
+
+```typescript
+const sub = client.subscriptions.onOrderStatusChange().subscribe({
+  next: (data) => {
+    console.log(data);
+  },
+});
+```
+
+Finally, you can invoke a mutation and trigger a subscription from EventBridge. You can test your custom mutation and subscriptions by using the EventBridge console to send an event which will invoke the custom mutation. You can then observe the results from the subscription being triggered. 
+
+To send an event, navigate to the Amazon EventBridge console and choose "Send Events". Fill out the form, specifying the event source to be `amplify.orders` and the `detail-type` to be `OrderStatusChange`. Choose "Send" and observe the subscription output in the AppSync Queries console.
+
+The HTTP Datasource allows you to quickly configure HTTP resolvers within your Data API. 
+
+This guide will demonstrate how to establish a connection to an external REST API using an HTTP data source and use Amplify Data's custom mutations and queries to interact with the REST API.
+
+To start, you need to set up your custom type. For this example, we will define a Post type and use an existing external REST API that will store records for it. In Amplify Gen 2, a customType adds a type to the schema that is not backed by an Amplify-generated DynamoDB table. 
+
+With the Post type defined, it can then be referenced as the return type when defining your custom queries and mutations. To add the Post custom type to your schema, use the following code 
+```javascript
+const schema = {
+  Post: {
+    title: 'string',
+    content: 'string',
+    author: 'string',
+  },
+};
+```
+
+Next, you need to add your REST API or HTTP API as a Datasource. To integrate the external REST API or HTTP API, you'll need to set it up as the HTTP Datasource. 
+
+Now that your REST API has been added as a data source, you can reference it in custom queries and mutations. Use the following code examples to add addPost, getPost, updatePost, and deletePost as custom queries and mutations to your schema 
+```javascript
+const addPost = {
+  type: 'mutation',
+  args: {
+    title: 'string',
+    content: 'string',
+    author: 'string',
+  },
+  resolve: async (parent, args) => {
+    const response = await fetch('https://www.example.com/post', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title: args.title,
+        content: args.content,
+        author: args.author,
+      }),
+    });
+    return response.json();
+  },
+};
+
+const getPost = {
+  type: 'query',
+  args: {
+    id: 'string',
+  },
+  resolve: async (parent, args) => {
+    const response = await fetch(`https://www.example.com/posts/${args.id}`);
+    return response.json();
+  },
+};
+
+const updatePost = {
+  type: 'mutation',
+  args: {
+    id: 'string',
+    title: 'string',
+    content: 'string',
+    author: 'string',
+  },
+  resolve: async (parent, args) => {
+    const response = await fetch(`https://www.example.com/posts/${args.id}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title: args.title,
+        content: args.content,
+        author: args.author,
+      }),
+    });
+    return response.json();
+  },
+};
+
+const deletePost = {
+  type: 'mutation',
+  args: {
+    id: 'string',
+  },
+  resolve: async (parent, args) => {
+    const response = await fetch(`https://www.example.com/posts/${args.id}`, {
+      method: 'DELETE',
+    });
+    return response.json();
+  },
+};
+```
+
+Next, you need to configure custom business logic handler code. Create the following files and use the code examples to define custom resolvers for the custom queries and mutations added to your schema from the previous step. 
+
+To invoke custom queries or mutations, you can use the following code examples 
+```javascript
+const addPostData = await fetch('https://www.example.com/post', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    title: 'My Post',
+    content: 'My Content',
+    author: 'Chris',
+  }),
+});
+
+const getPostData = await fetch('https://www.example.com/posts/<post-id>');
+const updatePostData = await fetch('https://www.example.com/posts/<post-id>', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    title: 'An Updated Post',
+  }),
+});
+
+const deletePostData = await fetch('https://www.example.com/posts/<post-id>', {
+  method: 'DELETE',
+});
+```
+
+In this guide, you’ve added an external REST API as a HTTP data source to an Amplify Data API and defined custom queries and mutations, handled by AppSync JS resolvers, to manipulate Post items in an external REST API using the Amplify Gen 2 Data client. 
+
+To clean up, you can delete your sandbox by accepting the prompt when terminating the sandbox process in your terminal. Alternatively, you can also use the AWS Amplify console to manage and delete sandbox environments.
+
+To add custom queries and mutations to your AWS Amplify application, you need to follow three steps. 
+
+First, you define a custom query or mutation. A query is used when the request only needs to read data and will not modify any backend data, while a mutation is used when the request will modify backend data. You need to set a return type and, optionally, arguments for your custom query or mutation. 
+
+In React, you can define your custom query or mutation in your amplify/data/resource.ts file. For example, to define a custom query, you can use the `a.query()` method and specify the return type and arguments. 
+
+```typescript
+const schema = a.schema({
+  EchoResponse: a.customType({
+    content: a.string(),
+    executionDuration: a.float()
+  }),
+
+  echo: a
+   .query()
+   .arguments({
+      content: a.string()
+    })
+   .returns(a.ref('EchoResponse'))
+});
+```
+
+To define a custom mutation, you can use the `a.mutation()` method and specify the return type and arguments. 
+
+```typescript
+const schema = a.schema({
+  Post: a.model({
+    id: a.id(),
+    content: a.string(),
+    likes: a.integer()
+  }),
+
+  likePost: a
+   .mutation()
+   .arguments({
+      postId: a.string()
+    })
+   .returns(a.ref('Post'))
+});
+```
+
+Second, you need to configure custom business logic handler code. You can either define it in a function or using a custom resolver powered by AppSync JavaScript resolver. 
+
+To define a function, you can create a handler.ts file in your amplify/data/echo-handler/ folder and import the utility type for your function handler via the Schema type from your backend resource. 
+
+```typescript
+export const handler: Schema["echo"]["functionHandler"] = async (event, context) => {
+  const start = performance.now();
+  return {
+    content: `Echoing content: ${event.arguments.content}`,
+    executionDuration: performance.now() - start
+  };
+};
+```
+
+Then, in your amplify/data/resource.ts file, you can define the function using `defineFunction` and reference the function with your query or mutation using `a.handler.function()` as a handler. 
+
+```typescript
+const echoHandler = defineFunction({
+  entry: './echo-handler/handler.ts'
+})
+
+const schema = a.schema({
+  EchoResponse: a.customType({
+    content: a.string(),
+    executionDuration: a.float()
+  }),
+
+  echo: a
+   .query()
+   .arguments({
+      content: a.string()
+    })
+   .returns(a.ref('EchoResponse'))
+   .handler(a.handler.function(echoHandler))
+});
+```
+
+To use a custom resolver, you can define a custom handler using `a.handler.custom` in your amplify/data/resource.ts file. 
+
+```typescript
+const schema = a.schema({
+  Post: a.model({
+    content: a.string(),
+    likes: a.integer()
+  }),
+
+  likePost: a
+   .mutation()
+   .arguments({
+      postId: a.id()
+    })
+   .returns(a.ref('Post'))
+   .handler(a.handler.custom({
+      dataSource: a.ref('Post'),
+      entry: './increment-like.js'
+    }))
+});
+```
+
+You can then define the custom resolver in a separate file, such as amplify/data/increment-like.js. 
+
+```typescript
+export function request(ctx) {
+  return {
+    operation: 'UpdateItem',
+    key: util.dynamodb.toMapValues({ id: ctx.args.postId}),
+    update: {
+      expression: 'ADD likes :plusOne',
+      expressionValues: { ':plusOne': { N: 1 } },
+    }
+  }
+}
+
+export function response(ctx) {
+  return ctx.result
+}
+```
+
+Third, you need to invoke the custom query or mutation. You can do this using the generated Data client. 
+
+```typescript
+const { data, errors } = await client.queries.echo({
+  content: 'hello world!!!'
+});
+
+const { data, errors } = await client.mutations.likePost({
+  postId: 'hello'
+});
+```
+
+Note that all handlers must be of the same type. You cannot mix and match `a.handler.function` with `a.handler.custom` within a single `.handler()` modifier. 
+
+Additionally, you can use async function handlers to execute long-running operations asynchronously, improving the responsiveness of your API. To define an async function handler, you can use the `.async()` method when defining your handler. 
+
+```typescript
+const signUpForNewsletter = defineFunction({
+  entry: './sign-up-for-newsletter/handler.ts'
+});
+
+const schema = a.schema({
+  someAsyncOperation: a.mutation()
+   .arguments({
+      email: a.email().required()
+    })
+   .handler(a.handler.function(signUpForNewsletter).async())
+});
+```
+
+Amazon OpenSearch Service is a managed platform for deploying search and analytics solutions with OpenSearch or Elasticsearch. It integrates with Amazon DynamoDB, allowing for seamless search on DynamoDB data by automatically replicating and transforming it without requiring custom code or infrastructure. This integration simplifies processes and reduces the operational workload of managing data pipelines.
+
+To connect to Amazon OpenSearch, follow these steps:
+
+## Step 1: Setup the project
+
+Begin by setting up your project. For this example, we'll sync a Todo table from DynamoDB to OpenSearch. Add the Todo model to your schema.
+
+```typescript
+const schema = {
+  Todo: {
+    content: 'string',
+    done: 'boolean',
+    priority: ['low', 'medium', 'high']
+  }
+}
+```
+
+Enable Point in Time Recovery (PITR) and DynamoDB streams to capture item changes that will be ingested into OpenSearch.
+
+## Step 2: Setting Up the OpenSearch Instance
+
+Create an OpenSearch instance with encryption. Define the OpenSearch domain and set the instance type, node count, and removal policy.
+
+```typescript
+const openSearchDomain = {
+  version: 'OPENSEARCH_2_11',
+  capacity: {
+    masterNodeInstanceType: 't3.small.search',
+    masterNodes: 0,
+    dataNodeInstanceType: 't3.small.search',
+    dataNodes: 1
+  },
+  nodeToNodeEncryption: true,
+  removalPolicy: 'DESTROY',
+  encryptionAtRest: {
+    enabled: true
+  }
+}
+```
+
+## Step 3: Setting Up Zero ETL from DynamoDB to OpenSearch
+
+### Step 3a: Setup Storage and IAM Role
+
+Establish storage to back up raw events consumed by the OpenSearch pipeline. Generate a file to set up a storage resource and tailor your storage configurations to regulate access.
+
+```typescript
+const storage = {
+  name: 'opensearch-backup-bucket',
+  access: {
+    'public/*': ['list', 'write', 'get']
+  }
+}
+```
+
+Create an IAM role for OpenSearch integration and assign the necessary permissions.
+
+```typescript
+const openSearchIntegrationPipelineRole = {
+  assumedBy: 'osis-pipelines.amazonaws.com',
+  inlinePolicies: {
+    openSearchPipelinePolicy: {
+      statements: [
+        {
+          actions: ['es:DescribeDomain'],
+          resources: [openSearchDomain.domainArn, openSearchDomain.domainArn + '/*']
+        }
+      ]
+    }
+  }
+}
+```
+
+### Step 3b: OpenSearch Service Pipeline
+
+Define the pipeline construct and its configuration. Customize the template content JSON-representation to define the data structure for the ingestion pipeline.
+
+```typescript
+const openSearchTemplate = `
+version: "2"
+dynamodb-pipeline:
+  source:
+    dynamodb:
+      acknowledgments: true
+      tables:
+        - table_arn: "${tableArn}"
+          stream:
+            start_position: "LATEST"
+          export:
+            s3_bucket: "${s3BucketName}"
+            s3_region: "${backend.storage.stack.region}"
+            s3_prefix: "${tableName}/"
+      aws:
+        sts_role_arn: "${openSearchIntegrationPipelineRole.roleArn}"
+        region: "${backend.data.stack.region}"
+  sink:
+    - opensearch:
+        hosts:
+          - "https://${openSearchDomain.domainEndpoint}"
+        index: "${indexName}"
+        index_type: "custom"
+        template_content: |
+          ${JSON.stringify(indexMapping)}
+        document_id: '${getMetadata("primary_key")}'
+        action: '${getMetadata("opensearch_action")}'
+        document_version: '${getMetadata("document_version")}'
+        document_version_type: "external"
+        bulk_size: 4
+        aws:
+          sts_role_arn: "${openSearchIntegrationPipelineRole.roleArn}"
+          region: "${backend.data.stack.region}"
+`
+```
+
+Create the OSIS pipeline resource and define the log group and pipeline configuration.
+
+```typescript
+const logGroup = {
+  logGroupName: '/aws/vendedlogs/OpenSearchService/pipelines/1',
+  removalPolicy: 'DESTROY'
+}
+
+const cfnPipeline = {
+  maxUnits: 4,
+  minUnits: 1,
+  pipelineConfigurationBody: openSearchTemplate,
+  pipelineName: 'dynamodb-integration-2',
+  logPublishingOptions: {
+    isLoggingEnabled: true,
+    cloudWatchLogDestination: {
+      logGroup: logGroup.logGroupName
+    }
+  }
+}
+```
+
+## Step 4: Expose new queries on OpenSearch
+
+### Step 4a: Add OpenSearch Datasource to backend
+
+Add the OpenSearch data source to the data backend.
+
+```typescript
+const osDataSource = backend.data.addOpenSearchDataSource('osDataSource', openSearchDomain)
+```
+
+### Step 4b: Create Resolver and attach to query
+
+Create a search resolver and attach it to the query. Define the request and response functions for the resolver.
+
+```typescript
+export function request(ctx) {
+  return {
+    operation: 'GET',
+    path: '/todo/_search'
+  }
+}
+
+export function response(ctx) {
+  if (ctx.error) {
+    util.error(ctx.error.message, ctx.error.type)
+  }
+  return ctx.result.hits.hits.map((hit) => hit._source)
+}
+```
+
+### Step 4c: Add the AppSync Resolver for the Search Query
+
+Update the schema and add a searchTodo query. Attach the resolver to the query.
+
+```typescript
+const schema = {
+  Todo: {
+    content: 'string',
+    done: 'boolean',
+    priority: ['low', 'medium', 'high']
+  },
+  searchTodos: {
+    type: 'Todo',
+    args: {
+      filter: {
+        type: 'TodoFilterInput'
+      }
+    },
+    resolve: async (source, args, context, info) => {
+      const result = await context.dataSources.osDataSource.searchTodo(args.filter)
+      return result.items
+    }
+  }
+}
+```
+
+Once you've deployed the resources, you can verify the changes by checking the AppSync console. Run the 'searchTodo' query and review the results to confirm their accuracy.
+
+To add custom real-time subscriptions to your application, you need to define a custom subscription in your amplify/data/resource file. This involves setting the mutation that triggers the subscription event, the return type that matches the subscribed mutation's return type, and authorization rules. You can also optionally set filter arguments to customize server-side subscription filter rules.
+
+To define a custom subscription, use the `a.subscription()` function and specify the mutation that should trigger the subscription event using the `for` method. You can also specify a subscription handler to set custom filters and authorization rules.
+
+For example, to create a custom real-time subscription for a mutation called `publish`, you would use the following code:
+
+```javascript
+const schema = a.schema({
+  // Message type that's used for this PubSub sample
+  Message: a.customType({
+    content: a.string().required(),
+    channelName: a.string().required()
+  }),
+
+  // Message publish mutation
+  publish: a.mutation()
+   .arguments({
+      channelName: a.string().required(),
+      content: a.string().required()
+    })
+   .returns(a.ref('Message'))
+   .handler(a.handler.custom({ entry: './publish.js' }))
+   .authorization(allow => [allow.publicApiKey()]),
+
+  // Subscribe to incoming messages
+  receive: a.subscription()
+    // subscribes to the 'publish' mutation
+   .for(a.ref('publish')) 
+    // subscription handler to set custom filters
+   .handler(a.handler.custom({entry: './receive.js'})) 
+    // authorization rules as to who can subscribe to the data
+   .authorization(allow => [allow.publicApiKey()]),
+});
+```
+
+To subscribe to custom subscriptions client-side, you can use the `client.subscriptions` object and the `subscribe` function. For example:
+
+```javascript
+import { generateClient } from 'aws-amplify/data'
+import type { Schema } from '../amplify/data/resource'
+
+const client = generateClient<Schema>()
+
+const sub = client.subscriptions.receive()
+ .subscribe({
+    next: event => {
+      console.log(event)
+    }
+  }
+)
+```
+
+You can also try publishing an event using the custom mutation to test the real-time subscription.
+
+```javascript
+client.mutations.publish({
+  channelName: "world",
+  content: "My first message!"
+})
+```
+
+Your subscription event should be received and logs the payload into your app's developer console. Unsubscribe your subscription to disconnect using the `unsubscribe` function.
+
+```javascript
+sub.unsubscribe()
+```
+
+To add server-side subscription filters, you can add arguments to the custom subscriptions. For example, you can introduce a required `name` argument that allows your users to filter events based on a specific channel name.
+
+```javascript
+const schema = a.schema({
+  Channel: a.customType({
+    name: a.string(),
+    data: a.json()
+  }),
+  // Define a mutation to publish events to
+  publish: a.mutation()
+   .arguments({
+      name: a.string(),
+      data: a.json()
+    })
+   .returns(a.ref('Channel'))
+   .handler(a.handler.custom({
+      entry: "./publish.js"
+    }))
+   .authorization(allow => [allow.authenticated()]),
+  
+  // Subscribe to all events from the "publish" mutation
+  receive: a.subscription(['publish'])
+    // subscription filter
+   .arguments({ name: a.string() })
+   .authorization(allow => [allow.publicApiKey()])
+});
+```
+
+To customize the filters, modify the subscription handler. For example, you can allow a customer to pass in a `namePrefix` parameter that allows the end users to only receive channel events in channels that start with the `namePrefix`.
+
+```javascript
+const schema = a.schema({
+  Channel: a.model({
+    name: a.string(),
+  }).authorization(allow => [allow.publicApiKey()]),
+
+  Message: a.customType({
+    content: a.string().required(),
+    channelName: a.string().required()
+  }),
+
+  publish: a.mutation()
+   .arguments({
+      channelName: a.string().required(),
+      content: a.string().required()
+    })
+   .returns(a.ref('Message'))
+   .handler(a.handler.custom({ entry: './publish.js' }))
+   .authorization(allow => [allow.publicApiKey()]),
+
+  receive: a.subscription()
+   .for(a.ref('publish'))
+    // subscription filter
+   .arguments({ namePrefix: a.string() })
+   .handler(a.handler.custom({entry: './receive.js'}))
+   .authorization(allow => [allow.publicApiKey()])
+});
+```
+
+In your handler, you can set custom subscription filters based on arguments passed into the custom subscription. For example:
+
+```javascript
+import { util, extensions } from "@aws-appsync/utils"
+
+// Subscription handlers must return a `null` payload on the request
+export function request() { return { payload: null } }
+
+/**
+ * @param {import('@aws-appsync/utils').Context} ctx
+ */
+export function response(ctx) {
+  const filter = {
+    channelName: {
+      beginsWith: ctx.args.namePrefix
+    }
+  }
+
+  extensions.setSubscriptionFilter(util.transform.toSubscriptionFilter(filter))
+
+  return null
+}
+```
+
+Amplify Data allows you to configure custom identity and group claims instead of using the default Amazon Cognito claims. This can be useful if you want to populate claims from an external source like a database or 3rd party auth provider. 
+
+You can define custom claims to provide more flexibility in authorization rules. For example, you can check the `user_id` identity claim and the `user_groups` group claim that could come from a custom pre token generation Lambda trigger.
+
+To use custom claims, specify `identityClaim` or `groupClaim` as appropriate. In the example below, the `identityClaim` is specified and the record owner will check against this `user_id` claim. Similarly, if the `user_groups` claim contains a "Moderator" string then access will be granted.
+
+In your React application, you can perform CRUD operations against the model using `client.models.model-name` with the `userPool` auth mode. Here is an example:
+```javascript
+const client = generateClient();
+const { errors, data: newTodo } = await client.models.Post.create(
+  {
+    postname: 'My New Post',
+    content: 'My post content',
+  },
+  {
+    authMode: 'userPool',
+  }
+);
+```
+You can define your schema with custom claims like this:
+```javascript
+const schema = {
+  Post: {
+    id: 'string',
+    owner: 'string',
+    postname: 'string',
+    content: 'string',
+  },
+  authorization: (allow) => [
+    allow.owner().identityClaim('user_id'),
+    allow.groups(['Moderator']).withClaimIn('user_groups'),
+  ],
+};
+```
+This schema defines a `Post` model with an `owner` field that checks against the `user_id` claim, and allows access to the "Moderator" group if the `user_groups` claim contains the string "Moderator".
+
+You can define your own custom authorization rule with a Lambda function. To do this, you will need to indicate which models or fields should use a custom authorization rule and pass in the function to be used for a custom authorization rule.
+
+In your backend, you will need to define a schema that includes the custom authorization rule. For example, if you have a Todo model, you can define the schema as follows:
+
+```typescript
+const schema = {
+  Todo: {
+    content: 'string',
+    authorization: (allow) => [allow.custom()],
+  },
+};
+```
+
+You will then need to define the custom authorization rule in your Lambda function. The Lambda function will receive an authorization token from the client and execute the desired authorization logic. The AppSync GraphQL API will receive a payload from Lambda after invocation to allow or deny the API call accordingly.
+
+To configure a Lambda function as the authorization mode, you can create a new file `custom-authorizer.ts`. You can use the following Lambda function code template as a starting point for your authorization handler code:
+
+```typescript
+export const handler = async (event) => {
+  const {
+    authorizationToken,
+    requestContext: { apiId, accountId },
+  } = event;
+  const response = {
+    isAuthorized: authorizationToken === 'custom-authorized',
+    resolverContext: {
+      userid: 'user-id',
+      info: 'contextual information A',
+      more_info: 'contextual information B',
+    },
+    deniedFields: [
+      `arn:aws:appsync:${process.env.AWS_REGION}:${accountId}:apis/${apiId}/types/Event/fields/comments`,
+      `Mutation.createEvent`,
+    ],
+    ttlOverride: 300,
+  };
+  return response;
+};
+```
+
+In your React application, you can perform CRUD operations against the model using the `client.models.<model-name>` with the `lambda` auth mode. For example:
+
+```typescript
+const client = generateClient<Schema>();
+const { errors, data: newTodo } = await client.models.Todo.create(
+  {
+    content: 'My new todo',
+  },
+  {
+    authMode: 'lambda',
+  }
+);
+```
+
+The Lambda function receives an event that includes the authorization token, API ID, and account ID. The function needs to return a JSON response that includes the `isAuthorized` field, `resolverContext` field, and optionally the `deniedFields` and `ttlOverride` fields.
+
+For example, the event received by the Lambda function might look like this:
+
+```json
+{
+  "authorizationToken": "ExampleAuthToken123123123",
+  "requestContext": {
+    "apiId": "aaaaaa123123123example123",
+    "accountId": "111122223333",
+    "requestId": "f4081827-1111-4444-5555-5cf4695f339f",
+    "queryString": "mutation CreateEvent {...}\n\nquery MyQuery {...}\n",
+    "operationName": "MyQuery",
+    "variables": {}
+  }
+}
+```
+
+And the Lambda function needs to return a response like this:
+
+```json
+{
+  "isAuthorized": true,
+  "resolverContext": {
+    "banana": "very yellow"
+  },
+  "deniedFields": ["TypeName.FieldName"],
+  "ttlOverride": 10
+}
+```
+
+To grant a Lambda function access to an API and data in AWS Amplify Gen 2, you can configure an authorization rule on the schema object using the `authorization` method. This method uses a `deny-by-default` authorization model, meaning that function access must be explicitly defined in the schema.
+
+To start, create a new directory and a resource file, `amplify/functions/data-access/resource.ts`. Then, define the function with `defineFunction` and export it. This function can be passed directly to `allow.resource()` in the schema authorization rules, allowing the function to execute Query, Mutation, and Subscription operations against the GraphQL API.
+
+You can narrow down access to one or more operations using the `.to()` method. For example, you can allow query and subscription operations but not mutations.
+
+Function access can only be configured on the schema object and not on individual models or fields.
+
+To access the API using `aws-amplify`, you need to configure the Amplify data client in the handler file for your function. You can do this by using `getAmplifyDataClientConfig` and `generateClient`.
+
+Here is an example of how to grant access to a function:
+```javascript
+const schema = new Schema({
+  Todo: new Model({
+    name: new Field(String),
+    description: new Field(String),
+    isDone: new Field(Boolean)
+  })
+})
+ .authorization((allow) => [
+    allow.resource(functionWithDataAccess)
+  ]);
+```
+And here is an example of how to narrow down access to one or more operations:
+```javascript
+const schema = new Schema({
+  Todo: new Model({
+    name: new Field(String),
+    description: new Field(String),
+    isDone: new Field(Boolean)
+  })
+})
+ .authorization((allow) => [
+    allow.resource(functionWithDataAccess).to(['query', 'listen'])
+  ]);
+```
+To access the API using `aws-amplify`, you can use the following code in your function handler:
+```javascript
+const client = generateClient();
+export const handler = async (event) => {
+  const { errors: createErrors, data: newTodo } = await client.models.Todo.create({
+    name: "My new todo",
+    description: "Todo description",
+    isDone: false,
+  })
+
+  const { errors: listErrors, data: todos } = await client.models.Todo.list();
+
+  return event;
+};
+```
+Note that when configuring Amplify with `getAmplifyDataClientConfig`, your function consumes schema information from an S3 bucket created during backend deployment with grants for the access your function needs to use it. Any changes to this bucket outside of backend deployment may break your function.
+
+To customize authorization rules in AWS Amplify Gen 2, you can use the `.authorization()` modifier. This modifier operates on the deny-by-default principle, meaning that if an authorization rule is not specifically configured, it is denied.
+
+There are several available authorization strategies, including:
+
+* Public data access using `publicApiKey` or `guest`
+* Per user data access using `owner`
+* Any signed-in data access using `authenticated`
+* Per user group data access using `group`
+* Custom authorization rules using `custom`
+
+You can apply authorization rules globally, to specific data models, or to specific fields. Amplify will always use the most specific authorization rule available. If there are multiple authorization rules present, they will be logically OR'ed.
+
+Here's an example of how to configure authorization rules in React:
+```javascript
+const schema = {
+  Post: {
+    content: 'string',
+    createdBy: 'string'
+  }
+};
+
+const authorizationRules = {
+  Post: {
+    auth: [
+      {
+        allow: 'publicApiKey',
+        operations: ['read']
+      },
+      {
+        allow: 'owner',
+        operations: ['create', 'read', 'update', 'delete']
+      }
+    ]
+  }
+};
+```
+In this example, anyone with a public API key can read all posts, and the owner of a post can create, read, update, and delete their own posts.
+
+You can also configure multiple authorization rules, which will be logically OR'ed. For example:
+```javascript
+const authorizationRules = {
+  Post: {
+    auth: [
+      {
+        allow: 'guest',
+        operations: ['read']
+      },
+      {
+        allow: 'owner',
+        operations: ['create', 'read', 'update', 'delete']
+      }
+    ]
+  }
+};
+```
+In this example, unauthenticated users (guests) can read all posts, and the owner of a post can create, read, update, and delete their own posts.
+
+Note that IAM authorization is enabled by default for all Amplify Gen 2 projects, which allows for administrative access to your API using IAM policies.
+
+It's also important to note that authorization rules are only supported on data models and custom operations, and not on custom types. However, Amplify will add appropriate authorization rules to custom types to allow authenticated users to access them.
+
+To authenticate with the corresponding authorization mode on the client-side, you can use the following code:
+```javascript
+import { API } from 'aws-amplify';
+
+// Creating a post is restricted to Cognito User Pools
+const post = {
+  title: 'Hello World'
+};
+API.graphql({
+  query: 'createPost',
+  variables: { input: post },
+  authMode: 'AMAZON_COGNITO_USER_POOLS'
+});
+
+// Listing posts is available to unauthenticated users (verified by Amazon Cognito identity pool's unauthenticated role)
+API.graphql({
+  query: 'listPosts',
+  authMode: 'AWS_IAM'
+});
+```
+This code creates a new post using the `createPost` mutation, which is restricted to Cognito User Pools, and lists all posts using the `listPosts` query, which is available to unauthenticated users.
+
+The ownersDefinedIn rule grants a set of users access to a record by automatically creating an owners field to store the allowed record owners. You can override the default owners field name by specifying inField with the desired field name to store the owner information. You can dynamically manage which users can access a record by updating the owner field.
+
+To grant a set of users access to a record, you use the ownersDefinedIn rule. This automatically creates an owners field to store the allowed owners. 
+
+For example, in a React application, you can define a schema with the ownersDefinedIn rule like this:
+```javascript
+const schema = {
+  Todo: {
+    content: 'string',
+    owners: ['string']
+  },
+  authorization: (allow) => [allow.ownersDefinedIn('owners')]
+}
+```
+In your React application, you can perform CRUD operations against the model using the Amplify API with the userPool auth mode. To create a record with the current user as the first owner:
+```javascript
+const { errors, data: newTodo } = await Amplify.API.graphql({
+  query: 'createTodo',
+  variables: {
+    input: {
+      content: 'My new todo'
+    },
+    authMode: 'userPool'
+  }
+});
+```
+To add another user as an owner, you can update the owners field:
+```javascript
+await Amplify.API.graphql({
+  query: 'updateTodo',
+  variables: {
+    input: {
+      id: newTodo.id,
+      owners: [...(newTodo.owners), otherUserId]
+    },
+    authMode: 'userPool'
+  }
+});
+```
+You can override the default owners field name by specifying inField with the desired field name to store the owner information. For example:
+```javascript
+const schema = {
+  Todo: {
+    content: 'string',
+    authors: ['string']
+  },
+  authorization: (allow) => [allow.ownersDefinedIn('authors')]
+}
+```
+This way, the authors field will store the owner information instead of the default owners field. Any user listed in the authors field can access the record.
+
+The owner authorization strategy restricts operations on a record to only the record's owner. When configured, the owner field will automatically be added and populated with the identity of the created user. The API will authorize against the owner field to allow or deny operations.
+
+To add per-user/per-owner authorization rule, you can use the owner authorization strategy to restrict a record's access to a specific user. When owner authorization is configured, only the record's owner is allowed the specified operations.
+
+For example, in a React application, you can define a schema with the following code:
+```javascript
+const schema = {
+  Todo: {
+    content: 'string',
+    authorization: {
+      allow: ['owner'],
+    },
+  },
+};
+```
+This will allow the owner of a Todo record to create, read, update, and delete their own todos.
+
+You can also specify the operations that the owner is allowed to perform:
+```javascript
+const schema = {
+  Todo: {
+    content: 'string',
+    authorization: {
+      allow: ['owner'].to(['create', 'read', 'update']),
+    },
+  },
+};
+```
+This will allow the owner of a Todo record to create, read, and update their own todos, but not delete them.
+
+In your React application, you can perform CRUD operations against the model using the `API.graphql` method with the `userPool` auth mode:
+```javascript
+import { API } from 'aws-amplify';
+
+const todo = {
+  content: 'My new todo',
+};
+
+API.graphql({
+  query: 'createTodo',
+  variables: { input: todo },
+  authMode: 'AMAZON_COGNITO_USER_POOLS',
+})
+ .then((result) => console.log(result))
+ .catch((error) => console.error(error));
+```
+Behind the scenes, Amplify will automatically add a `owner` field to each record which contains the record owner's identity information upon record creation. By default, the Cognito user pool's user information is populated into the `owner` field.
+
+To prevent an owner from reassigning their record to another user, you can protect the owner field with a field-level authorization rule. For example:
+```javascript
+const schema = {
+  Todo: {
+    content: 'string',
+    owner: 'string',
+    authorization: {
+      allow: ['owner'].to(['read', 'delete']),
+    },
+  },
+};
+```
+You can also customize the owner field by specifying a custom `ownerField` in the authorization rule:
+```javascript
+const schema = {
+  Todo: {
+    content: 'string',
+    author: 'string',
+    authorization: {
+      allow: ['ownerDefinedIn'].to(['author']),
+    },
+  },
+};
+```
+
+The public authorization strategy grants everyone access to the API, which is protected behind the scenes with an API key. You can also override the authorization provider to use an unauthenticated IAM role from Cognito instead of an API key for public access.
+
+To grant everyone access, use the public authorization strategy. Behind the scenes, the API will be protected with an API key.
+
+To implement this in React, you can use the following code:
+```javascript
+const schema = {
+  Todo: {
+    content: 'string',
+  },
+  authorization: {
+    allow: ['publicApiKey'],
+  },
+};
+```
+In your React application, you can perform CRUD operations against the model using the `client.models` object by specifying the `apiKey` auth mode.
+```javascript
+const client = generateClient(schema);
+
+const { errors, data: newTodo } = await client.models.Todo.create(
+  {
+    content: 'My new todo',
+  },
+  {
+    authMode: 'apiKey',
+  }
+);
+```
+If the API key has not expired, you can extend the expiration date by deploying your app again. The API key expiration date will be set to `expiresInDays` days from the date when the app is deployed.
+```javascript
+export const data = defineData({
+  schema,
+  authorizationModes: {
+    defaultAuthorizationMode: 'apiKey',
+    apiKeyAuthorizationMode: {
+      expiresInDays: 7,
+    },
+  },
+});
+```
+You can rotate an API key if it was expired, compromised, or deleted. To rotate an API key, you can override the logical ID of the API key resource in the `amplify/backend` file. This will create a new API key with a new logical ID.
+```javascript
+const backend = defineBackend({
+  auth,
+  data,
+});
+
+backend.data.resources.cfnResources.cfnApiKey.overrideLogicalId(
+  `recoverApiKey${new Date().getTime()}`
+);
+```
+You can also override the authorization provider to use an Amazon Cognito identity pool's unauthenticated role. In this case, you can use the `identityPool` auth mode.
+```javascript
+const schema = {
+  Todo: {
+    content: 'string',
+  },
+  authorization: {
+    allow: ['guest'],
+  },
+};
+```
+In your React application, you can perform CRUD operations against the model using the `client.models` object with the `identityPool` auth mode.
+```javascript
+const client = generateClient(schema);
+
+const { errors, data: newTodo } = await client.models.Todo.create(
+  {
+    content: 'My new todo',
+  },
+  {
+    authMode: 'identityPool',
+  }
+);
+```
+Note that if you're not using the auto-generated `amplify_outputs.json` file, you must set the Amplify Library resource configuration's `allowGuestAccess` flag to `true`. This lets the Amplify Library use the unauthenticated role from your Cognito identity pool when your user isn't logged in.
+```javascript
+import Amplify from 'aws-amplify';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure(
+  {
+   ...outputs,
+    Auth: {
+      Cognito: {
+        identityPoolId: config.aws_cognito_identity_pool_id,
+        userPoolClientId: config.aws_user_pools_web_client_id,
+        userPoolId: config.aws_user_pools_id,
+        allowGuestAccess: true,
+      },
+    },
+  }
+);
+```
+
+The authenticated authorization strategy restricts record access to only signed-in users authenticated through IAM, Cognito, or OpenID Connect, applying the authorization rule to all users. It provides a simple way to make data private to all authenticated users.
+
+To add signed-in user authorization rule, you can use the authenticated authorization strategy to restrict a record's access to every signed-in user. This is done by adding the allow.authenticated() method to the model's authorization rules.
+
+For example, if you have a Todo model, you can add the authenticated authorization rule like this:
+```javascript
+const schema = new Schema({
+  Todo: new Model({
+    content: {
+      type: 'string',
+    },
+  })
+ .authorization(allow => [allow.authenticated()]),
+});
+```
+This will allow anyone with a valid JWT token from the Cognito user pool to access all Todos.
+
+To perform CRUD operations against the model, you can use the client.models.modelName method with the userPool auth mode. For example:
+```javascript
+import { DataStore } from 'aws-amplify';
+
+const todo = new Todo({ content: 'My new todo' });
+DataStore.save(todo, {
+  authMode: 'userPool',
+})
+```
+You can also override the authorization provider by specifying identityPool as the provider, which allows you to use an Unauthenticated Role from the Cognito identity pool for public access instead of an API key.
+
+For example:
+```javascript
+const schema = new Schema({
+  Todo: new Model({
+    content: {
+      type: 'string',
+    },
+  })
+ .authorization(allow => [allow.authenticated('identityPool')]),
+});
+```
+To perform CRUD operations against the model, you can use the client.models.modelName method with the iam auth mode. For example:
+```javascript
+import { DataStore } from 'aws-amplify';
+
+const todo = new Todo({ content: 'My new todo' });
+DataStore.save(todo, {
+  authMode: 'identityPool',
+})
+```
+Note that the user must be logged in for the Amplify Library to use the authenticated role from your Cognito identity pool. 
+
+Additionally, you can also use OpenID Connect with authenticated authorization.
+
+You can use the group authorization strategy to restrict access based on user groups. The user group authorization strategy allows restricting data access to specific user groups or groups defined dynamically on each data record.
+
+To restrict access to a specific set of user groups, provide the group names in the groups parameter. For example, to only allow users that are part of the Admin user group to access the Salary model, you can use the following code:
+```javascript
+const schema = {
+  Salary: {
+    wag: 'float',
+    currency: 'string',
+  },
+  auth: {
+    rules: [
+      {
+        allow: {
+          groups: ['Admin'],
+        },
+      },
+    ],
+  },
+};
+```
+You can also allow access to multiple defined groups by passing an array of group names to the groups parameter. For example:
+```javascript
+const schema = {
+  Salary: {
+    wag: 'float',
+    currency: 'string',
+  },
+  auth: {
+    rules: [
+      {
+        allow: {
+          groups: ['Admin', 'Leadership'],
+        },
+      },
+    ],
+  },
+};
+```
+In your React application, you can perform CRUD operations against the model using the Amplify API. For example:
+```javascript
+import { API } from 'aws-amplify';
+
+const salary = {
+  wage: 50.25,
+  currency: 'USD',
+};
+
+const response = await API.graphql({
+  query: 'createSalary',
+  variables: { input: salary },
+  authMode: 'AMAZON_COGNITO_USER_POOLS',
+});
+```
+To add authorization rules for dynamically set user groups, you can use the groupsDefinedIn or groupDefinedIn methods. For example:
+```javascript
+const schema = {
+  Post: {
+    title: 'string',
+    groups: ['string'],
+  },
+  auth: {
+    rules: [
+      {
+        allow: {
+          groupsDefinedIn: 'groups',
+        },
+      },
+    ],
+  },
+};
+```
+You can also access a user's groups from their session using the Auth category:
+```javascript
+import { Auth } from 'aws-amplify';
+
+const session = await Auth.currentSession();
+const groups = session.accessToken.payload['cognito:groups'] || [];
+
+console.log('User groups:', groups);
+```
+Note that there are known limitations for real-time subscriptions when using dynamic group authorization. If you authorize based on a single group per record, then subscriptions are only supported if the user is part of 5 or fewer user groups. If you authorize via an array of groups, subscriptions are only supported if the user is part of 20 or fewer groups, and you can only authorize 20 or fewer user groups per record.
+
+To use OpenID Connect as an authorization provider in your React application, you can configure it with private, owner, and group authorization strategies. To do this, add "oidc" to the authorization rule as the provider. You will also need to configure the OpenID Connect provider name, OpenID Connect provider domain, Client ID, Issued at TTL, and Auth Time TTL using the `oidcAuthorizationMode` property.
+
+Here's an example of how to configure the authorization strategies with an "oidc" authorization provider. For owner and group-based authorization, you will also need to specify a custom identity and group claim.
+
+```javascript
+// amplify/data/resource.js
+import { Amplify } from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+const schema = {
+  Todo: {
+    type: 'object',
+    properties: {
+      content: { type: 'string' },
+    },
+    required: ['content'],
+  },
+};
+
+const authorizationModes = {
+  defaultAuthorizationMode: 'oidc',
+  oidcAuthorizationMode: {
+    oidcProviderName: 'oidc-provider-name',
+    oidcIssuerUrl: 'https://example.com',
+    clientId: 'client-id',
+    tokenExpiryFromAuthInSeconds: 300,
+    tokenExpireFromIssueInSeconds: 600,
+  },
+};
+
+Amplify.configure({
+  aws_appsync_authenticationType: 'OIDC',
+  aws_appsync_oidcProvider: {
+    issuerUrl: authorizationModes.oidcAuthorizationMode.oidcIssuerUrl,
+    clientId: authorizationModes.oidcAuthorizationMode.clientId,
+  },
+});
+
+const { DataStore } = withSSRContext({ Amplify });
+
+DataStore HubbubModel = {
+  Todo: {
+    authorization: {
+      allow: [
+        {
+          owner: 'oidc',
+          identityClaim: 'user_id',
+        },
+        {
+          authenticated: 'oidc',
+        },
+        {
+          groups: ['testGroupName'],
+          withClaimIn: 'user_groups',
+        },
+      ],
+    },
+  },
+};
+```
+
+To perform CRUD operations against the model, you can use the `DataStore` and specify the `oidc` auth mode.
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+const { DataStore } = withSSRContext({ Amplify });
+
+const todo = await DataStore.save(
+  new Todo({ content: 'My new todo' }),
+  { authMode: 'oidc' }
+);
+
+const todos = await DataStore.query(Todo, { authMode: 'oidc' });
+```
+
+Amplify Data supports various field types, including built-in and custom types. The built-in types include:
+
+* ID: a unique identifier for an object, serialized as a string but not meant to be human-readable
+* String: a UTF-8 character sequence
+* Integer: an integer value between -(2^31) and 2^31-1
+* Float: an IEEE 754 floating point value
+* Boolean: a Boolean value, either true or false
+* Date: an extended ISO 8601 date string in the format YYYY-MM-DD
+* Time: an extended ISO 8601 time string in the format hh:mm:ss.sss
+* Datetime: an extended ISO 8601 date and time string in the format YYYY-MM-DDThh:mm:ss.sssZ
+* Timestamp: an integer value representing the number of seconds before or after 1970-01-01-T00:00Z
+* Email: an email address in the format local-part@domain-part as defined by RFC 822
+* JSON: a JSON string, automatically parsed and loaded in the resolver code as maps, lists, or scalar values
+* Phone: a phone number, stored as a string and validated on the service side
+* URL: a URL as defined by RFC 1738, with type enforcement on the schema part
+* IP Address: a valid IPv4 or IPv6 address, with type enforcement for IPv4 and IPv6 patterns
+
+You can specify custom field types in your schema. There are two ways to define custom types: inline and explicit. 
+
+Inline definition: you can define a custom type directly in the model definition. For example:
+```javascript
+const schema = {
+  Post: {
+    location: {
+      lat: 'float',
+      long: 'float',
+    },
+    content: 'string',
+  },
+}
+```
+Explicit definition: you can define a custom type separately and reference it in the model definition. For example:
+```javascript
+const schema = {
+  Location: {
+    lat: 'float',
+    long: 'float',
+  },
+  Post: {
+    location: 'Location',
+    content: 'string',
+  },
+}
+```
+You can also define enum field types, which have a similar developer experience to custom types. Enums can be defined using the short-hand or long-form approach.
+
+Short-hand approach:
+```javascript
+const schema = {
+  Post: {
+    privacySetting: ['PRIVATE', 'FRIENDS_ONLY', 'PUBLIC'],
+    content: 'string',
+  },
+}
+```
+Long-form approach:
+```javascript
+const schema = {
+  PrivacySetting: ['PRIVATE', 'FRIENDS_ONLY', 'PUBLIC'],
+  Post: {
+    content: 'string',
+    privacySetting: 'PrivacySetting',
+  },
+}
+```
+When creating a new item client-side, the enums are also type-enforced. For example:
+```javascript
+client.models.Post.create({
+  content: 'hello',
+  privacySetting: 'PRIVATE', // WORKS - value auto-completed
+  // privacySetting: 'NOT_PUBLIC', // DOES NOT WORK - TYPE ERROR
+})
+```
+You can list available enum values client-side using the `client.enums.<ENUM_NAME>.values()` API.
+
+You can mark fields as required using the `.required()` modifier. For example:
+```javascript
+const schema = {
+  Todo: {
+    content: {
+      type: 'string',
+      required: true,
+    },
+  },
+}
+```
+You can mark fields as arrays using the `.array()` modifier. For example:
+```javascript
+const schema = {
+  Todo: {
+    content: 'string',
+    notes: {
+      type: 'string',
+      array: true,
+    },
+  },
+}
+```
+You can assign default values for fields using the `.default(...)` modifier. For example:
+```javascript
+const schema = {
+  Todo: {
+    content: {
+      type: 'string',
+      default: 'My new Todo',
+    },
+  },
+}
+```
+Note that the `.default(...)` modifier cannot be applied to required fields.
+
+Identifiers for models can be defined using the `.identifier()` method. If this method is not used, a field named `id` of type `ID` will be automatically generated.
+
+For example, consider a `Todo` model with a `content` field and a `completed` field. Without defining an identifier, the model will automatically have an `id` field:
+```javascript
+const schema = {
+  Todo: {
+    content: 'string',
+    completed: 'boolean',
+  }
+}
+```
+You can use Amplify Data to define single-field and composite identifiers. A single-field identifier can be defined by passing the name of the field to the `.identifier()` method. For example:
+```javascript
+const schema = {
+  Todo: {
+    todoId: { type: 'id', required: true },
+    content: 'string',
+    completed: 'boolean',
+  },
+  identifiers: ['todoId']
+}
+```
+This will create a `Todo` model with a `todoId` field as the identifier.
+
+To create a new `Todo` item with a custom identifier:
+```javascript
+const client = /* your Amplify client */;
+const todo = await client.models.Todo.create({ todoId: 'MyUniqueTodoId', content: 'Buy Milk', completed: false });
+console.log(`New Todo created: ${todo.todoId}`);
+```
+A composite identifier can be defined by passing an array of field names to the `.identifier()` method. For example:
+```javascript
+const schema = {
+  StoreBranch: {
+    geoId: { type: 'id', required: true },
+    name: { type: 'string', required: true },
+    country: 'string',
+    state: 'string',
+    city: 'string',
+    zipCode: 'string',
+    streetAddress: 'string',
+  },
+  identifiers: ['geoId', 'name']
+}
+```
+This will create a `StoreBranch` model with a composite identifier consisting of the `geoId` and `name` fields.
+
+To retrieve a `StoreBranch` item with a composite identifier:
+```javascript
+const client = /* your Amplify client */;
+const branch = await client.models.StoreBranch.get({ geoId: '123', name: 'Downtown' });
+```
+
+Data modeling capabilities allow you to define and customize your data model as part of a data schema. You can enhance your data model with various fields, customize their identifiers, apply authorization rules, or model relationships. Every data model automatically provides create, read, update, and delete API operations as well as real-time subscription events.
+
+In React, you can define a data model using the Amplify schema builder. For example:
+```javascript
+import { a, defineData } from '@aws-amplify/backend';
+
+const schema = a
+ .schema({
+    Customer: a
+     .model({
+        customerId: a.id().required(),
+        name: a.string(),
+        location: a.customType({
+          lat: a.float().required(),
+          long: a.float().required(),
+        }),
+        engagementStage: a.enum(["PROSPECT", "INTERESTED", "PURCHASED"]),
+        collectionId: a.id(),
+        collection: a.belongsTo("Collection", "collectionId")
+      })
+     .identifier(["customerId"]),
+    Collection: a
+     .model({
+        customers: a.hasMany("Customer", "collectionId"), 
+        tags: a.string().array(), 
+        representativeId: a.id().required(),
+      })
+     .secondaryIndexes((index) => [index("representativeId")]),
+  })
+ .authorization((allow) => [allow.publicApiKey()]);
+
+const data = defineData({
+  schema,
+  authorizationModes: {
+    defaultAuthorizationMode: "apiKey",
+    apiKeyAuthorizationMode: {
+      expiresInDays: 30,
+    },
+  },
+});
+```
+This example defines a data model with two types: `Customer` and `Collection`. The `Customer` type has fields for `customerId`, `name`, `location`, `engagementStage`, `collectionId`, and `collection`. The `Collection` type has fields for `customers`, `tags`, and `representativeId`. The `identifier` method is used to customize the identifier for the `Customer` type, and the `secondaryIndexes` method is used to customize the secondary indexes for the `Collection` type.
+
+If you are coming from Gen 1, you can continue to use the GraphQL Schema Definition Language (SDL) for defining your schema. However, it is strongly recommended to use the TypeScript-first schema builder experience in your project as it provides type safety and is the recommended way of working with Amplify going forward.
+
+For example, you can define a schema using GraphQL SDL like this:
+```javascript
+import { defineData } from '@aws-amplify/backend';
+
+const schema = /* GraphQL */`
+  type Todo @model @auth(rules: [{ allow: owner }]) {
+    content: String
+    isDone: Boolean
+  }
+`;
+
+const data = defineData({
+  schema,
+  authorizationModes: {
+    defaultAuthorizationMode: "apiKey",
+    apiKeyAuthorizationMode: {
+      expiresInDays: 30,
+    },
+  },
+});
+```
+Note that some features available in Gen 1 GraphQL SDL are not available in Gen 2. You can see the feature matrix for features supported in Gen 2.
+
+When modeling application data, you often need to establish relationships between different data models. In Amplify Data, you can create one-to-many, one-to-one, and many-to-many relationships in your Data schema. On the client-side, Amplify Data allows you to lazy or eager load related data.
+
+There are three types of relationships: 
+- One-to-many: Creates a one-to-many relationship between two models. For example, a Team has many Members, and a Member belongs to a Team.
+- One-to-one: Creates a one-to-one relationship between two models. For example, a Customer has one Cart, and a Cart belongs to one Customer.
+- Many-to-many: Creates two one-to-many relationships between the related models in a join table. For example, a Post has many Tags, and a Tag has many Posts.
+
+To model a one-to-many relationship, you need to create a reference field on the child model that matches the type of the parent model's identifier, and then create a relationship field that references the reference field. For example, to create a one-to-many relationship between a Team and a Member, you would create a reference field called teamId on the Member model, and then create a relationship field called team that references the teamId field.
+
+To create a "Has Many" relationship between records, you need to create the parent record and then create the child record and assign the parent. For example, to create a "Has Many" relationship between a Team and a Member, you would create a Team record and then create a Member record and assign the Team to the Member.
+
+You can update a "Has Many" relationship by updating the child record and assigning a new parent. For example, to update a "Has Many" relationship between a Team and a Member, you would update the Member record and assign a new Team to the Member.
+
+You can delete a "Has Many" relationship by setting the relationship value to null. For example, to delete a "Has Many" relationship between a Team and a Member, you would update the Member record and set the teamId field to null.
+
+To load related data in a "Has Many" relationship, you can use the relationship field to fetch the related data. For example, to load the Members of a Team, you would use the members relationship field on the Team model to fetch the related Members.
+
+To lazy load a "Has Many" relationship, you can use the relationship field to fetch the related data on demand. For example, to lazy load the Members of a Team, you would use the members relationship field on the Team model to fetch the related Members when needed.
+
+To eagerly load a "Has Many" relationship, you can use the selectionSet parameter to fetch the related data when fetching the parent record. For example, to eagerly load the Members of a Team, you would use the selectionSet parameter to fetch the members relationship field when fetching the Team record.
+
+To handle orphaned foreign keys on parent record deletion in a "Has One" relationship, you need to delete the child record when the parent record is deleted. For example, to handle orphaned foreign keys on parent record deletion in a "Has One" relationship between a Customer and a Cart, you would delete the Cart record when the Customer record is deleted.
+
+To model a one-to-one relationship, you need to create a reference field on one of the models that matches the type of the other model's identifier, and then create a relationship field that references the reference field. For example, to create a one-to-one relationship between a Customer and a Cart, you would create a reference field called customerId on the Cart model, and then create a relationship field called customer that references the customerId field.
+
+To create a "Has One" relationship between records, you need to create the parent record and then create the child record and assign the parent. For example, to create a "Has One" relationship between a Customer and a Cart, you would create a Customer record and then create a Cart record and assign the Customer to the Cart.
+
+You can update a "Has One" relationship by updating the child record and assigning a new parent. For example, to update a "Has One" relationship between a Customer and a Cart, you would update the Cart record and assign a new Customer to the Cart.
+
+You can delete a "Has One" relationship by setting the relationship value to null. For example, to delete a "Has One" relationship between a Customer and a Cart, you would update the Cart record and set the customerId field to null.
+
+To load related data in a "Has One" relationship, you can use the relationship field to fetch the related data. For example, to load the Cart of a Customer, you would use the activeCart relationship field on the Customer model to fetch the related Cart.
+
+To lazy load a "Has One" relationship, you can use the relationship field to fetch the related data on demand. For example, to lazy load the Cart of a Customer, you would use the activeCart relationship field on the Customer model to fetch the related Cart when needed.
+
+To eagerly load a "Has One" relationship, you can use the selectionSet parameter to fetch the related data when fetching the parent record. For example, to eagerly load the Cart of a Customer, you would use the selectionSet parameter to fetch the activeCart relationship field when fetching the Customer record.
+
+To model a many-to-many relationship, you need to create a join model that contains two one-to-many relationships between the related entities. For example, to model a many-to-many relationship between a Post and a Tag, you would create a PostTag join model that contains two one-to-many relationships between the Post and Tag entities.
+
+To model multiple relationships between two models, you need to create separate reference fields and relationship fields for each relationship. For example, to model multiple relationships between a Post and a Person, you would create separate reference fields and relationship fields for the author and editor relationships.
+
+To make relationships required or optional, you can use the required parameter on the reference field to determine if the relationship is required or not. For example, to make a relationship required, you would set the required parameter to true on the reference field.
+
+You can optimize your list queries based on secondary indexes. For example, if you have a Customer model, you can query based on the customer's id identifier field by default, but you can add a secondary index based on the accountRepresentativeId to get a list of customers for a given account representative.
+
+A secondary index consists of a hash key and, optionally, a sort key. Use the hash key to perform strict equality and the sort key for greater than, greater than or equal to, less than, less than or equal to, equals, begins with, and between operations.
+
+To define a secondary index, you can use the secondaryIndexes modifier in your schema. For instance:
+```javascript
+const schema = {
+  Customer: {
+    name: 'string',
+    phoneNumber: 'string',
+    accountRepresentativeId: 'string',
+  },
+  secondaryIndexes: [
+    {
+      hashKey: 'accountRepresentativeId',
+    },
+  ],
+};
+```
+The example client query below allows you to query for Customer records based on their accountRepresentativeId:
+```javascript
+import { API } from 'aws-amplify';
+
+const queriedCustomers = await API.graphql({
+  query: 'listCustomerByAccountRepresentativeId',
+  variables: {
+    accountRepresentativeId: 'YOUR_REP_ID',
+  },
+});
+```
+You can define sort keys to add a set of flexible filters to your query, such as greater than, greater than or equal to, less than, less than or equal to, equals, begins with, and between operations. To define a sort key, you can add a sortKeys property to your secondary index definition:
+```javascript
+const schema = {
+  Customer: {
+    name: 'string',
+    phoneNumber: 'string',
+    accountRepresentativeId: 'string',
+  },
+  secondaryIndexes: [
+    {
+      hashKey: 'accountRepresentativeId',
+      sortKey: 'name',
+    },
+  ],
+};
+```
+On the client side, you should find a new list query that's named after the hash key and sort keys. For example, in this case: listCustomerByAccountRepresentativeIdAndName. You can supply the filter as part of this new list query:
+```javascript
+import { API } from 'aws-amplify';
+
+const queriedCustomers = await API.graphql({
+  query: 'listCustomerByAccountRepresentativeIdAndName',
+  variables: {
+    accountRepresentativeId: 'YOUR_REP_ID',
+    name: {
+      beginsWith: 'Rene',
+    },
+  },
+});
+```
+You can also customize the auto-generated query name under client.models.ModelName.listBy... by setting the queryField modifier.
+```javascript
+const schema = {
+  Customer: {
+    name: 'string',
+    phoneNumber: 'string',
+    accountRepresentativeId: 'string',
+  },
+  secondaryIndexes: [
+    {
+      hashKey: 'accountRepresentativeId',
+      queryField: 'listByRep',
+    },
+  ],
+};
+```
+In your client app code, you'll see the query updated under the Data client:
+```javascript
+import { API } from 'aws-amplify';
+
+const queriedCustomers = await API.graphql({
+  query: 'listByRep',
+  variables: {
+    accountRepresentativeId: 'YOUR_REP_ID',
+  },
+});
+```
+To customize the underlying DynamoDB's index name, you can optionally provide the name modifier.
+```javascript
+const schema = {
+  Customer: {
+    name: 'string',
+    phoneNumber: 'string',
+    accountRepresentativeId: 'string',
+  },
+  secondaryIndexes: [
+    {
+      hashKey: 'accountRepresentativeId',
+      name: 'MyCustomIndexName',
+    },
+  ],
+};
+```
+Amplify uses Amazon DynamoDB tables as the default data source for your models. For key-value databases, it is critical to model your access patterns with secondary indexes. Use the secondaryIndexes modifier to configure a secondary index. Amazon DynamoDB is a key-value and document database that delivers single-digit millisecond performance at any scale, but making it work for your access patterns requires a bit of forethought. DynamoDB query operations may use at most two attributes to efficiently query data. The first query argument passed to a query (the hash key) must use strict equality and the second attribute (the sort key) may use gt, ge, lt, le, eq, beginsWith, and between. DynamoDB can effectively implement a wide variety of access patterns that are powerful enough for the majority of applications.
+
+To enable logging for your Amplify data resource, you can use Amazon CloudWatch logs. You can learn more about the logging and monitoring capabilities for your GraphQL API in the AWS AppSync documentation.
+
+To enable default logging configuration, you can set the logging property to true in the call to defineData. For example:
+```
+const data = defineData({
+  logging: true
+});
+```
+This applies the default configuration, which includes:
+- Excluding verbose content from logs
+- No field-level logging
+- Retaining logs for 1 week
+
+You can customize individual configuration values by providing a DataLogConfig object. For example:
+```
+const data = defineData({
+  logging: {
+    excludeVerboseContent: false,
+    fieldLogLevel: 'all',
+    retention: '1 month'
+  }
+});
+```
+Be careful when setting excludeVerboseContent to false, as this can log full queries and user parameters, which may contain sensitive data. It's recommended to limit CloudWatch log access to only those roles or users who genuinely require it.
+
+The logging configuration properties include:
+- logging: enables default logging or overrides default fields with a DataLogConfig object
+- DataLogConfig fields:
+  - excludeVerboseContent: defaults to true, when false logs can contain request-level logs
+  - fieldLogLevel: defaults to 'none', supported values include 'none', 'error', 'info', 'debug', and 'all'
+  - retention: defaults to '1 week', supported values include '1 day', '3 days', '5 days', '1 week', '2 weeks', '1 month', and others up to 'infinite'
+
+The Data manager page in the Amplify Console is a user-friendly interface for managing the backend GraphQL API data of an application. It allows you to create and update application data in real-time, eliminating the need to build separate admin views.
+
+To use the Data manager, you need to have already created a data resource. If you haven't, you can visit the Data setup guide to get started.
+
+To access the Data manager, follow these steps:
+1. Log in to the Amplify console and choose your app.
+2. Select the branch you want to access.
+3. Select Data from the left navigation bar.
+4. Then, select Data manager.
+
+Once you're on the Data manager page, you can perform various actions:
+- To create a record, select a table from the dropdown, click Create, enter your custom values, and submit.
+- To update a record, select a table, choose a record, make changes, and submit.
+- To delete a record(s), select a table, choose the record(s), and select delete item(s) from the Actions dropdown.
+- To seed records, select a table, choose Auto-generate data from the Actions dropdown, specify the number of rows and constraints, and generate data. Note that you can generate up to 100 records at a time, but this feature is not available for tables with certain field types.
+- To download records, select a table, choose an option from the Actions dropdown (Download selected items or Download all items), and your data will be downloaded as a CSV file.
+
+To create, update, and delete application data using Amplify Libraries' Data client in a React application, you will need to have an application connected to the API. 
+
+## Create an item
+
+To create an item in your React application, first generate the Data client with your backend Data schema. Then, you can add an item like this:
+
+```javascript
+import { generateClient } from 'aws-amplify/data';
+
+const client = generateClient();
+
+const { errors, data: newTodo } = await client.models.Todo.create({
+  content: "My new todo",
+  isDone: true,
+})
+```
+
+Note that you do not need to specify `createdAt` or `updatedAt` fields because Amplify automatically populates these fields for you.
+
+## Update an item
+
+To update the item, use the `update` function:
+
+```javascript
+const todo = {
+  id: 'some_id',
+  content: 'Updated content',
+};
+
+const { data: updatedTodo, errors } = await client.models.Todo.update(todo);
+```
+
+Note that you do not need to specify the `updatedAt` field. Amplify will automatically populate this field for you. If you specify extra input fields not expected by the API, this query will fail.
+
+## Delete an item
+
+You can then delete the Todo by using the delete mutation. To specify which item to delete, you only need to provide the `id` of that item:
+
+```javascript
+const toBeDeletedTodo = {
+  id: '123123213'
+}
+
+const { data: deletedTodo, errors } = await client.models.Todo.delete(toBeDeletedTodo)
+```
+
+Note that when deleting items in many-to-many relationships, the join table records must be deleted before deleting the associated records.
+
+## Troubleshoot unauthorized errors
+
+If you get unauthorized errors, you may need to update your authorization mode. To override the default authorization mode defined in your **amplify/data/resource.ts** file, pass an `authMode` property to the request or the client. 
+
+```javascript
+const { errors, data: newTodo } = await client.models.Todo.create(
+  {
+    content: 'My new todo',
+    isDone: true,
+  },
+  {
+    authMode: 'apiKey',
+  }
+);
+```
+
+## Cancel create, update, and delete requests
+
+You can cancel any mutation API request by calling `.cancel` on the mutation request promise that's returned by `.create(...)`, `.update(...)`, or `.delete(...)`.
+
+```javascript
+const promise = client.models.Todo.create({ content: 'New Todo' });
+
+try {
+  await promise;
+} catch (error) {
+  console.log(error);
+  if (client.isCancelError(error)) {
+    console.log(error.message); 
+    // handle user cancellation logic
+  }
+}
+
+// To cancel the above request
+client.cancel(promise, 'my message for cancellation');
+```
+
+Remember that you need to ensure that the promise returned from `.create()`, `.update()`, and `.delete()` has not been modified.
+
+In conclusion, you have now learned how to create, update, and delete application data using Amplify Libraries' Data client in a React application. The recommended next steps include using the API to query data and subscribe to real-time events to look for mutations in your data. Some resources that will help with this work include reading application data and subscribing to real-time events.
+
+Amplify Data can be used with TanStack Query to implement optimistic UI, allowing CRUD operations to be rendered immediately on the UI before the request roundtrip has completed. Using Amplify Data with TanStack additionally makes it easy to render loading and error states, and allows you to rollback changes on the UI when API calls are unsuccessful.
+
+To get started, you need to install TanStack Query and its devtools by running the command `npm i @tanstack/react-query @tanstack/react-query-devtools` in an existing Amplify project with a React frontend.
+
+You then need to modify your Data schema to use a specific example, such as a "Real Estate Property" example, and deploy the changes to your backend cloud sandbox by running `npx ampx sandbox`.
+
+Next, at the root of your project, you need to add the required TanStack Query imports and create a client. You can do this by creating a new file, for example `main.tsx`, and adding the following code:
+
+```tsx
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.tsx'
+import './index.css'
+import { Amplify } from 'aws-amplify'
+import outputs from '../amplify_outputs.json'
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+
+Amplify.configure(outputs)
+
+const queryClient = new QueryClient()
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <App />
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
+  </React.StrictMode>,
+)
+```
+
+To render a list of items returned from the Amplify Data API, you can use the TanStack `useQuery` hook, passing in the Data API query as the `queryFn` parameter. For example:
+
+```tsx
+import { generateClient } from 'aws-amplify/data'
+import type { Schema } from '../amplify/data/resource'
+import { useQuery } from '@tanstack/react-query'
+
+const client = generateClient<Schema>();
+
+function App() {
+  const {
+    data: realEstateProperties,
+    isLoading,
+    isSuccess,
+    isError: isErrorQuery,
+  } = useQuery({
+    queryKey: ["realEstateProperties"],
+    queryFn: async () => {
+      const response = await client.models.RealEstateProperty.list();
+
+      const allRealEstateProperties = response.data;
+
+      if (!allRealEstateProperties) return null;
+
+      return allRealEstateProperties;
+    },
+  });
+  // return...
+}
+```
+
+To optimistically render a newly created item, you can use the TanStack `useMutation` hook, passing in the Amplify Data API mutation as the `mutationFn` parameter. For example:
+
+```tsx
+import { generateClient } from 'aws-amplify/api'
+import type { Schema } from '../amplify/data/resource'
+import { useQueryClient, useMutation } from '@tanstack/react-query'
+
+const client = generateClient<Schema>();
+
+function App() {
+  const queryClient = useQueryClient();
+
+  const createMutation = useMutation({
+    mutationFn: async (input: { name: string, address: string }) => {
+      const { data: newRealEstateProperty } = await client.models.RealEstateProperty.create(input)
+      return newRealEstateProperty;
+    },
+    // When mutate is called:
+    onMutate: async (newRealEstateProperty) => {
+      // Cancel any outgoing refetches
+      // (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({ queryKey: ["realEstateProperties"] });
+
+      // Snapshot the previous value
+      const previousRealEstateProperties = queryClient.getQueryData([
+        "realEstateProperties",
+      ]);
+
+      // Optimistically update to the new value
+      if (previousRealEstateProperties) {
+        queryClient.setQueryData(["realEstateProperties"], (old: Schema["RealEstateProperty"]["type"][]) => [
+         ...old,
+          newRealEstateProperty,
+        ]);
+      }
+
+      // Return a context object with the snapshotted value
+      return { previousRealEstateProperties };
+    },
+    // If the mutation fails,
+    // use the context returned from onMutate to rollback
+    onError: (err, newRealEstateProperty, context) => {
+      console.error("Error saving record:", err, newRealEstateProperty);
+      if (context?.previousRealEstateProperties) {
+        queryClient.setQueryData(
+          ["realEstateProperties"],
+          context.previousRealEstateProperties
+        );
+      }
+    },
+    // Always refetch after error or success:
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["realEstateProperties"] });
+    },
+  });
+  // return...
+}
+```
+
+To query a single item with TanStack Query, you can use the `useQuery` hook, passing in the `get` query as the `queryFn` parameter. For example:
+
+```tsx
+import { generateClient } from 'aws-amplify/data'
+import type { Schema } from '../amplify/data/resource'
+import { useQuery } from '@tanstack/react-query'
+
+const client = generateClient<Schema>();
+
+function App() {
+  const currentRealEstatePropertyId = "SOME_ID"
+  const {
+    data: realEstateProperty,
+    isLoading,
+    isSuccess,
+    isError: isErrorQuery,
+  } = useQuery({
+    queryKey: ["realEstateProperties", currentRealEstatePropertyId],
+    queryFn: async () => {
+      if (!currentRealEstatePropertyId) { return }
+
+      const { data: property } = await client.models.RealEstateProperty.get({
+        id: currentRealEstatePropertyId,
+      });
+      return property;
+    },
+  });
+  // return...
+}
+```
+
+To optimistically render updates for a record, you can use the TanStack `useMutation` hook, passing in the update mutation as the `mutationFn` parameter. For example:
+
+```tsx
+import { generateClient } from 'aws-amplify/data'
+import type { Schema } from '../amplify/data/resource'
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+
+const client = generateClient<Schema>();
+
+function App() {
+  const queryClient = useQueryClient();
+
+  const updateMutation = useMutation({
+    mutationFn: async (realEstatePropertyDetails: { id: string, name?: string, address?: string }) => {
+      const { data: updatedProperty } = await client.models.RealEstateProperty.update(realEstatePropertyDetails);
+
+      return updatedProperty;
+    },
+    // When mutate is called:
+    onMutate: async (newRealEstateProperty: { id: string, name?: string, address?: string }) => {
+      // Cancel any outgoing refetches
+      // (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({
+        queryKey: ["realEstateProperties", newRealEstateProperty.id],
+      });
+
+      await queryClient.cancelQueries({
+        queryKey: ["realEstateProperties"],
+      });
+
+      // Snapshot the previous value
+      const previousRealEstateProperty = queryClient.getQueryData([
+        "realEstateProperties",
+        newRealEstateProperty.id,
+      ]);
+
+      // Optimistically update to the new value
+      if (previousRealEstateProperty) {
+        queryClient.setQueryData(
+          ["realEstateProperties", newRealEstateProperty.id],
+          /**
+           * `newRealEstateProperty` will at first only include updated values for
+           * the record. To avoid only rendering optimistic values for updated
+           * fields on the UI, include the previous values for all fields:
+           */
+          {...previousRealEstateProperty,...newRealEstateProperty }
+        );
+      }
+
+      // Return a context with the previous and new realEstateProperty
+      return { previousRealEstateProperty, newRealEstateProperty };
+    },
+    // If the mutation fails, use the context we returned above
+    onError: (err, newRealEstateProperty, context) => {
+      console.error("Error updating record:", err, newRealEstateProperty);
+      if (context?.previousRealEstateProperty) {
+        queryClient.setQueryData(
+          ["realEstateProperties", context.newRealEstateProperty.id],
+          context.previousRealEstateProperty
+        );
+      }
+    },
+    // Always refetch after error or success:
+    onSettled: (newRealEstateProperty) => {
+      if (newRealEstateProperty) {
+        queryClient.invalidateQueries({
+          queryKey: ["realEstateProperties", newRealEstateProperty.id],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["realEstateProperties"],
+        });
+      }
+    },
+  });
+  // return...
+}
+```
+
+To optimistically render deleting a record, you can use the TanStack `useMutation` hook, passing in the delete mutation as the `mutationFn` parameter. For example:
+
+```tsx
+import { generateClient } from 'aws-amplify/data'
+import type { Schema } from '../amplify/data/resource'
+import { useQueryClient, useMutation } from '@tanstack/react-query'
+
+const client = generateClient<Schema>();
+
+function App() {
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: async (realEstatePropertyDetails: { id: string }) => {
+      const { data: deletedProperty } = await client.models.RealEstateProperty.delete(realEstatePropertyDetails);
+      return deletedProperty;
+    },
+    // When mutate is called:
+    onMutate: async (newRealEstateProperty) => {
+      // Cancel any outgoing refetches
+      // (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({
+        queryKey: ["realEstateProperties", newRealEstateProperty.id],
+      });
+
+      await queryClient.cancelQueries({
+        queryKey: ["realEstateProperties"],
+      });
+
+      // Snapshot the previous value
+      const previousRealEstateProperty = queryClient.getQueryData([
+        "realEstateProperties",
+        newRealEstateProperty.id,
+      ]);
+
+      // Optimistically update to the new value
+      if (previousRealEstateProperty) {
+        queryClient.setQueryData(
+          ["realEstateProperties", newRealEstateProperty.id],
+          newRealEstateProperty
+        );
+      }
+
+      // Return a context with the previous and new realEstateProperty
+      return { previousRealEstateProperty, newRealEstateProperty };
+    },
+    // If the mutation fails, use the context we returned above
+    onError: (err, newRealEstateProperty, context) => {
+      console.error("Error deleting record:", err, newRealEstateProperty);
+      if (context?.previousRealEstateProperty) {
+        queryClient.setQueryData(
+          ["realEstateProperties", context.newRealEstateProperty.id],
+          context.previousRealEstateProperty
+        );
+      }
+    },
+    // Always refetch after error or success:
+    onSettled: (newRealEstateProperty) => {
+      if (newRealEstateProperty) {
+        queryClient.invalidateQueries({
+          queryKey: ["realEstateProperties", newRealEstateProperty.id],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["realEstateProperties"],
+        });
+      }
+    },
+  });
+  // return...
+}
+```
+
+To render loading and error states for optimistically rendered data, you can use the `isLoading` and `isError` states returned by the `useQuery` and `useMutation` hooks. For example:
+
+```tsx
+function App() {
+  const {
+    data: realEstateProperties,
+    isLoading,
+    isSuccess,
+    isError: isErrorQuery,
+  } = useQuery({
+    queryKey: ["realEstateProperties"],
+    queryFn: async () => {
+      const response = await client.models.RealEstateProperty.list();
+
+      const allRealEstateProperties = response.data;
+
+      if (!allRealEstateProperties) return null;
+
+      return allRealEstateProperties;
+    },
+  });
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (isErrorQuery) {
+    return <div>Error loading data</div>;
+  }
+
+  // return...
+}
+```
+
+You can also use the `useIsFetching` hook from TanStack Query to render a global loading indicator. For example:
+
+```tsx
+function GlobalLoadingIndicator() {
+  const isFetching = useIsFetching();
+
+  return isFetching? <div>Loading...</div> : null;
+}
+```
+
+This is a basic example of how to implement optimistic UI with Amplify Data and TanStack Query. You can customize the code to fit your specific needs and requirements.
+
+You can modify the underlying AWS resources generated by the Amplify GraphQL API to optimize the deployed stack for your specific use case. Amplify uses a variety of auto-generated AWS services and resources, and you can customize these resources using CDK constructs.
+
+To access the underlying resources, you can use CDK "L2" or "L1" constructs. You can access the generated resources as L2 constructs via the `.resources` property on the returned stack or access the generated resources as L1 constructs using the `.resources.cfnResources` property.
+
+For example, to modify the resources, you can use the following code:
+```typescript
+const { cfnResources } = backend.data.resources;
+```
+You can then customize the resources, such as enabling X-Ray tracing for the AppSync GraphQL API:
+```typescript
+cfnResources.cfnGraphqlApi.xrayEnabled = true;
+```
+You can also modify the resources generated for specific data models, such as enabling time-to-live on a DynamoDB table:
+```typescript
+cfnResources.amplifyDynamoDbTables["Todo"].timeToLiveAttribute = {
+  attributeName: "ttl",
+  enabled: true,
+};
+```
+Additionally, you can configure various settings for DynamoDB tables, such as:
+* Billing mode: `cfnResources.amplifyDynamoDbTables['Todo'].billingMode = BillingMode.PAY_PER_REQUEST;`
+* Provisioned throughput: `cfnResources.amplifyDynamoDbTables["Todo"].provisionedThroughput = { readCapacityUnits: 5, writeCapacityUnits: 5 };`
+* Point-in-time recovery: `cfnResources.amplifyDynamoDbTables['Todo'].pointInTimeRecoveryEnabled = true;`
+
+These are just a few examples of how you can customize the underlying AWS resources generated by the Amplify GraphQL API.
+
+You can read application data using the Amplify Data client. This guide reviews the difference between reading data and getting data, how to filter query results to get just the data you need, and how to paginate results to make your data more manageable. You will also learn how to cancel these requests when needed.
+
+Before you begin, you need an application connected to the API and data already created to view.
+
+Queries are used to read data through the API and include the `list` and `get` operations. Amplify Data automatically creates `list` and `get` queries for any model in your schema. The `list` query retrieves multiple items, such as Todo items, without needing to specify an identifier for a particular record. This is best suited for getting an overview or summary of items, or for enhancing the `list` operation to filter the items by specific criteria. When you want to query a single entry by an identifier, you would use `get` to retrieve a specific Todo item.
+
+You can list items by first generating the Data client with your backend Data schema. Then you can list items of your desired model. For example, to list all Todo items, you can use the following code:
+```javascript
+const client = generateClient<Schema>();
+const { data: todos, errors } = await client.models.Todo.list();
+```
+To get a specific Todo item, you can use the following code:
+```javascript
+const { data: todo, errors } = await client.models.Todo.get({
+  id: '...',
+});
+```
+Each API request uses an authorization mode. If you get unauthorized errors, you may need to update your authorization mode. To override the default authorization mode defined in your amplify/data/resource file, pass an `authMode` property to the request or the client.
+
+You can filter list queries by using the `filter` parameter. For example, to filter Todo items by content, you can use the following code:
+```javascript
+const { data: todos, errors } = await client.models.Todo.list({
+  filter: {
+    content: {
+      beginsWith: 'hello'
+    }
+  }
+});
+```
+You can also combine filters with `and`, `or`, and `not` Boolean logic.
+
+To paginate list queries, you can use the `nextToken` and `limit` input variables. The `limit` variable limits how many results are returned. The response will include a `nextToken` you can use to request the next page of data.
+
+In React, you can use the `usePagination` hook in Amplify UI to help with managing the pagination user experience. For example:
+```javascript
+import * as React from 'react';
+import { Pagination } from '@aws-amplify/ui-react';
+
+export const PaginationHasMorePagesExample = () => {
+  const [pageTokens, setPageTokens] = React.useState([null]);
+  const [currentPageIndex, setCurrentPageIndex] = React.useState(1);
+  const [hasMorePages, setHasMorePages] = React.useState(true);
+
+  const handleNextPage = async () => {
+    if (hasMorePages && currentPageIndex === pageTokens.length) {
+      const { data: todos, nextToken } = await client.models.Todo.list({
+        nextToken: pageTokens[pageTokens.length - 1]
+      });
+
+      if (!nextToken) {
+        setHasMorePages(false);
+      }
+
+      setPageTokens([...pageTokens, nextToken]);
+    }
+
+    setCurrentPageIndex(currentPageIndex + 1);
+  };
+
+  return (
+    <Pagination
+      currentPage={currentPageIndex}
+      totalPages={pageTokens.length}
+      hasMorePages={hasMorePages}
+      onNext={handleNextPage}
+      onPrevious={() => setCurrentPageIndex(currentPageIndex - 1)}
+      onChange={(pageIndex) => setCurrentPageIndex(pageIndex)}
+    />
+  );
+};
+```
+You can also fetch only the data you need with a custom selection set. A custom selection set allows consumers to specify, on a per-call basis, the fields the consumer wants to retrieve.
+
+To cancel read requests, you can call `.cancel` on the query request promise that's returned by `.list(...)` or `.get(...)`.
+
+Finally, you can use TypeScript type helpers for Amplify Data to specify data model types for type generics. For example:
+```typescript
+import { type Schema } from '@/amplify/data/resource';
+
+type Post = Schema['Post']['type'];
+
+const [posts, setPosts] = useState<Post[]>([]);
+```
+You can also combine the `Schema["MODEL_NAME"]["type"]` type with the `SelectionSet` helper type to describe the return type of API requests using the `selectionSet` parameter.
+
+In this guide, you will learn how to set up Amplify Data. This includes building a real-time API and database using TypeScript to define your data model, and securing your API with authorization rules. We will also explore using AWS Lambda to scale to custom use cases.
+
+Before you begin, you will need:
+
+* Node.js v18.16.0 or later
+* npm v6.14.4 or later
+* git v2.14.1 or later
+
+With Amplify Data, you can build a secure, real-time API backed by a database in minutes. After you define your data model using TypeScript, Amplify will deploy a real-time API for you. This API is powered by AWS AppSync and connected to an Amazon DynamoDB database. You can secure your API with authorization rules and scale to custom use cases with AWS Lambda.
+
+## Building your data backend
+
+If you've run `npm create amplify@latest` already, you should see an `amplify/data/resource.ts` file, which is the central location to configure your data backend. The most important element is the `schema` object, which defines your backend data models (`a.model()`) and custom queries (`a.query()`), mutations (`a.mutation()`), and subscriptions (`a.subscription()`).
+
+```typescript
+const schema = a.schema({
+  Todo: a.model({
+      content: a.string(),
+      isDone: a.boolean()
+    })
+   .authorization(allow => [allow.publicApiKey()])
+});
+```
+
+Every `a.model()` automatically creates the following resources in the cloud:
+
+* a DynamoDB database table to store records
+* query and mutation APIs to create, read (list/get), update, and delete records
+* `createdAt` and `updatedAt` fields that help you keep track of when each record was initially created or when it was last updated
+* real-time APIs to subscribe for create, update, and delete events of records
+
+The `allow.publicApiKey()` rule designates that anyone authenticated using an API key can create, read, update, and delete todos.
+
+To deploy these resources to your cloud sandbox, run the following CLI command in your terminal:
+
+```bash
+npx ampx sandbox
+```
+
+## Connect your application code to the data backend
+
+Once the cloud sandbox is up and running, it will also create an `amplify_outputs.json` file, which includes the relevant connection information to your data backend, like your API endpoint URL and API key.
+
+To connect your frontend code to your backend, you need to:
+
+1. Configure the Amplify library with the Amplify client configuration file (`amplify_outputs.json`)
+2. Generate a new API client from the Amplify library
+3. Make an API request with end-to-end type-safety
+
+Let's install the Amplify client library to your project:
+
+```bash
+npm add aws-amplify
+```
+
+In your app's entry point, typically **main.tsx** for React apps created using Vite, make the following edits:
+
+```tsx
+import { Amplify } from 'aws-amplify';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure(outputs);
+```
+
+## Write data to your backend
+
+Let's first add a button to create a new todo item. To make a "create Todo" API request, generate the data client using `generateClient()` in your frontend code, and then call `.create()` operation for the Todo model.
+
+```tsx
+const client = generateClient<Schema>()
+
+export default function TodoList() {
+  const createTodo = async () => {
+    await client.models.Todo.create({
+      content: window.prompt("Todo content?"),
+      isDone: false
+    })
+  }
+
+  return <div>
+    <button onClick={createTodo}>Add new todo</button>
+  </div>
+}
+```
+
+## Read data from your backend
+
+Next, list all your todos and then refetch the todos after a todo has been added:
+
+```tsx
+import { useState, useEffect } from "react";
+import type { Schema } from "../amplify/data/resource";
+import { generateClient } from "aws-amplify/data";
+
+const client = generateClient<Schema>();
+
+export default function TodoList() {
+  const [todos, setTodos] = useState<Schema["Todo"]["type"][]>([]);
+
+  const fetchTodos = async () => {
+    const { data: items, errors } = await client.models.Todo.list();
+    setTodos(items);
+  };
+
+  useEffect(() => {
+    fetchTodos();
+  }, []);
+
+  const createTodo = async () => {
+    await client.models.Todo.create({
+      content: window.prompt("Todo content?"),
+      isDone: false,
+    });
+
+    fetchTodos();
+  }
+
+  return (
+    <div>
+      <button onClick={createTodo}>Add new todo</button>
+      <ul>
+        {todos.map(({ id, content }) => (
+          <li key={id}>{content}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+## Subscribe to real-time updates
+
+You can also use `observeQuery` to subscribe to a live feed of your backend data. Let's refactor the code to use a real-time observeQuery instead.
+
+```tsx
+import type { Schema } from "../amplify/data/resource";
+import { useState, useEffect } from "react";
+import { generateClient } from "aws-amplify/data";
+
+const client = generateClient<Schema>();
+
+export default function TodoList() {
+  const [todos, setTodos] = useState<Schema["Todo"]["type"][]>([]);
+
+  useEffect(() => {
+    const sub = client.models.Todo.observeQuery().subscribe({
+      next: ({ items }) => {
+        setTodos([...items]);
+      },
+    });
+
+    return () => sub.unsubscribe();
+  }, []);
+
+  const createTodo = async () => {
+    await client.models.Todo.create({
+      content: window.prompt("Todo content?"),
+      isDone: false,
+    });
+    // no more manual refetchTodos required!
+    // - fetchTodos()
+  };
+
+  return (
+    <div>
+      <button onClick={createTodo}>Add new todo</button>
+      <ul>
+        {todos.map(({ id, content }) => (
+          <li key={id}>{content}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+## Conclusion
+
+Success! You've learned how to create your first real-time API and database with Amplify Data.
+
+### Next steps
+
+There's so much more to discover with Amplify Data. Learn more about:
+
+* How to model your database table and their access patterns
+* Secure your API with fine-grained authorization rules
+* Create relationships between different database models
+* Add custom business logic
+
+To subscribe to real-time events in your React application using AWS Amplify, you will need to set up a real-time list query and a real-time event subscription. 
+
+First, ensure you have an application connected to the API and data already created to modify. 
+
+To set up a real-time list query, use `observeQuery` to get a real-time list of your app data at all times. You can integrate `observeQuery` with React's `useState` and `useEffect` hooks. 
+
+Here's an example:
+
+```javascript
+import { useState, useEffect } from 'react';
+import { generateClient } from 'aws-amplify/data';
+import type { Schema } from '../amplify/data/resource';
+
+type Todo = Schema['Todo']['type'];
+
+const client = generateClient<Schema>();
+
+export default function MyComponent() {
+  const [todos, setTodos] = useState<Todo[]>([]);
+
+  useEffect(() => {
+    const sub = client.models.Todo.observeQuery().subscribe({
+      next: ({ items, isSynced }) => {
+        setTodos([...items]);
+      },
+    });
+    return () => sub.unsubscribe();
+  }, []);
+
+  return (
+    <ul>
+      {todos.map((todo) => (
+        <li key={todo.id}>{todo.content}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+To set up a real-time event subscription, use the `onCreate`, `onUpdate`, or `onDelete` methods provided by the `client.models.Todo` object. 
+
+Here's an example:
+
+```javascript
+import { generateClient } from 'aws-amplify/data';
+import type { Schema } from '../amplify/data/resource';
+
+const client = generateClient<Schema>();
+
+// Subscribe to creation of Todo
+const createSub = client.models.Todo.onCreate().subscribe({
+  next: (data) => console.log(data),
+  error: (error) => console.warn(error),
+});
+
+// Subscribe to update of Todo
+const updateSub = client.models.Todo.onUpdate().subscribe({
+  next: (data) => console.log(data),
+  error: (error) => console.warn(error),
+});
+
+// Subscribe to deletion of Todo
+const deleteSub = client.models.Todo.onDelete().subscribe({
+  next: (data) => console.log(data),
+  error: (error) => console.warn(error),
+});
+
+// Stop receiving data updates from the subscription
+createSub.unsubscribe();
+updateSub.unsubscribe();
+deleteSub.unsubscribe();
+```
+
+If you want to filter your subscriptions, you can pass a `filter` argument to the `onCreate`, `onUpdate`, or `onDelete` methods. 
+
+Here's an example:
+
+```javascript
+const sub = client.models.Todo.onCreate({
+  filter: {
+    content: {
+      contains: 'groceries',
+    },
+  },
+}).subscribe({
+  next: (data) => console.log(data),
+  error: (error) => console.warn(error),
+});
+```
+
+To unsubscribe from a subscription, call the `unsubscribe` method on the subscription object. 
+
+Here's an example:
+
+```javascript
+sub.unsubscribe();
+```
+
+When dealing with related model mutations, note that mutations do not trigger real-time updates for related models. If you need to update a related model when a mutation occurs, you must manually "touch" the relevant record.
+
+To monitor the connection state for changes, use the `Hub` local eventing system. 
+
+Here's an example:
+
+```javascript
+import { CONNECTION_STATE_CHANGE, ConnectionState } from 'aws-amplify/data';
+import { Hub } from 'aws-amplify/utils';
+
+Hub.listen('api', (data: any) => {
+  const { payload } = data;
+  if (payload.event === CONNECTION_STATE_CHANGE) {
+    const connectionState = payload.data.connectionState as ConnectionState;
+    console.log(connectionState);
+  }
+});
+```
+
+Connection states include `Connected`, `ConnectedPendingDisconnect`, `ConnectedPendingKeepAlive`, `ConnectedPendingNetwork`, `Connecting`, `ConnectionDisrupted`, `ConnectionDisruptedPendingNetwork`, and `Disconnected`. 
+
+When using server-side subscription filters, be aware of the limitations. For example, specifying an empty object `{}` as a filter is not recommended, and using dynamic group authorization may have limitations. 
+
+To troubleshoot connection issues and automated reconnection, monitor the subscription status for changes and handle errors accordingly. Depending on your use case, you may want to take action to catch up when your app comes back online after being offline. 
+
+In conclusion, setting up real-time events in your React application using AWS Amplify involves creating a real-time list query and a real-time event subscription, filtering subscriptions, and handling connection states. Be sure to unsubscribe from subscriptions when no longer needed and monitor connection states for changes. 
+
+For further customization, consider exploring the AWS Amplify documentation on data modeling, authentication, and authorization. 
+
+Next steps may include continuing to build out and customize your information architecture for your data, customizing your auth rules, customizing your data model, and adding custom business logic. 
+
+Note that the examples provided are in JavaScript and use React hooks for state management. The code snippets demonstrate how to set up real-time events, filter subscriptions, and handle connection states. 
+
+By following these steps and using the provided code snippets, you can effectively set up real-time events in your React application using AWS Amplify.
+
+The Storage and GraphQL API categories in AWS Amplify can be used together to associate a file, such as an image or video, with a particular record. For example, you might create a User model with a profile picture, or a Post model with an associated image.
+
+To set up your project, follow the instructions in the Quickstart guide. 
+
+Next, define your model by opening the `amplify/data/resource.ts` file and adding the model as shown below:
+
+```typescript
+const schema = a.schema({
+  Song: a
+   .model({
+      id: a.id().required(),
+      name: a.string().required(),
+      coverArtPath: a.string(),
+    })
+   .authorization((allow) => [allow.publicApiKey()]),
+});
+```
+
+Then, configure Storage by creating a file `amplify/storage/resource.ts` and adding the following code:
+
+```typescript
+export const storage = defineStorage({
+  name: "amplify-gen2-files",
+  access: (allow) => ({
+    "images/*": [allow.authenticated.to(["read", "write", "delete"])],
+  }),
+});
+```
+
+Configure the storage in the `amplify/backend.ts` file as demonstrated below:
+
+```typescript
+import { defineBackend } from "@aws-amplify/backend";
+import { auth } from "./auth/resource";
+import { data } from "./data/resource";
+import { storage } from "./storage/resource";
+
+export const backend = defineBackend({
+  auth,
+  data,
+  storage,
+});
+```
+
+To create a record with an associated file, use the Amplify Data client to create a record, upload a file to Storage, and then update the record to associate it with the uploaded file. 
+
+Here's how to create a record and associate it with a file in React:
+
+```typescript
+import { generateClient } from "aws-amplify/api";
+import { uploadData, getUrl } from "aws-amplify/storage";
+import type { Schema } from "../amplify/data/resource";
+
+// Generating the client
+const client = generateClient<Schema>({
+  authMode: "apiKey",
+});
+
+// Create the API record:
+const response = await client.models.Song.create({
+  name: `My first song`,
+});
+
+const song = response.data;
+
+if (!song) return;
+
+// Upload the Storage file:
+const result = await uploadData({
+  path: `images/${song.id}-${file.name}`,
+  data: file,
+  options: {
+    contentType: "image/png", // contentType is optional
+  },
+}).result;
+
+// Add the file association to the record:
+const updateResponse = await client.models.Song.update({
+  id: song.id,
+  coverArtPath: result?.path,
+});
+
+const updatedSong = updateResponse.data;
+```
+
+To add or update a file for an associated record, update the record with the path returned by the Storage upload.
+
+Here's how to add or update a file for an associated record in React:
+
+```typescript
+// Upload the Storage file:
+const result = await uploadData({
+  path: `images/${currentSong.id}-${file.name}`,
+  data: file,
+  options: {
+    contentType: "image/png", // contentType is optional
+  },
+}).result;
+
+// Add the file association to the record:
+const response = await client.models.Song.update({
+  id: currentSong.id,
+  coverArtPath: result?.path,
+});
+
+const updatedSong = response.data;
+```
+
+To query a record and retrieve the associated file, first query the record, then use Storage to get the signed URL.
+
+Here's how to query a record and retrieve the associated file in React:
+
+```typescript
+const response = await client.models.Song.get({
+  id: currentSong.id,
+});
+
+const song = response.data;
+
+// If the record has no associated file, we can return early.
+if (!song?.coverArtPath) return;
+
+// Retrieve the signed URL:
+const signedURL = await getUrl({ path: song.coverArtPath });
+```
+
+To delete and remove files associated with API records, you can remove the file association, continue to persist both file and record, remove the record association and delete the file, or delete both file and record.
+
+Here's how to delete and remove files associated with API records in React:
+
+```typescript
+// Remove the file association, continue to persist both file and record
+const updatedSong = await client.models.Song.update({
+  id: song.id,
+  coverArtPath: null,
+});
+
+// Remove the record association and delete the file
+await remove({ path: song.coverArtPath });
+
+// Delete both file and record
+await client.models.Song.delete({ id: song.id });
+```
+
+To work with multiple files, you can add a list of file keys to the record.
+
+Here's how to create a record with multiple associated files in React:
+
+```typescript
+// Upload all files to Storage:
+const imagePaths = await Promise.all(
+  Array.from(e.target.files).map(async (file) => {
+    const result = await uploadData({
+      path: `images/${photoAlbum.id}-${file.name}`,
+      data: file,
+      options: {
+        contentType: "image/png", // contentType is optional
+      },
+    }).result;
+
+    return result.path;
+  })
+);
+
+// Add the file association to the record:
+const updateResponse = await client.models.PhotoAlbum.update({
+  id: photoAlbum.id,
+  imagePaths: imagePaths,
+});
+```
+
+To add new files to an associated record, update the record with the paths returned by the Storage uploads.
+
+Here's how to add new files to an associated record in React:
+
+```typescript
+// Upload all files to Storage:
+const newimagePaths = await Promise.all(
+  Array.from(e.target.files).map(async (file) => {
+    const result = await uploadData({
+      path: `images/${currentPhotoAlbum.id}-${file.name}`,
+      data: file,
+      options: {
+        contentType: "image/png", // contentType is optional
+      },
+    }).result;
+
+    return result.path;
+  })
+);
+
+// Update the record with the merged file associations:
+const response = await client.models.PhotoAlbum.update({
+  id: currentPhotoAlbum.id,
+  imagePaths: [...newimagePaths,...photoAlbum.imagePaths],
+});
+```
+
+To update the file for an associated record, update the list of file keys.
+
+Here's how to update the file for an associated record in React:
+
+```typescript
+// Upload new file to Storage:
+const result = await uploadData({
+  path: `images/${currentPhotoAlbum.id}-${file.name}`,
+  data: file,
+  options: {
+    contentType: "image/png", // contentType is optional
+  },
+}).result;
+
+// Update the record with the updated file associations:
+const response = await client.models.PhotoAlbum.update({
+  id: currentPhotoAlbum.id,
+  imagePaths: [
+   ...photoAlbum.imagePaths.filter((path) => path!== lastImagePath),
+    result.path,
+  ],
+});
+```
+
+To query a record and retrieve the associated files, first query the record, then use Storage to retrieve all of the signed URLs.
+
+Here's how to query a record and retrieve the associated files in React:
+
+```typescript
+// Query the record to get the file paths:
+const response = await client.models.PhotoAlbum.get({
+  id: currentPhotoAlbum.id,
+});
+
+const photoAlbum = response.data;
+
+// If the record has no associated files, we can return early.
+if (!photoAlbum?.imagePaths) return;
+
+// Retrieve the signed URLs for the associated images:
+const signedUrls = await Promise.all(
+  photoAlbum.imagePaths.map(async (imagePath) => {
+    if (!imagePath) return;
+    return await getUrl({ path: imagePath });
+  })
+);
+```
+
+To delete and remove files associated with API records when working with multiple files, you can remove the file association, continue to persist both files and record, remove the record association and delete the files, or delete both files and record.
+
+Here's how to delete and remove files associated with API records when working with multiple files in React:
+
+```typescript
+// Remove the file association, continue to persist both files and record
+const updatedPhotoAlbum = await client.models.PhotoAlbum.update({
+  id: photoAlbum.id,
+  imagePaths: null,
+});
+
+// Remove the record association and delete the files
+await Promise.all(
+  photoAlbum?.imagePaths.map(async (imagePath) => {
+    if (!imagePath) return;
+    await remove({ path: imagePath });
+  })
+);
+
+// Delete both files and record
+await client.models.PhotoAlbum.delete({ id: photoAlbum.id });
+```
+
+It's also important to consider data consistency when working with records and files. The recommended access patterns may remove deleted files, but favor leaving orphans over leaving records that point to non-existent files. This optimizes for read latency by ensuring clients rarely attempt to fetch a non-existent file from Storage. However, any app that deletes files can inherently cause records on-device to point to non-existent files. 
+
+To handle this, you can use real-time data / GraphQL subscriptions to keep your app's local state in sync with the global state. You can also add meaningful error handling around these cases and retry failed operations. 
+
+Here's an example of a complete React application that demonstrates how to work with files and records:
+
+```typescript
+import React, { useState } from "react";
+import { generateClient } from "aws-amplify/api";
+import { uploadData, getUrl, remove } from "aws-amplify/storage";
+import type { Schema } from "../amplify/data/resource";
+
+// Generating the client
+const client = generateClient<Schema>({
+  authMode: "apiKey",
+});
+
+function App() {
+  const [currentSong, setCurrentSong] = useState(null);
+  const [currentImageUrl, setCurrentImageUrl] = useState(null);
+
+  async function createSongWithImage(e) {
+    // Create the API record:
+    const response = await client.models.Song.create({
+      name: `My first song`,
+    });
+
+    const song = response.data;
+
+    if (!song) return;
+
+    // Upload the Storage file:
+    const result = await uploadData({
+      path: `images/${song.id}-${e.target.files[0].name}`,
+      data: e.target.files[0],
+      options: {
+        contentType: "image/png", // contentType is optional
+      },
+    }).result;
+
+    // Add the file association to the record:
+    const updateResponse = await client.models.Song.update({
+      id: song.id,
+      coverArtPath: result?.path,
+    });
+
+    const updatedSong = updateResponse.data;
+    setCurrentSong(updatedSong);
+
+    // If the record has no associated file, we can return early.
+    if (!updatedSong?.coverArtPath) return;
+
+    // Retrieve the file's signed URL:
+    const signedURL = await getUrl({ path: updatedSong.coverArtPath });
+    setCurrentImageUrl(signedURL.url.toString());
+  }
+
+  //...
+}
+```
+
+This application demonstrates how to create a song with an associated image, add a new image to a song, get the image for a song, remove an image from a song, delete an image for a song, and delete a song and its associated image. It also handles data consistency by favoring leaving orphans over leaving records that point to non-existent files.

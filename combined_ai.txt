@@ -1,0 +1,1162 @@
+The Amplify AI Kit is built around the concept of routes, which are similar to API endpoints for interacting with backend AI functionality. These routes are configured in the Amplify backend, where you can define authorization rules, route type, AI model, and other settings. There are two types of AI routes: 
+
+Conversation routes are asynchronous and multi-turn, meaning they involve multiple interactions between the user and the AI. These conversations are automatically stored in a database. Examples of conversation routes include chat-based AI experiences or conversational user interfaces.
+
+Generation routes, on the other hand, are single, synchronous requests that generate structured data based on the route definition. These routes are often used for tasks such as generating structured data from unstructured input or summarization.
+
+When you create an AI route with the Amplify AI Kit, it uses several cloud infrastructure services, including:
+
+AWS AppSync, a serverless API layer that authorizes and routes requests from the browser to AWS services.
+Amazon DynamoDB, a serverless database that stores conversation history.
+AWS Lambda, a serverless execution environment for conversations.
+Amazon Bedrock, a serverless foundation model. 
+
+In a React application, you might interact with these AI routes using the Amplify AI Kit, which provides a simple and intuitive way to integrate AI functionality into your app. For example, you might use the `Amplify` library to send a request to a conversation route, like this:
+```
+import Amplify from 'aws-amplify';
+
+// Send a message to a conversation route
+Amplify.AI.converse(message, (response) => {
+  // Handle the response
+});
+```
+Or, you might use the `Amplify` library to send a request to a generation route, like this:
+```
+import Amplify from 'aws-amplify';
+
+// Send a request to a generation route
+Amplify.AI.generate(input, (response) => {
+  // Handle the response
+});
+```
+
+Inference configuration refers to the parameters that can be adjusted to change how a Large Language Model (LLM) behaves. These models predict text based on the input they receive, and this prediction is probabilistic. By tweaking the inference configuration, you can influence the model to produce more creative or deterministic outputs. The optimal configuration will depend on your specific use case.
+
+Inference refers to the process of using a trained model to generate or predict output based on input data. This is a crucial step in using generative AI models.
+
+In Amplify, you can set inference configuration as optional parameters for all generative AI routes. If you don't provide any configuration options, the model will use its default settings. To set the inference configuration, you can pass an options object with the desired parameters. For example, in a React application, you might use the following code:
+```
+const inferenceConfiguration = {
+  temperature: 0.2,
+  topP: 0.2,
+  maxTokens: 1000,
+}
+```
+Then, you can pass this configuration to the generative AI route:
+```
+a.generation({
+  aiModel: a.ai.model("Claude 3.5 Haiku"),
+  systemPrompt: `You are a helpful assistant`,
+  inferenceConfiguration: inferenceConfiguration
+})
+```
+There are several parameters that can be adjusted in the inference configuration:
+
+* Temperature: This affects the shape of the probability distribution for the predicted output and influences the likelihood of the model selecting lower-probability outputs. A lower value will result in more deterministic responses, while a higher value will allow for more creative outputs.
+* Top P: This refers to the percentage of token candidates the model can choose from for the next token in the response. A lower value will decrease the size of the pool and limit the options to more likely outputs, while a higher value will increase the size of the pool and allow for lower-probability tokens.
+* Max Tokens: This parameter is used to limit the maximum response a model can give.
+
+Each model has its own default inference configuration settings. These settings can be found in the Bedrock documentation for each model. For example:
+
+* AI21 Labs Jamba: temperature = 1.0, top P = 0.5, max tokens = 4096
+* Meta Llama: temperature = 0.5, top P = 0.9, max tokens = 512
+* Amazon Titan: temperature = 0.7, top P = 0.9, max tokens = 512
+* Anthropic Claude: temperature = 1, top P = 0.999, max tokens = 512
+* Cohere Command R: temperature = 0.3, top P = 0.75, max tokens = 512
+* Mistral Large: temperature = 0.7, top P = 1, max tokens = 8192
+
+Note that some models, such as AI21 Labs Jamba, use a different temperature range (0-2.0) than the standard range (0-1).
+
+A foundation model is a large, general-purpose machine learning model that has been pre-trained on a vast amount of data. These models are trained in an unsupervised or self-supervised manner, meaning they learn patterns and representations from the unlabeled training data without being given specific instructions or labels.
+
+Foundation models are useful because they are general-purpose and you don't need to train the models yourself, but are powerful enough to take on a range of applications. They are inherently stateless, taking input in the form of text or images and generating text or images, and are also inherently non-deterministic, meaning providing the same input can generate different output.
+
+To use foundation models on Bedrock, you need to request access to the models in the AWS console. Be sure to check the region you are building your Amplify app in, as not all models are available in all regions.
+
+Each foundation model in Amazon Bedrock has its own pricing and throughput limits for on-demand use. On-demand use is serverless, and you only pay for what you use. The cost for using foundation models is calculated by token usage, where a token refers to chunks of data that were sent as input and how much data was generated.
+
+The Amplify AI Kit uses Bedrock's Converse API to leverage a unified API across models. The supported models for Amplify AI kit include AI21 Labs, Amazon, Anthropic, Cohere, Meta, and Mistral AI. Each model has its own strengths and weaknesses, and you should try different models for different use-cases to find the right fit.
+
+When choosing a model, consider the context window, latency, cost, and use-case fit. The context window refers to the amount of information you can send to the model, and is defined by the number of tokens it can receive. Smaller models tend to have a lower latency than larger models, but can also sometimes be less powerful.
+
+To use different models in your Amplify AI backend, update the aiModel attribute in your schema using the a.ai.model() function. This function gives you access to friendly names for the Bedrock models, and can be used to define different models for different functionality in your application.
+
+For example, to use the Claude 3.5 Haiku model, you can define your schema like this:
+```javascript
+const schema = a.schema({
+  summarizer: a.generation({
+    aiModel: a.ai.model("Claude 3.5 Haiku")
+  })
+})
+```
+Alternatively, you can use the model ID, which can be found in the Bedrock console or documentation:
+```javascript
+const schema = a.schema({
+  summarizer: a.generation({
+    aiModel: {
+      resourcePath: 'meta.llama3-1-405b-instruct-v1:0'
+    }
+  })
+})
+```
+
+LLM prompting is the process of giving a language model specific input to generate a desired output. The input, or "prompt," can be a sentence, paragraph, or sequence of instructions that guides the model to produce content that aligns with the user's intent. The way the prompt is structured and worded can significantly influence the model's response.
+
+To get the best results from an LLM, you need to understand its strengths and limitations and experiment with different prompt formats, styles, and techniques. This can include using specific keywords, providing context, breaking down tasks into steps, and incorporating formatting elements like bullet points or code blocks.
+
+The Amplify AI kit uses the Converse API, which has a structured input and output rather than just text in and text out. The prompt structure consists of three parts: system prompt, messages, and tool configuration. The system prompt provides high-level instructions to the LLM, messages are the conversation history, and tool configuration is information about the tools the model can invoke.
+
+To customize the system prompt in the Amplify AI kit, you need to provide a system prompt for all AI routes. This will be used in all requests to the LLM. For example, you can define a system prompt like this:
+```javascript
+const reviewSummarizer = a.generation({
+  aiModel: a.ai.model("Claude 3.5 Haiku"),
+  systemPrompt: `
+  You are a helpful assistant that summarizes reviews
+  for an ecommerce site. 
+  `
+})
+```
+Here are some tips for effective prompting: be as detailed as possible, give the LLM a role and scope, say what it should and shouldn't do, use multiple routes, and don't put everything into the system prompt. Additionally, prompting strategies differ based on the model, so it's essential to read up on the model itself and what works well with it.
+
+For more information on prompting, you can refer to the following resources: What is a prompt, What is prompt engineering, Design a prompt, and the Anthropic prompt library.
+
+When a large language model generates a lot of text, typically over 100 words, it can take some time to produce the entire response. Instead of waiting for the complete response, the generated text can be sent back in chunks as it is created. 
+
+Model providers like Amazon Bedrock usually have an HTTP streaming API that sends responses back in pieces. 
+
+The Amplify AI kit handles streaming differently than other frameworks, it doesn't use HTTP streaming from the server to the client. Instead, it uses a WebSocket connection to AWS AppSync to send updates to the browser.
+
+Here's how it works: the Amplify AI kit provisions a Lambda function that calls Bedrock with a streaming API request. The Lambda function receives chunks from the HTTP streaming response and sends updates to AppSync. The client then subscribes to these updates.
+
+If you're using the `useAIConversation` React hook, you don't need to worry about the details, as it takes care of everything and provides conversation messages as React state that updates as chunks are received. 
+
+For example, you can use the hook in your React component like this:
+```javascript
+function Conversation() {
+  const { messages } = useAIConversation();
+  return (
+    <div>
+      {messages.map((message, index) => (
+        <p key={index}>{message}</p>
+      ))}
+    </div>
+  );
+}
+```
+
+Large language models are stateless text generators that have no knowledge of the real world and cannot access data on their own. For instance, if you asked a large language model "what is the weather in San Jose?" it would not be able to tell you because it does not know what the weather is today. Tools, also known as function calling, are functions or APIs that large language models can invoke to get information about the world. This allows the large language model to answer questions with information not included in their training data, such as the weather, application-specific data, and even user-specific data.
+
+When a large language model is prompted with tools, it can choose to respond by saying that it wants to call a tool to get some data or take an action on the user's behalf. The data returned by the tool is then added to the conversation history, allowing the large language model to see what data was returned.
+
+Here is an example of how this works:
+1. A user asks "what is the weather in San Jose?"
+2. The large language model is called with this message and is told it has access to a tool called `getWeather` that takes an input like `{ city: string }`.
+3. The large language model responds with a message saying it wants to call the `getWeather` tool with the input `{ city: 'San Jose' }`.
+4. The `getWeather` function is called with the input `{ city: 'San Jose' }` and the results are appended to the conversation history.
+5. The large language model is called again with the updated conversation history and responds with a message like "In San Jose, it is 72 degrees and sunny".
+
+It's worth noting that the large language model itself is not actually executing any function or code. Instead, it responds with a special message saying that it wants to call a specific tool with certain input. The tool then needs to be called and the results returned to the large language model in a message history. 
+
+In a React application, you might implement a tool like `getWeather` as a function that makes an API call to retrieve the current weather for a given city. For example:
+```javascript
+function getWeather(city) {
+  // Make an API call to retrieve the current weather for the given city
+  // Return the weather data
+}
+```
+The large language model would then be called with a message like "what is the weather in San Jose?" and would respond with a message saying it wants to call the `getWeather` tool with the input `{ city: 'San Jose' }`. The `getWeather` function would then be called with this input and the results would be appended to the conversation history. The large language model would then be called again with the updated conversation history and would respond with a message like "In San Jose, it is 72 degrees and sunny".
+
+The AIConversation component is a customizable chat interface built for the Amplify AI kit. It is highly customizable to fit into any application and works with the useAIConversation hook, which manages the state and lifecycle of the component. The component requires some props, including messages, an array of the messages in the conversation, and handleSendMessage, a handler that is called when a user message is sent.
+
+To get started, you need to follow the getting started guide for the Amplify AI kit to set up your Amplify AI backend. Conversations require a logged-in user, so it is recommended to use the Authenticator component to easily add authentication flows to your app.
+
+Here is an example of how to use the AIConversation component:
+```tsx
+import { Amplify } from 'aws-amplify';
+import { generateClient } from "aws-amplify/api";
+import { Authenticator } from "@aws-amplify/ui-react";
+import { AIConversation, createAIHooks } from '@aws-amplify/ui-react-ai';
+import '@aws-amplify/ui-react/styles.css';
+import outputs from "../amplify_outputs.json";
+import { Schema } from "../amplify/data/resource";
+
+Amplify.configure(outputs);
+
+const client = generateClient<Schema>({ authMode: "userPool" });
+const { useAIConversation } = createAIHooks(client);
+
+export default function App() {
+  const [
+    {
+      data: { messages },
+      isLoading,
+    },
+    handleSendMessage,
+  ] = useAIConversation('chat');
+  // 'chat' is based on the key for the conversation route in your schema.
+
+  return (
+    <Authenticator>
+      <AIConversation
+        messages={messages}
+        isLoading={isLoading}
+        handleSendMessage={handleSendMessage}
+      />
+    </Authenticator>
+  );
+}
+```
+
+The AIConversation component also supports markdown rendering, image rendering, and customizing the timestamp display. You can customize the usernames and avatars used in the component by using the avatars prop.
+
+Response components are a way to define custom UI components that the LLM can respond with in the conversation. You can define a response component by giving it a name, description, and defining the props the LLM should know.
+
+Here is an example of how to define a response component:
+```tsx
+<AIConversation
+  responseComponents={{
+    WeatherCard: {
+      description: 'Used to display the weather of a given city to the user',
+      component: ({ city }) => {
+        return <Card>{city}</Card>;
+      },
+      props: {
+        city: {
+          type: 'string',
+          required: true,
+        },
+      },
+    },
+  }}
+/>
+```
+
+You can also add a fallback component if no component is found based on the name by using the FallbackResponseComponent prop.
+```tsx
+<AIConversation
+  FallbackResponseComponent={(props) => (
+    <Card variation="outlined">{JSON.stringify(props, null, 2)}</Card>
+  )}
+/>
+```
+
+In this guide, you will learn how to create, update, and delete conversations, as well as send messages and subscribe to assistant responses in your React application using AWS Amplify Gen 2.
+
+Conversations and their associated messages are persisted in Amazon DynamoDB. This means the previous messages for a conversation are automatically included in the history sent to the LLM. Access to conversations and messages are scoped to individual users through the owner-based authorization strategy.
+
+There are two main types within the conversation flow, Conversation and Message. 
+A Conversation is an instance of a chat session between an application user and an LLM. It contains data and methods for interacting with the conversation. 
+A conversation has a one-to-many relationship with its messages.
+
+The Conversation type has the following properties and methods:
+- id: a unique identifier for the conversation
+- name: the name of the conversation
+- metadata: metadata associated with the conversation
+- createdAt: the date and time when the conversation was created
+- updatedAt: the date and time when the last user message was sent
+- sendMessage(): sends a message to the AI assistant
+- listMessages(): lists all messages for the conversation
+- onStreamEvent(): subscribes to assistant responses
+
+A Message is a single chat message between an application user and an LLM. Each message has a role property that indicates whether the message is from the user or the assistant. 
+The Message type has the following properties:
+- id: a unique identifier for the message
+- conversationId: the ID of the conversation this message belongs to
+- associatedUserMessageId: for assistant messages, the ID of the user message that triggered the response
+- content: the content of the message
+- role: whether the message is from the user or assistant
+- createdAt: the date and time when the message was created
+
+To interact with conversations, follow these steps:
+1. Create a new conversation with the create method or get an existing one with the get method.
+2. Subscribe to assistant responses for a conversation with the onStreamEvent method.
+3. Send messages to the conversation with the sendMessage method.
+
+Here is an example of how to create a conversation, subscribe to assistant responses, and send a message:
+```javascript
+const client = // initialize your client
+
+// Create a conversation
+const { data: chat, errors } = await client.conversations.chat.create();
+
+// Subscribe to assistant responses
+const subscription = chat.onStreamEvent({
+  next: (event) => {
+    console.log(event);
+  },
+  error: (error) => {
+    console.error(error);
+  },
+});
+
+// Send a message to the conversation
+const { data: message, errors } = await chat.sendMessage('Hello, world!');
+```
+
+Conversations can be managed by creating, getting, listing, updating, and deleting them. 
+- Create a conversation by calling the create method on your conversation route.
+- Get an existing conversation by calling the get method on your conversation route with the conversation's id.
+- List conversations by calling the list method on your conversation route.
+- Update a conversation by calling the update method on your conversation route.
+- Delete a conversation by calling the delete method on your conversation route.
+
+Once you have a conversation instance, you can interact with it by calling methods on the instance. 
+- Send a message to the AI assistant by calling the sendMessage method.
+- Subscribe to assistant responses by calling the onStreamEvent method.
+- List messages for a conversation by calling the listMessages method.
+
+The sendMessage method can be customized by passing additional arguments. 
+- You can pass a content object with a content property to send different types of content to the AI assistant.
+- You can pass an aiContext object to attach arbitrary data to the message.
+- You can pass a toolConfiguration object to pass a client tool configuration to the AI assistant with a user message.
+
+Assistant responses are streamed back to the client as they are generated. 
+- Subscribe to assistant responses by calling the onStreamEvent method on your conversation instance.
+- The onStreamEvent method takes two callback functions as arguments: next and error.
+- The next callback is invoked with each assistant response.
+- The error callback is invoked if there's an error while processing messages.
+
+The next callback is invoked with a ConversationStreamEvent object. 
+- There are several types of ConversationStreamEvent objects, including ConversationStreamTextEvent, ConversationStreamDoneAtIndexEvent, ConversationStreamTurnDoneEvent, and ConversationStreamToolUseEvent.
+- Each type of ConversationStreamEvent object has its own set of properties.
+
+You can list messages for a conversation by calling the listMessages method on your conversation instance. 
+- Retrieved messages are paginated, so you can use the nextToken value to paginate through messages.
+- You can optionally specify a limit to limit the number of messages returned.
+
+To provide high-quality answers to users' questions, large language models (LLMs) need the right information. This information can be contextual, based on the user or the state of the application. You can send client-side context to the LLM with any user message, which can be any unstructured or structured data that might be useful.
+
+In React, you can pass this context using the `aiContext` property when sending a message to the LLM. For example, you can pass a simple object with a username:
+```tsx
+conversation.sendMessage({
+  content: [{ text: "hello" }],
+  aiContext: {
+    username: "danny"
+  }
+})
+```
+
+In a React application, you can use the `useAIConversation` hook to send messages to the LLM. You can pass the `aiContext` property when calling the `sendMessage` function:
+```tsx
+function handleSendMessage(message) {
+  sendMessage({
+    ...message,
+    aiContext: {
+      currentTime: new Date().toLocaleTimeString()
+    }
+  })
+}
+```
+
+Alternatively, you can pass a function to the `aiContext` property that returns the context data. This function will be run immediately before the request is sent, ensuring that the LLM receives the most up-to-date information:
+```tsx
+<AIConversation
+  messages={messages}
+  isLoading={isLoading}
+  handleSendMessage={sendMessage}
+  aiContext={() => {
+    return {
+      currentTime: new Date().toLocaleTimeString(),
+    };
+  }}
+/>
+```
+
+You can use React context or other state management systems to update the data passed to `aiContext`. For example, you can create a context to share state across components:
+```tsx
+const DataContext = React.createContext<{
+  data: any;
+  setData: (value: React.SetStateAction<any>) => void;
+}>({ data: {}, setData: () => {} });
+```
+
+Then, you can create a component that updates the shared state:
+```tsx
+function Counter() {
+  const { data, setData } = React.useContext(DataContext);
+  const count = data.count ?? 0;
+  return (
+    <Button onClick={() => setData({ ...data, count: count + 1 })}>
+      {count}
+    </Button>
+  );
+}
+```
+
+Finally, you can reference the shared data in the `aiContext` property:
+```tsx
+function Chat() {
+  const { data } = React.useContext(DataContext);
+  const [
+    {
+      data: { messages },
+      isLoading,
+    },
+    sendMessage,
+  ] = useAIConversation('pirateChat');
+
+  return (
+    <AIConversation
+      messages={messages}
+      isLoading={isLoading}
+      handleSendMessage={sendMessage}
+      aiContext={() => {
+        return {
+          ...data,
+          currentTime: new Date().toLocaleTimeString(),
+        };
+      }}
+    />
+  );
+}
+```
+
+The Amplify AI kit automatically and securely stores conversation history per user so you can easily resume past conversations. 
+
+If you are looking for a quick way to get started with conversation history, an example project has a similar interface to ChatGPT or Claude where users see past conversations in a sidebar they can manage. 
+
+When you define a conversation route in your Amplify data schema, the Amplify AI kit turns that into two data models: Conversation and Message. The Conversation model functions mostly the same way as other data models defined in your schema. You can list and filter them and you can get a specific conversation by ID. Then once you have a conversation instance you can load the messages in it if there are any, send messages to it, and subscribe to the stream events being sent back.
+
+To list all the conversations a user has you can use the list method. It works the same way as any other Amplify data model would. You can optionally pass a limit or nextToken. 
+```javascript
+const { data: conversations } = await client.conversations.chat.list()
+```
+The updatedAt field gets updated when new messages are sent, so you can use that to see which conversation had the most recent message. Conversations retrieved via list are sorted in descending order by updatedAt.
+
+For pagination, the result of list contains a nextToken property. This can be used to retrieve subsequent pages of conversations.
+```javascript
+const { data: conversations, nextToken } = await client.conversations.chat.list();
+
+// retrieve next page
+if (nextToken) { 
+  const { data: nextPageConversations } = await client.conversations.chat.list({ 
+    nextToken 
+  });
+}
+```
+Conversations also have name and metadata fields you can use to more easily find and resume past conversations. Name is a string and metadata is a JSON object so you can store any extra information you need.
+
+You can resume a conversation by calling the get method with a conversation ID. Both create and get return the conversation instance. 
+
+To list all conversations a user has, make sure the user has been authenticated with Amplify Auth, then
+```javascript
+const conversationList = await client.conversations.conversation.list();
+
+// Retrieve a specific conversation
+const { data: conversation } = await client.conversations.chat.get({ id: conversationList[0].id });
+
+// list the existing messages in the conversation
+const { data: messages } = await conversation.listMessages();
+
+// You can now send a message to the conversation
+conversation.sendMessage({
+  content: [
+    {text: "hello"}
+  ]
+})
+```
+For a react component, you can use the useAIConversation hook to get the conversation data and handle sending messages
+```javascript
+export function Chat({ id }) {
+  const [
+    data: { messages },
+    handleSendMessage,
+  ] = useAIConversation('chat', { id })
+}
+```
+
+The conversation feature in AWS Amplify simplifies the creation of AI-powered conversation interfaces in your application. It automatically sets up the necessary components, including an AppSync API and Lambda functions, to handle streaming multi-turn interactions with Amazon Bedrock foundation models.
+
+The key components of this feature are:
+1. AppSync API - this is the gateway to the conversation feature, allowing you to create new conversation instances, send messages, and subscribe to real-time updates for assistant responses.
+2. Lambda Function - this acts as a bridge between AppSync and Amazon Bedrock, retrieving conversation history, invoking Bedrock's converse endpoint, and handling tool use responses.
+3. DynamoDB - this stores conversation and message data, with conversations scoped to a specific application user.
+
+The authentication flow for this feature involves the following steps:
+1. The user's OIDC access token is passed from the client to AppSync.
+2. AppSync forwards this token to the Lambda function.
+3. The Lambda function uses the token to authenticate requests back to AppSync.
+
+This feature can be used in various scenarios, with safeguards in place to mitigate risks, including:
+- Redacting OIDC access tokens from logs.
+- Limiting the Lambda function's ability to access other resources through IAM policies.
+
+The data flow for this feature is as follows:
+1. The user sends a message via the AppSync mutation.
+2. AppSync triggers the Lambda function.
+3. The Lambda function processes the message and invokes Bedrock's converse endpoint.
+4. If the response is a tool use, the Lambda function invokes the applicable AppSync query.
+5. The Lambda function sends the assistant response back to AppSync.
+6. AppSync sends the response to subscribed clients.
+
+This design allows for real-time, scalable conversations while ensuring that the Lambda function's data access matches that of the application user. 
+
+Here is an example of how you might use this feature in a React application:
+```javascript
+import { API } from '@aws-amplify/api';
+
+// Create a new conversation instance
+const conversationInstance = await API.graphql({
+  query: 'createConversation',
+  variables: {
+    input: {
+      // Conversation input data
+    }
+  }
+});
+
+// Send a message to the conversation instance
+const message = await API.graphql({
+  query: 'sendMessage',
+  variables: {
+    input: {
+      conversationId: conversationInstance.id,
+      message: 'Hello, world!'
+    }
+  }
+});
+
+// Subscribe to real-time updates for assistant responses
+API.graphql({
+  query: 'subscribeToConversation',
+  variables: {
+    conversationId: conversationInstance.id
+  }
+}).subscribe({
+  next: (response) => {
+    // Handle assistant response
+  }
+});
+```
+
+Amazon Bedrock knowledge bases are a great way to implement Retrieval Augmented Generation, or RAG for short. RAG is a common pattern in building generative AI applications that involves storing a lot of content, like documentation, in a vector database. 
+
+When setting up an Amazon Bedrock knowledge base, be aware that the default setup uses OpenSearch Serverless, which can incur costs even if you're not using it. If you're just testing this out, make sure to turn off the OpenSearch Serverless instance when you're done to avoid getting a large AWS bill.
+
+To integrate a Bedrock knowledge base with your conversation route in a React application, first create an Amazon Bedrock knowledge base in the AWS console, CLI, or with CDK. 
+
+Then, create a custom query and tool to interact with the knowledge base. This can be done by defining a schema for the knowledge base and creating a query that allows you to search the knowledge base. 
+
+```javascript
+const schema = {
+  knowledgeBase: {
+    query: (input) => {
+      // handler to interact with the knowledge base
+    },
+    returns: (result) => {
+      // return the result of the query
+    },
+    authorization: (allow) => {
+      // authorization rules for the query
+    },
+  },
+  chat: {
+    aiModel: "Claude 3.5 Haiku",
+    systemPrompt: `You are a helpful assistant.`,
+    tools: [
+      {
+        name: 'searchDocumentation',
+        description: 'Performs a similarity search over the documentation for ...',
+        query: (input) => {
+          // reference to the knowledgeBase query
+        },
+      },
+    ]
+  }
+}
+```
+
+Next, write an AWS AppSync resolver to connect the query to the knowledge base. You'll need to know the ID of the knowledge base you want to use. 
+
+```javascript
+export function request(ctx) {
+  const { input } = ctx.args;
+  return {
+    resourcePath: "/knowledgebases/[KNOWLEDGE_BASE_ID]/retrieve",
+    method: "POST",
+    params: {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        retrievalQuery: {
+          text: input,
+        },
+      }),
+    },
+  };
+}
+
+export function response(ctx) {
+  return JSON.stringify(ctx.result.body);
+}
+```
+
+Finally, define the data source for the knowledge base query and give it permission to call the knowledge base. This can be done in the Amplify backend file. 
+
+```javascript
+const KnowledgeBaseDataSource = {
+  // configuration for the knowledge base data source
+};
+
+KnowledgeBaseDataSource.grantPrincipal.addToPrincipalPolicy(
+  {
+    resources: [
+      `arn:aws:bedrock:[region]:[account ID]:knowledge-base/[knowledge base ID]`
+    ],
+    actions: ["bedrock:Retrieve"],
+  },
+);
+```
+
+Response components are custom UI components that can be defined to allow an AI assistant to respond with more than just text. These components enable the creation of rich conversational interfaces. 
+
+The AIConversation component takes response components and turns them into tool configurations to send to the LLM. When a user sends a message to the backend, the backend Lambda merges the tools coming from the client and any schema tools. The LLM sees that it can invoke a UI component tool with certain input/props. If the LLM chooses to use a response component tool, a message gets sent to the client with the response component name and props. The AIConversation component will then try to render the provided React component with the props the LLM sends.
+
+It's essential to know that the LLM is not writing raw code that gets sent to the browser and evaluated.
+
+A response component has a description, a React component to render, and props in JSONSchema format. For example, you can define a WeatherCard response component that displays the weather to the user. 
+
+To pass context back to the assistant, you can send aiContext with the message. aiContext is any information about the current state of the client application that might be useful for the AI assistant to know to help it respond better. You can use the aiContext to let the AI assistant know what was rendered in the response component so it can have more context to respond with.
+
+To share state across components, you can create a context using React.createContext. For instance, you can create a DataContext to share state across components and use it to set the data context when the WeatherCard component is rendered. 
+
+In some cases, there may be times when there is a message in the conversation history that has a response component you no longer have. To handle these situations, you can use the FallbackResponseComponent prop. This prop allows you to define a fallback component to render when a response component is not found. 
+
+For example, you can define a fallback component that displays the props of the missing response component. 
+
+To use response components, you need to define them in the responseComponents prop of the AIConversation component. You can define multiple response components and use them to create a rich conversational interface. 
+
+You can also use the aiContext prop to pass context back to the assistant and use the FallbackResponseComponent prop to handle situations where a response component is not found. 
+
+Here is an example of how to use response components:
+```typescript
+<AIConversation
+  responseComponents={{
+    WeatherCard: {
+      description: "Used to display the weather to the user",
+      component: ({ city }) => {
+        return (
+          <div>{city}</div>
+        )
+      },
+      props: {
+        city: {
+          type: "string",
+          required: true,
+          description: "The name of the city to display the weather for",
+        },
+      },
+    },
+  }}
+/>
+```
+And here is an example of how to use the aiContext prop:
+```typescript
+<AIConversation
+  aiContext={() => {
+    return {
+      // data to pass to the assistant
+    };
+  }}
+/>
+```
+And here is an example of how to use the FallbackResponseComponent prop:
+```typescript
+<AIConversation
+  FallBackResponseComponent={(props) => {
+    return <>{JSON.stringify(props)}</>
+  }}
+/>
+```
+
+Tools allow LLMs to query information to respond with current and relevant information. They are invoked only if the LLM requests to use one based on the user's message and the tool's description.
+
+There are a few different ways to define LLM tools in the Amplify AI kit: 
+1. Model tools 
+2. Query tools 
+3. Lambda tools
+
+The easiest way to define tools for your conversation route is with `a.ai.dataTool()` for data models and custom queries in your data schema. When you define a tool for a conversation route, Amplify takes care of the heavy lifting, describing the tools to the LLM, invoking the tool with the right parameters, and maintaining the caller identity and authorization.
+
+Model tools give the LLM access to your data models by referencing them in an `a.ai.dataTool()` with a reference to a model in your data schema. This requires that the model uses at least one of the following authorization strategies: 
+- Per user data access, using `owner()`, `ownerDefinedIn()`, or `ownersDefinedIn()`
+- Any signed-in user data access, using `authenticated()`
+- Per user group data access, using `group()`, `groupsDefinedIn()`, `groups()`, or `groupsDefinedIn()`
+
+For example, you can define a model tool like this:
+```typescript
+const schema = a.schema({
+  Post: a.model({
+    title: a.string(),
+    body: a.string(),
+  })
+  .authorization(allow => allow.owner()),
+
+  chat: a.conversation({
+    aiModel: a.ai.model('Claude 3.5 Haiku'),
+    systemPrompt: 'Hello, world!',
+    tools: [
+      a.ai.dataTool({
+        name: 'PostQuery',
+        description: 'Searches for Post records',
+        model: a.ref('Post'),
+        modelOperation: 'list',
+      }),
+    ],
+  }),
+})
+```
+
+Query tools give the LLM access to custom queries defined in your data schema. To do so, define a custom query with a function or custom handler and then reference that custom query as a tool. This requires that the custom query uses the `allow.authenticated()` authorization strategy.
+
+For example, you can define a query tool like this:
+```typescript
+export const getWeather = defineFunction({
+  name: 'getWeather',
+  entry: './getWeather.ts',
+  environment: {
+    API_ENDPOINT: 'MY_API_ENDPOINT',
+    API_KEY: secret('MY_API_KEY'),
+  },
+});
+
+const schema = a.schema({
+  getWeather: a.query()
+    .arguments({ city: a.string() })
+    .returns(a.customType({
+      value: a.integer(),
+      unit: a.string()
+    }))
+    .handler(a.handler.function(getWeather))
+    .authorization((allow) => allow.authenticated()),
+
+  chat: a.conversation({
+    aiModel: a.ai.model('Claude 3.5 Haiku'),
+    systemPrompt: 'You are a helpful assistant',
+    tools: [
+      a.ai.dataTool({
+        name: 'get_weather',
+        description: 'Gets the weather for a given city',
+        query: a.ref('getWeather'),
+      }),
+    ]
+  })
+    .authorization((allow) => allow.owner()),
+})
+```
+
+You can also define a Lambda function handler for the custom query. For example:
+```typescript
+export const handler: Schema["getWeather"]["functionHandler"] = async (
+  event
+) => {
+  const { city } = event.arguments;
+  if (!city) {
+    throw new Error('City is required');
+  }
+
+  const url = `${env.API_ENDPOINT}?city=${encodeURIComponent(city)}`;
+  const request = new Request(url, {
+    headers: {
+      Authorization: `Bearer ${env.API_KEY}`
+    }
+  });
+
+  const response = await fetch(request);
+  const weather = await response.json();
+  return weather;
+}
+```
+
+You can connect to any AWS service by defining a custom query and calling that service in the function handler. To properly authorize the custom query function to call the AWS service, you will need to provide the Lambda with the proper permissions.
+
+Custom Lambda tools can be defined to execute in the conversation handler AWS Lambda function. This is useful if you want to define a tool that is not related to your data schema or that does simple tasks within the Lambda function runtime.
+
+To define a custom Lambda tool, first install the `@aws-amplify/backend-ai` package. Then, define a custom conversation handler function in your data schema and reference the function in the `handler` property of the `a.conversation()` definition.
+
+For example:
+```typescript
+export const chatHandler = defineConversationHandlerFunction({
+  entry: './chatHandler.ts',
+  name: 'customChatHandler',
+  models: [
+    { modelId: a.ai.model("Claude 3.5 Haiku") }
+  ]
+});
+
+const schema = a.schema({
+  chat: a.conversation({
+    aiModel: a.ai.model('Claude 3.5 Haiku'),
+    systemPrompt: "You are a helpful assistant",
+    handler: chatHandler,
+  })
+    .authorization((allow) => allow.owner()),
+})
+```
+
+Next, define the executable tool(s) and handler. For example:
+```typescript
+const jsonSchema = {
+  json: {
+    type: 'object',
+    properties: {
+      'operator': {
+        'type': 'string',
+        'enum': ['+', '-', '*', '/'],
+        'description': 'The arithmetic operator to use'
+      },
+      'operands': {
+        'type': 'array',
+        'items': {
+          'type': 'number'
+        },
+        'minItems': 2,
+        'maxItems': 2,
+        'description': 'Two numbers to perform the operation on'
+      }
+    },
+    required: ['operator', 'operands']
+  }
+} as const;
+
+const calculator = createExecutableTool(
+  'calculator',
+  'Returns the result of a simple calculation',
+  jsonSchema,
+  (input) => {
+    const [a, b] = input.operands;
+    switch (input.operator) {
+      case '+': return Promise.resolve({ text: (a + b).toString() });
+      case '-': return Promise.resolve({ text: (a - b).toString() });
+      case '*': return Promise.resolve({ text: (a * b).toString() });
+      case '/':
+        if (b === 0) throw new Error('Division by zero');
+        return Promise.resolve({ text: (a / b).toString() });
+      default:
+        throw new Error('Invalid operator');
+    }
+  },
+);
+
+export const handler = async (event: ConversationTurnEvent) => {
+  await handleConversationTurnEvent(event, {
+    tools: [calculator],
+  });
+};
+```
+
+Finally, update your backend definition to include the newly defined `chatHandler` function.
+
+Best practices for using tools include:
+- Validate and sanitize any input from the LLM before using it in your application
+- Handle errors gracefully and provide meaningful error messages
+- Log and monitor tool usage to detect potential misuse or issues
+
+Data extraction allows you to parse unstructured text and extract structured data using artificial intelligence. This is useful for converting free-form text into typed objects that can be used in your application.
+
+The following example shows how to extract product details from an unstructured product description in a React application. The AI model will analyze the text and return a structured object containing the product name, summary, price, and category.
+
+To achieve this, you need to define a schema that includes a custom type for the product details and a generation that uses the AI model to extract the details. 
+
+In your React component, you can use the `useAIGeneration` hook from `@aws-amplify/ui-react-ai` to generate the product details. This hook returns a function to extract the product details and a state object with the generated data and a loading indicator.
+
+Here is an example of how to use it:
+```javascript
+import { generateClient } from "aws-amplify/api";
+import { createAIHooks } from "@aws-amplify/ui-react-ai";
+
+const client = generateClient({ authMode: "userPool" });
+const { useAIGeneration } = createAIHooks(client);
+
+function Example() {
+  const productDescription = `The NBA Official Game Basketball is a premium
+  regulation-size basketball crafted with genuine leather and featuring
+  official NBA specifications. This professional-grade ball offers superior grip
+  and durability, with deep channels and a moisture-wicking surface that ensures
+  consistent performance during intense game play. Priced at $159.99, this high-end
+  basketball belongs in our Professional Sports Equipment category and is the same model
+  used in NBA games.`
+
+  const [{ data, isLoading }, extractProductDetails] =
+    useAIGeneration("extractProductDetails");
+
+  const productDetails = async () => {
+    extractProductDetails({
+      productDescription
+    });
+  };
+}
+```
+
+When you call the `extractProductDetails` function, it will generate the product details and update the `data` state with the result. The response will be a structured object containing the product name, summary, price, and category, like this:
+```json
+{
+  "name": "NBA Official Game Basketball",
+  "summary": "Premium regulation-size NBA basketball made with genuine leather. Features official NBA specifications, superior grip, deep channels, and moisture-wicking surface for consistent game play performance.",
+  "price": 159.99,
+  "category": "Professional Sports Equipment"
+}
+```
+
+AI generation routes are a request-response API used to generate structured output from AI models. These routes can be used for various tasks such as generating structured data from unstructured input, summarization, and more.
+
+To use AI generation routes, you need to define a schema that includes a generation route. A generation route is an AWS AppSync query that ensures the AI model responds with the response type defined for the route.
+
+### Generating Typed Objects
+
+To generate typed objects, you can define a schema with a generation route that returns a custom type. For example, you can define a schema that generates a recipe based on a description. 
+
+In React, you can use the `useAIGeneration` hook from `@aws-amplify/ui-react-ai` to generate a recipe. Here's an example:
+```tsx
+import { generateClient } from "aws-amplify/api";
+import { createAIHooks } from "@aws-amplify/ui-react-ai";
+
+const client = generateClient({ authMode: "userPool" });
+const { useAIGeneration } = createAIHooks(client);
+
+export default function Example() {
+  const [{ data, isLoading }, generateRecipe] = useAIGeneration("generateRecipe");
+
+  const generateSummary = async () => {
+    generateRecipe({
+      description: 'I would like to bake a birthday cake for my friend. She has celiac disease and loves chocolate.',
+    });
+  };
+}
+```
+
+### Generating Scalar Types
+
+To generate scalar types, you can define a schema with a generation route that returns a scalar type. For example, you can define a schema that summarizes a piece of text. 
+
+In React, you can use the `useAIGeneration` hook to generate a summary. Here's an example:
+```tsx
+import { generateClient } from "aws-amplify/api";
+import { createAIHooks } from "@aws-amplify/ui-react-ai";
+
+const client = generateClient({ authMode: "userPool" });
+const { useAIGeneration } = createAIHooks(client);
+
+export default function Example() {
+  const [{ data, isLoading }, summarize] = useAIGeneration("summarize");
+
+  const generateSummary = async () => {
+    summarize({
+      input: 'This is a piece of text that needs to be summarized.',
+    });
+  };
+}
+```
+
+### Setting Inference Parameters
+
+You can influence response generation by setting inference parameters for the AI model. Inference parameters allow you to control the randomness and diversity of responses, which is useful for generating responses tailored to your needs.
+
+For example, you can define a schema that generates a haiku with specific inference parameters. 
+```tsx
+import { generateClient } from "aws-amplify/api";
+import { createAIHooks } from "@aws-amplify/ui-react-ai";
+
+const client = generateClient({ authMode: "userPool" });
+const { useAIGeneration } = createAIHooks(client);
+
+export default function Example() {
+  const [{ data, isLoading }, generateHaiku] = useAIGeneration("generateHaiku");
+
+  const generateHaikuExample = async () => {
+    generateHaiku({
+      description: 'Generate a haiku about nature.',
+      inferenceConfiguration: {
+        maxTokens: 1000,
+        temperature: 0.5,
+        topP: 0.9,
+      }
+    });
+  };
+}
+```
+
+### Limitations
+
+There are some limitations to using AI generation routes. 
+
+1. Generation routes do not support referencing models. However, you can reference custom types. 
+
+2. Generation routes do not support some required types. The following AppSync scalar types are not supported as required fields in response types:
+- `AWSEmail`
+- `AWSDate`
+- `AWSTime`
+- `AWSDateTime`
+- `AWSTimestamp`
+- `AWSPhone`
+- `AWSURL`
+- `AWSIPAddress`
+
+For example, the following schema defines a custom type that can be used as the return type of a generation route:
+```tsx
+import { generateClient } from "aws-amplify/api";
+import { createAIHooks } from "@aws-amplify/ui-react-ai";
+
+const client = generateClient({ authMode: "userPool" });
+const { useAIGeneration } = createAIHooks(client);
+
+export default function Example() {
+  const [{ data, isLoading }, generateRecipe] = useAIGeneration("generateRecipe");
+
+  const generateRecipeExample = async () => {
+    generateRecipe({
+      description: 'I would like to bake a birthday cake for my friend. She has celiac disease and loves chocolate.',
+    });
+  };
+}
+```
+
+In this guide, you will learn how to get started with the Amplify AI kit. This includes defining your AI backend with Conversation and Generation routes, and securely connecting to them from your frontend application.
+
+To get started, you can use one of the samples provided by AWS. 
+
+Before you begin, you will need Node.js version 18.16.0 or later, npm version 6.14.4 or later, and git version 2.14.1 or later. You will also need an AWS account that is set up for local development and has access to the Bedrock Foundation Model(s) you want to use.
+
+Running inference on large language models can be costly. However, Amazon Bedrock is a serverless service, so you only pay for what you use. Be mindful of the costs associated with building generative AI applications.
+
+To create an Amplify backend, run the create amplify script in your project directory using the command `npm create amplify@latest`. Then, run the Amplify sandbox using the command `npx ampx sandbox`. This will provision the cloud resources you define in your amplify folder and watch for updates and redeploy them.
+
+To build an AI backend, you define AI 'routes' in your Amplify Data schema. An AI route is like an API endpoint for interacting with backend AI functionality. There are currently two types of routes: Conversation and Generation. 
+
+A conversation route is a streaming, multi-turn API. Conversations and messages are automatically stored in DynamoDB, so users can resume conversations. Examples of this include chat-based AI experiences or conversational UI.
+
+A generation route is a single synchronous request-response API. A generation route is just an AppSync Query. Examples of this include generating alt text for an image, generating structured data from unstructured input, summarization, etc.
+
+To define AI routes, open your `amplify/data/resource.ts` file and use `a.generation()` and `a.conversation()` in your schema. For example:
+
+```typescript
+import { a, defineData, type ClientSchema } from '@aws-amplify/backend';
+
+const schema = a.schema({
+  chat: a.conversation({
+    aiModel: a.ai.model('Claude 3.5 Haiku'),
+    systemPrompt: 'You are a helpful assistant',
+  })
+  .authorization((allow) => allow.owner()),
+
+  generateRecipe: a.generation({
+    aiModel: a.ai.model('Claude 3.5 Haiku'),
+    systemPrompt: 'You are a helpful assistant that generates recipes.',
+  })
+  .arguments({
+    description: a.string(),
+  })
+  .returns(
+    a.customType({
+      name: a.string(),
+      ingredients: a.string().array(),
+      instructions: a.string(),
+    })
+  )
+  .authorization((allow) => allow.authenticated()),
+});
+```
+
+Once the cloud sandbox is up and running, it will also create an `amplify_outputs.json` file, which includes relevant connection information to your AI routes and other Amplify configuration.
+
+To connect your frontend code to your backend, you need to configure the Amplify library with the Amplify client configuration file, generate a new API client from the Amplify library, and make an API request with end-to-end type-safety.
+
+First, install the Amplify client library to your project using the command `npm add aws-amplify @aws-amplify/ui-react @aws-amplify/ui-react-ai` for React, Next.js, or React Native, or `npm add aws-amplify` for JavaScript, Vue, or Angular.
+
+Then, configure the Amplify library with the `amplify_outputs.json` file. For React, you can do this in the file where the React application is mounted:
+
+```tsx
+import { Amplify } from 'aws-amplify';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure(outputs);
+```
+
+For Next.js, you can do this in the `pages/_app.tsx` file for the Pages router or in the `app/ConfigureAmplify.tsx` file for the App router.
+
+Next, generate a type-safe frontend client to talk to your backend using your backend data schema and the `generateClient()` function provided by the Amplify libraries. For React, you can do this in a `client.ts` file:
+
+```typescript
+import { generateClient } from "aws-amplify/api";
+import { Schema } from "../amplify/data/resource";
+import { createAIHooks } from "@aws-amplify/ui-react-ai";
+
+export const client = generateClient<Schema>({ authMode: "userPool" });
+export const { useAIConversation, useAIGeneration } = createAIHooks(client);
+```
+
+Finally, you can use the `useAIGeneration` hook to make a request to your generation route. For example:
+
+```tsx
+import * as React from 'react';
+import { Flex, TextAreaField, Loader, Text, View, Button } from "@aws-amplify/ui-react"
+import { useAIGeneration } from "./client";
+
+export default function App() {
+  const [description, setDescription] = React.useState("");
+  const [{ data, isLoading }, generateRecipe] =
+    useAIGeneration("generateRecipe");
+
+  const handleClick = async () => {
+    generateRecipe({ description });
+  };
+
+  return (
+    <Flex direction="column">
+      <Flex direction="row">
+        <TextAreaField
+          autoResize
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          label="Description"
+        />
+        <Button onClick={handleClick}>Generate recipe</Button>
+      </Flex>
+      {isLoading ? (
+        <Loader variation="linear" />
+      ) : (
+        <>
+          <Text fontWeight="bold">{data?.name}</Text>
+          <View as="ul">
+            {data?.ingredients?.map((ingredient) => (
+              <View as="li" key={ingredient}>
+                {ingredient}
+              </View>
+            ))}
+          </View>
+          <Text>{data?.instructions}</Text>
+        </>
+      )}
+    </Flex>
+  );
+}
+```
+
+You can also use the `useAIConversation` hook to make a request to your conversation route. For example:
+
+```tsx
+import { Authenticator } from "@aws-amplify/ui-react";
+import { AIConversation } from '@aws-amplify/ui-react-ai';
+import { useAIConversation } from './client';
+
+export default function App() {
+  const [
+    {
+      data: { messages },
+      isLoading,
+    },
+    handleSendMessage,
+  ] = useAIConversation('chat');
+
+  return (
+    <Authenticator>
+      <AIConversation
+        messages={messages}
+        isLoading={isLoading}
+        handleSendMessage={handleSendMessage}
+      />
+    </Authenticator>
+  );
+}
+```

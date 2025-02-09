@@ -1,0 +1,1261 @@
+This page is for formatting only.
+
+Amplify allows you to add layers to your functions, which contain your library dependencies. This makes it easier to manage shared components across multiple functions and reduces deployment package sizes. 
+
+To add a Lambda layer to your function, first create and set up your Lambda layer in AWS through the AWS Console or using the AWS CLI. Then, reference it in your Amplify project by specifying the layers property in defineFunction. 
+
+For example, if you're using React, you can specify the layers property like this:
+```javascript
+import { defineFunction } from "@aws-amplify/backend";
+
+export const myFunction = defineFunction({
+  name: "my-function",
+  layers: {
+    "@aws-lambda-powertools/logger": 
+      "arn:aws:lambda:us-east-1:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:12",
+  },
+});
+```
+The Lambda layer is represented by an object of key/value pairs where the key is the module name that is exported from your layer and the value is the ARN of the layer. You can also specify the layer as myLayer:1 where myLayer is the name of the layer and 1 is the version of the layer. 
+
+For example:
+```javascript
+import { defineFunction } from "@aws-amplify/backend";
+
+export const myFunction = defineFunction({
+  name: "my-function",
+  layers: {
+    "some-module": "myLayer:1"
+  },
+});
+```
+Amplify will automatically convert this to the full layer ARN format using your existing account ID and region. 
+
+When using layers, be mindful of versioning and ensure you're using the appropriate version and have a strategy for updating layers when new versions are released. 
+
+To use the locally installed module in the function handler, you can do something like this:
+```javascript
+import { Logger } from "@aws-lambda-powertools/logger";
+import type { Handler } from "aws-lambda";
+
+const logger = new Logger({ serviceName: "serverlessAirline" });
+
+export const handler = async (event, context) => {
+  logger.info("Hello World");
+};
+```
+For more information on creating and managing layers, refer to the AWS documentation for Lambda layers. 
+
+Note that configuring or adding layers in defineFunction is not supported for Custom Functions.
+
+To configure functions, you can use the `defineFunction` option with various settings. 
+
+The `name` option allows you to explicitly set the name of the function. By default, the function name is based on the directory where `defineFunction` is called. For example, you can set the name like this:
+```javascript
+export const myDemoFunction = defineFunction({
+  entry: './demo-function-handler.ts',
+  name: 'overrideName'
+});
+```
+
+The `timeoutSeconds` option allows you to set the timeout for the function, which defaults to 3 seconds. You can set it to any whole number of seconds up to 15 minutes. For example:
+```javascript
+export const myDemoFunction = defineFunction({
+  timeoutSeconds: 60
+});
+```
+
+The `memoryMB` option allows you to set the amount of memory allocated to the function, which defaults to 512 MB. You can set it to any value from 128 MB to 10240 MB. For example:
+```javascript
+export const myDemoFunction = defineFunction({
+  memoryMB: 256
+});
+```
+
+The `ephemeralStorageSizeMB` option allows you to set the amount of ephemeral storage allocated to the function, which defaults to 512 MB. You can set it to any value from 512 MB to 10240 MB. For example:
+```javascript
+export const myDemoFunction = defineFunction({
+  ephemeralStorageSizeMB: 1024
+});
+```
+
+The `runtime` option allows you to set the Node version used by the function, which defaults to Node 18. For example:
+```javascript
+export const myDemoFunction = defineFunction({
+  runtime: 20
+});
+```
+
+The `entry` option allows you to specify the location of the function handler, which defaults to a file called `handler.ts` in the same directory as the file where `defineFunction` is called. For example:
+```javascript
+export const myDemoFunction = defineFunction({
+  entry: './path/to/handler.ts'
+});
+```
+
+The `resourceGroupName` option allows you to group related functions with other Amplify resources, which defaults to `function`. For example:
+```javascript
+export const myDemoFunction = defineFunction({
+  resourceGroupName: 'data'
+});
+```
+
+Note that some options, such as `name`, `timeoutSeconds`, `memoryMB`, `ephemeralStorageSizeMB`, `runtime`, and `entry`, are not supported for custom functions, except for `resourceGroupName`.
+
+AWS Amplify Gen 2 functions are AWS Lambda functions used to perform tasks and customize workflows in your Amplify app. These functions can be written in Node.js, Python, Go, or any other language supported by AWS Lambda.
+
+To create a custom function, you can use languages like Python or Go. When creating a function, you should define it using the `defineFunction` method. This method allows you to specify the function's handler, runtime, timeout, and code.
+
+For Python functions, you'll need to create a handler file, typically named `index.py`, which exports a function named `handler`. This is the entry point to your function. You can also include Python packages by adding them to a `requirements.txt` file in the same directory as your handler file.
+
+For Go functions, you'll need to create a handler file, typically named `main.go`, which contains the function code. You'll also need to run the `go mod init` and `go mod tidy` commands to build the Go function.
+
+Once you've defined your function, you'll need to add it to your backend by importing it into your `amplify/backend.ts` file and including it in the `defineBackend` method.
+
+To invoke your function, you can add it as a handler for a custom query with your Amplify Data resource. This involves specifying a new query in your schema and using the `a.handler.function` method to link it to your custom function.
+
+It's also important to note that custom functions may require Docker to build and bundle the function's code. If you're using a Fullstack Git-based environment, you'll need to provide your own image that meets Amplify requirements and includes a Docker installation.
+
+Here's an example of how you might define a Python function in React:
+```javascript
+import { defineFunction } from '@aws-amplify/backend';
+
+const functionDir = './amplify/functions/say-hello';
+
+export const sayHelloFunctionHandler = defineFunction(
+  (scope) => 
+    new Function(scope, 'say-hello', {
+      handler: 'index.handler',
+      runtime: 'python3.9',
+      timeout: 20,
+      code: Code.fromAsset(functionDir, {
+        bundling: {
+          local: {
+            tryBundle(outputDir) {
+              // install Python packages
+              return true;
+            },
+          },
+        },
+      }),
+    }),
+  {
+    resourceGroupName: 'auth',
+  }
+);
+```
+
+And here's an example of how you might define a Go function in React:
+```javascript
+import { defineFunction } from '@aws-amplify/backend';
+
+const functionDir = './amplify/functions/say-hello';
+
+export const sayHelloFunctionHandler = defineFunction(
+  (scope) => 
+    new Function(scope, 'say-hello', {
+      handler: 'bootstrap',
+      runtime: 'provided.al2',
+      timeout: 3,
+      code: Code.fromAsset(functionDir, {
+        bundling: {
+          local: {
+            tryBundle(outputDir) {
+              // build Go function
+              return true;
+            },
+          },
+        },
+      }),
+    }),
+  {
+    resourceGroupName: 'auth',
+  }
+);
+```
+
+To add the function to your backend, you would import it into your `amplify/backend.ts` file:
+```javascript
+import { sayHelloFunctionHandler } from './functions/say-hello/resource';
+
+defineBackend({
+  sayHelloFunctionHandler,
+});
+```
+
+And to invoke the function, you would add it as a handler for a custom query in your `amplify/data/resource.ts` file:
+```javascript
+import { sayHelloFunctionHandler } from '../functions/say-hello/resource';
+
+const schema = a.schema({
+  sayHello: a
+   .query()
+   .arguments({
+      name: a.string(),
+    })
+   .returns(a.string())
+   .handler(a.handler.function(sayHelloFunctionHandler)),
+});
+```
+
+To configure and consume environment variables and secrets in AWS Amplify Gen 2, you can use the `environment` property of `defineFunction`. Environment variables can be set using this property, and they will be available to the function at runtime. 
+
+However, do not store secret values in environment variables, as they are rendered in plaintext to the build artifacts and may be emitted to CloudFormation stack event messages. Instead, use the `secret` function to reference a secret value that has been defined separately.
+
+To access environment variables within your function handler, you can use the `process.env` global object provided by the Node runtime. Alternatively, you can use the `env` symbol generated by Amplify, which provides typings for all variables that will be available at runtime.
+
+To use the `env` symbol, you need to import it from `$amplify/env/<function-name>`. If you created your project with `create-amplify`, then Amplify has already set up your project to use the `env` symbol. Otherwise, you need to manually configure your project by adding a `paths` compiler option to your `amplify/tsconfig.json` file.
+
+Here is an example of how to define a function with environment variables and secrets:
+
+```javascript
+import { defineFunction, secret } from '@aws-amplify/backend';
+
+export const sayHello = defineFunction({
+  environment: {
+    NAME: "World",
+    API_ENDPOINT: process.env.API_ENDPOINT,
+    API_KEY: secret('MY_API_KEY') 
+  }
+});
+```
+
+And here is an example of how to access environment variables and secrets within your function handler:
+
+```javascript
+import { env } from '$amplify/env/say-hello';
+
+export const handler = async (event) => {
+  const request = new Request(env.API_ENDPOINT, {
+    headers: {
+      Authorization: `Bearer ${env.API_KEY}`
+    }
+  })
+  //...
+  return `Hello, ${env.NAME}!`;
+};
+```
+
+Note that environment variables and secrets configuration in `defineFunction` is not supported for Custom Functions. Also, be aware that generated files are created before deployments when executing `ampx sandbox` or `ampx pipeline-deploy`. If you encounter issues with the generated file, you can visit the troubleshooting guide for `Cannot find module $amplify/env/<function-name>`.
+
+To add a user to a group in AWS Amplify, you can use a Post Authentication trigger, also known as a Cognito post confirmation Lambda trigger. This trigger extends the behavior of your application to perform an action when a user is confirmed, such as adding them to a group.
+
+A user is considered confirmed when they verify their account, typically through email verification. However, this trigger will not be triggered for federated sign-ins, such as social sign-ins.
+
+To get started, you will need to install the AWS SDK v3 package and the `@types/aws-lambda` package. You can install these packages using npm by running the command:
+```bash
+npm add --save-dev @aws-sdk/client-cognito-identity-provider @types/aws-lambda
+```
+Next, create a new directory and a resource file, `amplify/auth/post-confirmation/resource.ts`. Then, define the Function with `defineFunction`:
+```javascript
+// amplify/auth/post-confirmation/resource.ts
+import { defineFunction } from '@aws-amplify/backend';
+
+export const postConfirmation = defineFunction({
+  name: 'post-confirmation',
+  environment: {
+    GROUP_NAME: 'EVERYONE'
+  },
+  resourceGroupName: 'auth'
+});
+```
+After creating the Function definition, you will need to create the `EVERYONE` group, grant access to your auth resource to ensure it can perform the `addUserToGroup` action, and set the Function as the post confirmation trigger:
+```javascript
+// amplify/auth/resource.ts
+import { defineAuth } from "@aws-amplify/backend";
+import { postConfirmation } from "./post-confirmation/resource"
+
+export const auth = defineAuth({
+  loginWith: {
+    email: true,
+  },
+  groups: ["EVERYONE"],
+  triggers: {
+    postConfirmation,
+  },
+  access: (allow) => [
+    allow.resource(postConfirmation).to(["addUserToGroup"]),
+  ],
+})
+```
+Then, create the Function's corresponding handler file, `amplify/auth/post-confirmation/handler.ts`, with the following contents:
+```javascript
+// amplify/auth/post-confirmation/handler.ts
+import type { PostConfirmationTriggerHandler } from 'aws-lambda';
+import {
+  CognitoIdentityProviderClient,
+  AdminAddUserToGroupCommand
+} from '@aws-sdk/client-cognito-identity-provider';
+
+const client = new CognitoIdentityProviderClient();
+
+export const handler = async (event) => {
+  const command = new AdminAddUserToGroupCommand({
+    GroupName: 'EVERYONE',
+    Username: event.userName,
+    UserPoolId: event.userPoolId
+  });
+  const response = await client.send(command);
+  console.log('processed', response.$metadata.requestId);
+  return event;
+};
+```
+After deploying the changes, whenever a user signs up and verifies their account, they will be automatically added to the group named "EVERYONE". 
+
+In a react application this would be used in conjunction with Amplify's Auth library to manage user authentication and group membership. 
+
+To use this in a react application, you would set up your Amplify Auth configuration and then define the Post Confirmation trigger in your Amplify Backend configuration. 
+
+For example, in your react application you might have an Amplify Auth configuration like this:
+```javascript
+import Amplify from 'aws-amplify';
+import awsconfig from './aws-exports';
+
+Amplify.configure(awsconfig);
+```
+And then in your Amplify Backend configuration you would define the Post Confirmation trigger:
+```javascript
+import { defineAuth } from "@aws-amplify/backend";
+import { postConfirmation } from "./post-confirmation/resource"
+
+export const auth = defineAuth({
+  loginWith: {
+    email: true,
+  },
+  groups: ["EVERYONE"],
+  triggers: {
+    postConfirmation,
+  },
+  access: (allow) => [
+    allow.resource(postConfirmation).to(["addUserToGroup"]),
+  ],
+})
+```
+
+You can create a user profile record automatically when a user confirms their account by using an Auth Post Authentication trigger. This trigger is a Lambda function that runs after a user verifies their account, typically by confirming their email address. 
+
+To set this up, you'll need to define a data model for the user's profile and create a Lambda function to handle the post confirmation trigger. 
+
+First, you need to define a data model for the user's profile. This model should include the email address and the profile owner. The profile owner is typically the user's ID. 
+
+Here is an example of how you might define this model in a React application:
+```javascript
+const UserProfileModel = {
+  email: '',
+  profileOwner: '',
+}
+```
+Next, you need to create a Lambda function to handle the post confirmation trigger. This function will create a new user profile record when a user confirms their account. 
+
+In a React application, you might use the AWS Amplify library to interact with your backend APIs. Here is an example of how you might create a post confirmation handler:
+```javascript
+import { Amplify } from 'aws-amplify';
+import { API } from 'aws-amplify';
+
+const postConfirmationHandler = async (event) => {
+  const userProfile = {
+    email: event.request.userAttributes.email,
+    profileOwner: event.request.userAttributes.sub,
+  };
+
+  try {
+    const response = await API.post('user-profile', '/user-profile', {
+      body: userProfile,
+    });
+    return response;
+  } catch (error) {
+    console.error(error);
+  }
+};
+```
+Then you need to set up the Auth Post Authentication trigger to call this Lambda function when a user confirms their account. 
+
+In a React application, you might use the AWS Amplify library to configure your Auth settings. Here is an example of how you might set up the post confirmation trigger:
+```javascript
+import Amplify from 'aws-amplify';
+import Auth from '@aws-amplify/auth';
+
+Amplify.configure({
+  Auth: {
+    mandatorySignIn: true,
+    region: 'your-region',
+    userPoolId: 'your-user-pool-id',
+    userPoolWebClientId: 'your-user-pool-web-client-id',
+    oauth: {
+      domain: 'your-domain',
+      scope: ['email', 'profile'],
+      redirectSignIn: 'http://localhost:3000',
+      redirectSignOut: 'http://localhost:3000',
+      responseType: 'code',
+    },
+    triggers: {
+      postConfirmation: postConfirmationHandler,
+    },
+  },
+});
+```
+After deploying the changes, whenever a user signs up and verifies their account, a profile record is automatically created. 
+
+Note: A user is considered "confirmed" when they verify their account, typically by confirming their email address. The post confirmation handler will not be triggered for federated sign-ins, such as social sign-in.
+
+Secure Remote Password (SRP) is a cryptographic protocol that allows password-based authentication without transmitting the password over the network. Amazon Cognito custom authentication flows use two types of custom authentication, CUSTOM_WITH_SRP and CUSTOM_WITHOUT_SRP. CUSTOM_WITH_SRP incorporates SRP steps for enhanced security, while CUSTOM_WITHOUT_SRP bypasses these steps for a simpler process.
+
+To implement custom authentication flows using AWS Amplify with Lambda triggers, you can use the defineAuth and defineFunction functions to create an authentication experience that uses CUSTOM_WITH_SRP and CUSTOM_WITHOUT_SRP. This is done by leveraging Amazon Cognito's feature to define a custom authentication flow and three triggers: create auth challenge, define auth challenge, and verify auth challenge response.
+
+To get started, install the aws-lambda package, which is used to define the handler type. Then, create the three triggers: create-auth-challenge, define-auth-challenge, and verify-auth-challenge-response.
+
+The create-auth-challenge trigger is responsible for creating the reCAPTCHA challenge after a password is verified. The define-auth-challenge trigger defines the authentication flow, and the verify-auth-challenge-response trigger verifies the challenge response.
+
+For CUSTOM_WITHOUT_SRP, the define-auth-challenge trigger checks if it's the first authentication attempt and starts with the custom challenge. If it's the second attempt and the custom challenge was successful, it issues tokens and completes the authentication.
+
+For CUSTOM_WITH_SRP, the define-auth-challenge trigger starts with SRP_A (Secure Remote Password protocol, step A) on the first attempt. On the second attempt, if SRP_A was successful, it moves to PASSWORD_VERIFIER. On the third attempt, if PASSWORD_VERIFIER was successful, it moves to CUSTOM_CHALLENGE. On the fourth attempt, if CUSTOM_CHALLENGE was successful, it issues tokens and completes the authentication.
+
+The verify-auth-challenge-response trigger verifies the challenge response and always returns true for the purpose of this example.
+
+Finally, import and set the three triggers on your auth resource using the defineAuth function. After deploying the changes, whenever a user attempts to sign in with CUSTOM_WITH_SRP or CUSTOM_WITHOUT_SRP, the Lambda challenges will be triggered.
+
+Here is an example of how you can implement this in React:
+```javascript
+import Amplify from 'aws-amplify';
+import { withAuthenticator } from '@aws-amplify/ui-react';
+
+// Define the auth resource
+const auth = {
+  // Configure your auth resource
+  loginWith: {
+    email: true,
+  },
+  triggers: {
+    createAuthChallenge: (event) => {
+      // Generate a random code for the custom challenge
+      const challengeCode = "123456";
+
+      event.response.challengeMetadata = "TOKEN_CHECK";
+
+      event.response.publicChallengeParameters = {
+        trigger: "true",
+        code: challengeCode,
+      };
+
+      event.response.privateChallengeParameters = { trigger: "true" };
+      event.response.privateChallengeParameters.answer = challengeCode;
+      return event;
+    },
+    defineAuthChallenge: (event) => {
+      // Check if this is the first authentication attempt
+      if (event.request.session.length === 0) {
+        // For the first attempt, we start with the custom challenge
+        event.response.issueTokens = false;
+        event.response.failAuthentication = false;
+        event.response.challengeName = "CUSTOM_CHALLENGE";
+      } else if (
+        event.request.session.length === 1 &&
+        event.request.session[0].challengeName === "CUSTOM_CHALLENGE" &&
+        event.request.session[0].challengeResult === true
+      ) {
+        // If this is the second attempt (session length 1),
+        // it was a CUSTOM_CHALLENGE, and the result was successful
+        event.response.issueTokens = true;
+        event.response.failAuthentication = false;
+      } else {
+        // If we reach here, it means either:
+        // 1. The custom challenge failed
+        // 2. We've gone through more attempts than expected
+        // In either case, we fail the authentication
+        event.response.issueTokens = false;
+        event.response.failAuthentication = true;
+      }
+      return event;
+    },
+    verifyAuthChallengeResponse: (event) => {
+      // Verify the challenge response
+      event.response.answerCorrect = true;
+      return event;
+    },
+  },
+};
+
+// Configure Amplify
+Amplify.configure({
+  Auth: auth,
+});
+
+// Use the withAuthenticator component to wrap your app
+const App = () => {
+  // Your app content
+};
+
+export default withAuthenticator(App);
+```
+
+To customize the message sent to users in AWS Amplify, you can use an Auth custom message authentication trigger. This trigger allows you to send a custom email or phone verification message, or a multi-factor authentication (MFA) code.
+
+To get started, you need to create a new directory and a resource file, then define the function using `defineFunction`. 
+
+```typescript
+import { defineFunction } from '@aws-amplify/backend';
+
+export const customMessage = defineFunction({
+  name: "custom-message",
+  resourceGroupName: 'auth'
+});
+```
+
+Next, create the corresponding handler file with the following contents:
+
+```typescript
+import type { CustomMessageTriggerHandler } from "aws-lambda";
+
+export const handler: CustomMessageTriggerHandler = async (event) => {
+  if (event.triggerSource === "CustomMessage_ForgotPassword") {
+    const locale = event.request.userAttributes["locale"];
+    if (locale === "en") {
+      event.response.emailMessage = `Your new one-time code is ${event.request.codeParameter}`;
+      event.response.emailSubject = "Reset my password";
+    } else if (locale === "es") {
+      event.response.emailMessage = `Tu nuevo código de un solo uso es ${event.request.codeParameter}`;
+      event.response.emailSubject = "Restablecer mi contraseña";
+    }
+  }
+
+  return event;
+};
+```
+
+Lastly, set the newly created function resource on your auth resource:
+
+```typescript
+import { defineAuth } from '@aws-amplify/backend';
+import { customMessage } from "./custom-message/resource";
+
+export const auth = defineAuth({
+  triggers: {
+    customMessage,
+  }
+});
+```
+
+In a React application, you would use this custom message trigger in the same way, by defining the function and handler, and then setting the trigger on your auth resource. After deploying the changes, whenever a user attempts to reset a password, they will receive an email with a one-time code in the language specified by their `locale` attribute.
+
+To integrate AWS Lambda with Amazon DynamoDB Streams, you can trigger a Lambda function in response to real-time events, enabling you to build responsive, event-driven applications. This feature allows you to react to changes in data or system state without the need for polling services.
+
+In this example, we will configure a Lambda function with an Amazon DynamoDB stream as an event source, using a `Todo` table created by a data model on the GraphQL API. 
+
+First, install the required packages, including the AWS Lambda Powertools Logger for structured logging capabilities and the `aws-lambda` package to define the handler type, by running `npm add --save-dev @aws-lambda-powertools/logger @types/aws-lambda` in your terminal.
+
+Next, create a new directory and a resource file, and define the Lambda function using `defineFunction`. 
+
+Then, create a corresponding handler file and define the function handler, which will be triggered whenever an item is added, updated, or deleted from the table. The handler function will process the event records and log information about the event.
+
+Lastly, create a DynamoDB table as an event source in the `amplify/backend` file and attach the necessary policy to the Lambda function's role.
+
+Here's how you could write the handler function in React, although note that the handler function itself is typically written in a serverless environment and not directly in a React application:
+
+```javascript
+import { DynamoDBStreamHandler } from "aws-lambda";
+import { Logger } from "@aws-lambda-powertools/logger";
+
+const logger = new Logger({
+  logLevel: "INFO",
+  serviceName: "dynamodb-stream-handler",
+});
+
+export const handler: DynamoDBStreamHandler = async (event) => {
+  for (const record of event.Records) {
+    logger.info(`Processing record: ${record.eventID}`);
+    logger.info(`Event Type: ${record.eventName}`);
+
+    if (record.eventName === "INSERT") {
+      // business logic to process new records
+      logger.info(`New Image: ${JSON.stringify(record.dynamodb?.NewImage)}`);
+    }
+  }
+  logger.info(`Successfully processed ${event.Records.length} records.`);
+
+  return {
+    batchItemFailures: [],
+  };
+};
+```
+
+In a React application, you would typically interact with the Lambda function through an API Gateway or other serverless API. However, the actual handling of the DynamoDB stream event would occur in the Lambda function, not in the React application itself.
+
+You can use defineAuth and defineFunction to create a Cognito pre sign-up Lambda trigger that performs filtering based on the user's email address. This can allow or deny user signups based on their email address.
+
+To get started, you need to install the aws-lambda package. 
+
+Next, create a new directory and a resource file, then define the Function with defineFunction. For example, you can define the Function like this:
+```javascript
+const preSignUp = defineFunction({
+  name: 'pre-sign-up',
+  environment: {
+    ALLOW_DOMAIN: 'amazon.com'
+  }
+});
+```
+
+Then, create the corresponding handler file with the following contents:
+```javascript
+const handler = async (event) => {
+  const email = event.request.userAttributes['email'];
+
+  if (!email.endsWith(process.env.ALLOW_DOMAIN)) {
+    throw new Error('Invalid email domain');
+  }
+
+  return event;
+};
+```
+
+Lastly, set the newly created Function resource on your auth resource. For example:
+```javascript
+const auth = defineAuth({
+  triggers: {
+    preSignUp
+  }
+});
+```
+
+After deploying the changes, whenever a user attempts to sign up without an amazon.com email address they will receive an error.
+
+To protect against spam, you can use Google reCAPTCHA in your AWS Amplify Gen 2 application. This involves creating an authentication flow that includes a custom challenge. 
+
+You will need to set up three triggers: 
+1. Create auth challenge: This trigger creates the reCAPTCHA challenge after a password is verified.
+2. Define auth challenge: This trigger defines the authentication flow, which includes the custom challenge.
+3. Verify auth challenge response: This trigger verifies the reCAPTCHA token.
+
+To set up the create auth challenge trigger, create a function that sends a request to Amazon Cognito to create the challenge. The function will include a condition to check if the session has two steps (SRP and password verification) and if the challenge name is CUSTOM_CHALLENGE. If the condition is met, the function will set the public challenge parameters, private challenge parameters, and optionally, the challenge metadata.
+
+```javascript
+// Create auth challenge trigger
+export const createAuthChallenge = async (event) => {
+  const { request, response } = event;
+
+  if (
+    request.session.length === 2 &&
+    request.challengeName === "CUSTOM_CHALLENGE"
+  ) {
+    response.publicChallengeParameters = { trigger: "true" };
+    response.privateChallengeParameters = { answer: "" };
+    // optionally set challenge metadata
+    response.challengeMetadata = "CAPTCHA_CHALLENGE";
+  }
+
+  return event;
+};
+```
+
+To set up the define auth challenge trigger, create a function that defines the authentication flow. The function will check the session and challenge name, and update the response accordingly.
+
+```javascript
+// Define auth challenge trigger
+export const defineAuthChallenge = async (event) => {
+  const { response } = event;
+  const [srp, password, captcha] = event.request.session;
+
+  // deny by default
+  response.issueTokens = false;
+  response.failAuthentication = true;
+
+  if (srp?.challengeName === "SRP_A") {
+    response.failAuthentication = false;
+    response.challengeName = "PASSWORD_VERIFIER";
+  }
+
+  if (
+    password?.challengeName === "PASSWORD_VERIFIER" &&
+    password.challengeResult === true
+  ) {
+    response.failAuthentication = false;
+    response.challengeName = "CUSTOM_CHALLENGE";
+  }
+
+  if (
+    captcha?.challengeName === "CUSTOM_CHALLENGE" &&
+    // check for the challenge metadata set in "create-auth-challenge"
+    captcha?.challengeMetadata === "CAPTCHA_CHALLENGE" &&
+    captcha.challengeResult === true
+  ) {
+    response.issueTokens = true;
+    response.failAuthentication = false;
+  }
+
+  return event;
+};
+```
+
+To set up the verify auth challenge response trigger, create a function that verifies the reCAPTCHA token. You will need to register your application and retrieve a reCAPTCHA secret key. Then, create a function that sends a request to Google reCAPTCHA to verify the token.
+
+```javascript
+// Verify auth challenge response trigger
+export const verifyAuthChallengeResponse = async (event) => {
+  if (!event.request.challengeAnswer) {
+    throw new Error("Missing challenge answer");
+  }
+
+  // https://developers.google.com/recaptcha/docs/verify#api_request
+  const url = new URL("https://www.google.com/recaptcha/api/siteverify");
+  const params = new URLSearchParams({
+    secret: process.env.GOOGLE_RECAPTCHA_SECRET_KEY,
+    response: event.request.challengeAnswer,
+  });
+  url.search = params.toString();
+
+  const request = new Request(url, {
+    method: "POST",
+  });
+
+  const response = await fetch(request);
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error("Verification failed", { cause: result["error-codes"] });
+  }
+
+  // indicate whether the answer is correct
+  event.response.answerCorrect = result.success;
+
+  return event;
+};
+```
+
+Finally, you will need to configure your auth resource to include the three triggers.
+
+```javascript
+// Configure auth resource
+import { createAuthChallenge } from "./create-auth-challenge/resource";
+import { defineAuthChallenge } from "./define-auth-challenge/resource";
+import { verifyAuthChallengeResponse } from "./verify-auth-challenge-response/resource";
+
+export const auth = {
+  loginWith: {
+    email: true,
+  },
+  triggers: {
+    createAuthChallenge,
+    defineAuthChallenge,
+    verifyAuthChallengeResponse,
+  },
+};
+```
+
+To use the reCAPTCHA in your React application, you can use the `useGoogleReCaptcha` hook to get the reCAPTCHA token.
+
+```javascript
+import React, { useState, useEffect } from "react";
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
+
+function Example() {
+  const [token, setToken] = useState(null);
+  const { executeRecaptcha } = useGoogleReCaptcha();
+
+  useEffect(() => {
+    if (executeRecaptcha) {
+      executeRecaptcha("your_action").then((token) => setToken(token));
+    }
+  }, [executeRecaptcha]);
+
+  return (
+    <div>
+      <p>reCAPTCHA token: {token}</p>
+    </div>
+  );
+}
+
+export default Example;
+```
+
+This page is for formatting only
+
+With AWS Lambda, you can integrate various event sources, such as Amazon Kinesis, Amazon SQS, and others, to trigger Lambda functions in response to real-time events. This feature enables you to build responsive, event-driven applications that react to changes in data or system state without the need for polling services.
+
+To configure a Lambda function with a Kinesis data stream as an event source, you need to follow these steps. 
+
+First, install the AWS Lambda Powertools Logger and the `aws-lambda` package. 
+
+```bash
+npm add @aws-lambda-powertools/logger @types/aws-lambda
+```
+
+Next, create a new directory and a resource file for your Lambda function, and define the function using the AWS Amplify `defineFunction` method.
+
+In a React application, you would define the function in a separate file, for example `amplify/functions/kinesis-function/resource.js`.
+
+```javascript
+import { defineFunction } from "@aws-amplify/backend";
+
+export const myKinesisFunction = defineFunction({
+  name: "kinesis-function",
+});
+```
+
+Then, create the corresponding handler file for your Lambda function, and import the necessary types and handlers from `aws-lambda`. 
+
+In a React application, you would define the handler in a separate file, for example `amplify/functions/kinesis-function/handler.js`.
+
+```javascript
+import type {
+  KinesisStreamBatchResponse,
+  KinesisStreamHandler,
+  KinesisStreamRecordPayload,
+} from "aws-lambda";
+import { Buffer } from "buffer";
+import { Logger } from "@aws-lambda-powertools/logger";
+
+const logger = new Logger({
+  logLevel: "INFO",
+  serviceName: "kinesis-stream-handler",
+});
+
+export const handler = async (event, context) => {
+  for (const record of event.Records) {
+    try {
+      logger.info(`Processed Kinesis Event - EventID: ${record.eventID}`);
+      const recordData = await getRecordDataAsync(record.kinesis);
+      logger.info(`Record Data: ${recordData}`);
+    } catch (err) {
+      logger.error(`An error occurred ${err}`);
+      return {
+        batchItemFailures: [{ itemIdentifier: record.kinesis.sequenceNumber }],
+      };
+    }
+  }
+  logger.info(`Successfully processed ${event.Records.length} records.`);
+  return { batchItemFailures: [] };
+};
+
+async function getRecordDataAsync(payload) {
+  const data = Buffer.from(payload.data, "base64").toString("utf-8");
+  return data;
+}
+```
+
+Finally, create the Kinesis stream and add it as an event source in your backend configuration file, for example `amplify/backend.js`.
+
+```javascript
+import { defineBackend } from "@aws-amplify/backend";
+import { Stream } from "aws-cdk-lib/aws-kinesis";
+import { StartingPosition } from "aws-cdk-lib/aws-lambda";
+import { KinesisEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
+import { auth } from "./auth/resource";
+import { data } from "./data/resource";
+import { myKinesisFunction } from "./functions/kinesis-function/resource";
+
+const backend = defineBackend({
+  auth,
+  data,
+  myKinesisFunction,
+});
+
+const kinesisStack = backend.createStack("kinesis-stack");
+
+const kinesisStream = new Stream(kinesisStack, "KinesisStream", {
+  streamName: "myKinesisStream",
+  shardCount: 1,
+});
+
+const eventSource = new KinesisEventSource(kinesisStream, {
+  startingPosition: StartingPosition.LATEST,
+  reportBatchItemFailures: true,
+});
+
+backend.myKinesisFunction.resources.lambda.addEventSource(eventSource);
+```
+
+For examples on streaming analytics data to the Kinesis stream from your frontend, see the relevant documentation.
+
+To override ID token claims in AWS Amplify, you can use the `defineAuth` and `defineFunction` features to create an Amazon Cognito Pre token generation AWS Lambda trigger. This trigger allows you to add new claims or modify the user's group membership in the ID token.
+
+To get started, you need to create a new Lambda function. First, install the required package. 
+
+Then, create a new directory and file to define the function. 
+
+In this file, you define the function with a name and resource group name. 
+
+Next, create a corresponding handler file with the function that will handle the pre-token generation event. This event is where you can add new claims or modify the user's group membership. 
+
+The handler function takes an event object as input and returns the modified event object. In this function, you can override the claims by specifying the claims to add or override. 
+
+You can also override the user's group membership by specifying the groups to override. 
+
+Finally, you need to set the newly created function resource on your auth resource. 
+
+After deploying the changes, the ID token of the user will be modified according to the trigger. You can verify this by checking the ID token, which should now contain the new claims and group membership. 
+
+For example, you can add a new claim called "amplfy_attribute" to the ID token, and also add the user to a Cognito group called "amplify_group_1". 
+
+To achieve this in React, you can define the function and handler in a JavaScript file, like this:
+```javascript
+import { defineFunction } from '@aws-amplify/backend';
+
+const preTokenGeneration = defineFunction({
+  name: 'pre-token-generation',
+  resourceGroupName: 'auth'
+});
+
+export const handler = async (event) => {
+  event.response = {
+    claimsOverrideDetails: {
+      groupOverrideDetails: {
+        groupsToOverride: ["amplify_group_1"],
+      },
+      claimsToAddOrOverride: {
+        amplfy_attribute: "amplify_gen_2",
+      },
+    },
+  };
+  return event;
+};
+```
+
+And then set the newly created function resource on your auth resource:
+```javascript
+import { defineAuth } from '@aws-amplify/backend';
+import { preTokenGeneration } from './pre-token-generation/resource';
+
+const auth = defineAuth({
+  loginWith: {
+    email: true,
+  },
+  triggers: {
+    preTokenGeneration
+  }
+});
+```
+
+To confirm uploading files in AWS Amplify Gen 2, you can use a trigger. This is done by defining a storage function with an onUpload trigger. 
+
+First, you need to install the @types/aws-lambda package, which can be done by running the command `npm add --save @types/aws-lambda` in your terminal.
+
+Next, you need to update your storage definition to include the onUpload trigger. This can be done by defining a storage function like so:
+```javascript
+import { defineFunction, defineStorage } from "@aws-amplify/backend";
+
+export const storage = defineStorage({
+  name: 'myProjectFiles',
+  triggers: {
+    onUpload: defineFunction({
+      entry: './on-upload-handler.ts'
+      resourceGroupName: 'storage',
+    })
+  }
+});
+```
+
+Then, create a file named on-upload-handler.ts and add the following code to log the object keys whenever an object is uploaded to the bucket. You can also add your custom logic to this function as needed.
+```javascript
+import type { S3Handler } from 'aws-lambda';
+
+export const handler = async (event) => {
+  const objectKeys = event.Records.map((record) => record.s3.object.key);
+  console.log(`Upload handler invoked for objects [${objectKeys.join(', ')}]`);
+};
+```
+
+When you deploy your backend, this function will be invoked whenever an object is uploaded to the bucket, allowing you to confirm the upload and add any custom logic as needed.
+
+To validate user attributes with an Auth trigger in AWS Amplify Gen 2, you can create a Cognito pre sign-up Lambda trigger. This trigger extends the sign-up behavior to validate attribute values. 
+
+To get started, create a new function that will act as the pre sign-up trigger. In a React application, you can define this function using `defineFunction` from `@aws-amplify/backend`. 
+
+For example, you can create a file called `preSignUp.js` with the following contents:
+```javascript
+import { defineFunction } from '@aws-amplify/backend';
+
+export const preSignUp = defineFunction({
+  name: "pre-sign-up",
+  resourceGroupName: 'auth'
+});
+```
+
+Next, create a corresponding handler file called `handler.js` with the following contents:
+```javascript
+function isOlderThan(date, age) {
+  const comparison = new Date()
+  comparison.setFullYear(comparison.getFullYear() - age)
+  return date.getTime() > comparison.getTime()
+}
+
+export const handler = async (event) => {
+  const birthdate = new Date(event.request.userAttributes["birthdate"])
+
+  // you must be 13 years or older
+  if (!isOlderThan(birthdate, 13)) {
+    throw new Error("You must be 13 years or older to use this site")
+  }
+
+  return event
+}
+```
+
+Lastly, set the newly created function resource on your auth resource. In a React application, you can do this by importing `defineAuth` from `@aws-amplify/backend` and setting the `triggers` property. For example:
+```javascript
+import { defineAuth } from '@aws-amplify/backend';
+import { preSignUp } from './preSignUp';
+
+export const auth = defineAuth({
+  //...
+  triggers: {
+    preSignUp
+  }
+});
+```
+
+After deploying the changes, whenever a user attempts to sign up, this handler will verify that the submitter's age is above 13 years.
+
+To grant Amplify Functions access to other resources, you must give them permission to do so. There are two ways to grant this access: 
+
+1. Using the `access` property: This property is found in each of the `define*` functions for defining Amplify resources. It allows you to specify the necessary actions using common language. When you grant a function access to another resource in your Amplify backend, it will configure environment variables for that function to make SDK calls to the AWS services it has access to. These environment variables are typed and available as part of the `env` object.
+
+For example, if you have a function that generates reports each month from your Data resource and needs to store the generated reports in Storage, you can use the `access` property as follows: 
+
+```javascript
+const storage = {
+  name: 'myReports',
+  access: (allow) => ({
+    'reports/*': [
+      allow.resource(generateMonthlyReports).to(['read', 'write', 'delete'])
+    ]
+  })
+};
+```
+
+This will add the environment variable `myReports_BUCKET_NAME` to the function. You can then use this environment variable to upload content to S3.
+
+```javascript
+const s3Client = new S3Client();
+const command = new PutObjectCommand({
+  Bucket: env.MY_REPORTS_BUCKET_NAME,
+  Key: `reports/${new Date().toISOString()}.csv`,
+  Body: new Blob([''], { type: 'text/csv;charset=utf-8;' })
+});
+await s3Client.send(command);
+```
+
+2. Using the AWS Cloud Development Kit (CDK): When permissions are needed to access resources beyond the capabilities of the `access` property, you must use CDK. Functions are created with an execution role, which is an IAM role that contains policies that dictate what resources your Function can interact with when it executes. This role can be extended using the `addToRolePolicy()` method.
+
+For example, to grant a function access to an SNS topic, you can add a policy statement to the function's role.
+
+```javascript
+const statement = new iam.PolicyStatement({
+  sid: "AllowPublishToDigest",
+  actions: ["sns:Publish"],
+  resources: [topic.topicArn],
+});
+weeklyDigestLambda.addToRolePolicy(statement);
+```
+
+Alternatively, some constructs provide a `grant*` method to grant access to common policy actions. For example, you can use the `grantPublish` method to grant a function access to an SNS topic.
+
+```javascript
+topic.grantPublish(weeklyDigestLambda);
+```
+
+To modify the underlying resources of an Amplify-generated Lambda function, you can use the AWS Cloud Development Kit (CDK). Amplify Functions use the NodejsFunction construct from CDK, which allows you to modify, override, or extend the resources after setting them on your backend.
+
+In your backend configuration, you can access the CDK constructs for a function and modify its resources. For example, if you have a function named `myFunction`, you can access its resources like this:
+```
+const backend = defineBackend({
+  myFunction
+})
+
+// Access the Lambda function resources
+const lambdaFunction = backend.myFunction.resources.lambda
+```
+The `lambda` property is an instance of `IFunction`, which represents a Lambda function.
+
+You can also add IAM policies to a function's execution role using CDK. To learn how to do this, you can visit the documentation for granting access to other resources. 
+
+Note: This page is referring to react as one of the platforms that can utilize this feature, but since the content is primarily focused on backend configuration with AWS CDK, the information can be applied to a react application by following the provided guidance on using CDK to modify the underlying resources of an Amplify-generated Lambda function. 
+
+Lambda Layers are mentioned but not explained in this context. If information about Lambda Layers is needed, it would be in a different section of the documentation.
+
+Amplify offers the ability to schedule functions to run at specific intervals using natural language or cron expressions. To get started, you need to specify the schedule property in defineFunction.
+
+Note that configuring the schedule in defineFunction is not supported for Custom Functions.
+
+Function schedules are powered by Amazon EventBridge rules and can be used to address various use cases such as generating reports or sending notifications.
+
+You can define a schedule using natural language, such as "every week", or using cron expressions like "0 9? * 3 *". The schedule can be a single interval or multiple intervals.
+
+Here's how you can define a function with a schedule in React:
+```javascript
+import { defineFunction } from "@aws-amplify/backend";
+
+export const weeklyDigest = defineFunction({
+  name: "weekly-digest",
+  schedule: "every week",
+});
+```
+You can also use cron expressions to define a schedule:
+```javascript
+import { defineFunction } from "@aws-amplify/backend";
+
+export const remindMe = defineFunction({
+  name: "remind-me-to-take-the-trash-out",
+  schedule: [
+    // every tuesday at 9am
+    "0 9? * 3 *",
+    // every friday at 9am
+    "0 9? * 6 *",
+  ]
+})
+```
+Additionally, you can use shorthand syntax to define schedules using minutes or hours:
+```javascript
+import { defineFunction } from "@aws-amplify/backend";
+
+export const drinkSomeWater = defineFunction({
+  name: "drink-some-water",
+  schedule: "every 1h"
+})
+```
+The schedule can also be combined to create complex schedules:
+```javascript
+import { defineFunction } from "@aws-amplify/backend";
+
+export const remindMe = defineFunction({
+  name: "remind-me",
+  schedule: [
+    // every sunday at midnight
+    "every week",
+    // every tuesday at 5pm
+    "0 17? * 3 *",
+    // every wednesday at 5pm
+    "0 17? * 4 *",
+    // every thursday at 5pm
+    "0 17? * 5 *",
+    // every friday at 5pm
+    "0 17? * 6 *",
+  ]
+})
+```
+You can use natural language expressions to define schedules using terms like "day", "week", "month", "year", "m" for minutes, and "h" for hours. Natural language expressions are prefixed with "every". For example:
+```javascript
+import { defineFunction } from "@aws-amplify/backend";
+
+export const drinkSomeWater = defineFunction({
+  name: "drink-some-water",
+  schedule: "every 1h"
+})
+```
+
+To set up a function in AWS Amplify, you will be using AWS Lambda functions to perform tasks and customize workflows. Functions can respond to events from other resources, execute some logic in-between events, or act as standalone jobs. They are used in various settings, including authentication flow customizations, resolvers for GraphQL APIs, handlers for individual REST API routes, and scheduled jobs.
+
+To get started, you need to create a new directory and a resource file. Then, define the function using `defineFunction`. 
+
+```javascript
+// amplify/functions/say-hello/resource.js
+import { defineFunction } from '@aws-amplify/backend';
+
+export const sayHello = defineFunction({
+  name: 'say-hello',
+  entry: './handler.js'
+});
+```
+
+Next, create the corresponding handler file. This is where your function code will go.
+
+```javascript
+// amplify/functions/say-hello/handler.js
+export const handler = async (event, context) => {
+  // your function code goes here
+  return 'Hello, World!';
+};
+```
+
+The handler file must export a function named "handler". This is the entry point to your function.
+
+Lastly, this function needs to be added to your backend.
+
+```javascript
+// amplify/backend.js
+import { defineBackend } from '@aws-amplify/backend';
+import { sayHello } from './functions/say-hello/resource';
+
+defineBackend({
+  sayHello
+});
+```
+
+Now when you run `npx ampx sandbox` or deploy your app on Amplify, it will include your function.
+
+To invoke your function, you can add your function as a handler for a custom query with your Amplify Data resource. This will enable you to strongly type function arguments and the return statement, and use this to author your function's business logic.
+
+```javascript
+// amplify/data/resource.js
+import { defineData } from '@aws-amplify/backend';
+import { sayHello } from '../functions/say-hello/resource';
+
+const schema = {
+  sayHello: {
+    type: 'query',
+    args: {
+      name: 'string'
+    },
+    returns: 'string',
+    handler: sayHello
+  }
+};
+
+export const data = defineData({
+  schema,
+  authorizationModes: {
+    defaultAuthorizationMode: "iam"
+  }
+});
+```
+
+Now you can use this query from the schema export to strongly type your function handler.
+
+```javascript
+// amplify/functions/say-hello/handler.js
+import { schema } from '../../data/resource';
+
+export const handler = async (event) => {
+  const { name } = event.arguments;
+  return `Hello, ${name}!`;
+};
+```
+
+Finally, use the data client to invoke your function by calling its associated query.
+
+```javascript
+// src/App.js
+import { DataStore } from 'aws-amplify';
+import { sayHello } from './amplify/data/resource';
+
+DataStore.query(sayHello, { name: "Amplify" })
+ .then((data) => console.log(data))
+ .catch((error) => console.error(error));
+```
+
+You can also explore additional features, such as environment variables and secrets, granting access to other resources, example use cases, and modifying underlying resources with CDK.
+
+AWS Amplify allows you to stream logs from your function directly to your terminal while running the `ampx sandbox` command. To do this, you need to specify the `--stream-function-logs` option when starting the sandbox. 
+
+This feature is only available for Sandbox environments. It enables faster debug iterations and provides greater insight into your functions' executions.
+
+You can filter the logs by specifying a filter by function name or a regular expression for function names using the `--logs-filter` option. For example, if you have a collection of Auth triggers where the function names include "auth", you can filter the logs by running the command with the `--logs-filter auth` option.
+
+After deploying your personal cloud sandbox, starting your frontend application, and signing up for the first time, you will see logs from your triggers' executions printed to the terminal where the sandbox is running.
+
+You can also write the logs to a file instead of printing them to the terminal by specifying the `--logs-out-file` option. This can be combined with the `--logs-filter` option to create a log file of just your Auth-related functions. However, you cannot write logs to multiple files at the same time.
+
+To stream logs, run the following command in your terminal:
+```
+npx ampx sandbox --stream-function-logs
+```
+To filter logs by function name, run:
+```
+npx ampx sandbox --stream-function-logs --logs-filter auth
+```
+To write logs to a file, run:
+```
+npx ampx sandbox --stream-function-logs --logs-out-file sandbox.log
+```
+To filter logs by function name and write to a file, run:
+```
+npx ampx sandbox --stream-function-logs --logs-filter auth --logs-out-file sandbox-auth.log
+```

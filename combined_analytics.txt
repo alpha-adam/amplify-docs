@@ -1,0 +1,582 @@
+When a user uninstalls an application that uses AWS Amplify, some data may persist on the device. This is because certain Amplify categories, such as Analytics and Auth, store data locally on the device.
+
+For Android devices, if the Android Auto Backup for Apps service is enabled, it may attempt to restore application data when the app is reinstalled. However, Amplify Auth uses EncryptedSharedPreferences to store auth data, which is encrypted using keys stored in the Android Keystore. When an app is uninstalled, these keys are deleted, making it impossible to restore the auth data when the app is reinstalled. As a result, users will have to re-authenticate after reinstalling the app.
+
+For iOS devices, Amplify stores auth information in the local system keychain, but it does not guarantee that this data will be removed when an app is uninstalled. Instead, app developers should decide when to clear this auth information by signing out. One way to do this is to use the UserDefaults API to detect whether the app is launching for the first time, and if so, invoke the Auth.signOut() method. 
+
+For example, in React, you could use the following code to detect whether the app is launching for the first time and sign out if necessary:
+```
+import { Auth } from 'aws-amplify';
+
+useEffect(() => {
+  const isFirstLaunch = localStorage.getItem('isFirstLaunch');
+  if (!isFirstLaunch) {
+    Auth.signOut();
+    localStorage.setItem('isFirstLaunch', 'true');
+  }
+}, []);
+```
+This code checks whether the 'isFirstLaunch' key exists in local storage, and if not, signs out the user and sets the key to 'true'. This ensures that the user is signed out when the app is launched for the first time after installation.
+
+Analytics auto tracking helps you to automatically track user behaviors like sessions' start/stop, page view change and web events like clicking or mouseover.
+
+Session Tracking is available in both web and React Native apps using Analytics. A web session is active when the page is not hidden and inactive when the page is hidden. In a React Native app, a session is active when the app is in the foreground and inactive when the app is in the background.
+
+To track sessions in a React app, you can use the `configureAutoTrack` function from `aws-amplify/analytics`. This function takes an options object with the following properties: 
+- `enable`: a boolean to turn on or off the auto tracking
+- `type`: the event type, which can be 'event', 'pageView', or 'session'
+- `options`: additional options for the tracked event, including attributes and other settings
+
+For example, to track sessions in a React app, you can use the following code:
+```javascript
+import { configureAutoTrack } from 'aws-amplify/analytics';
+
+configureAutoTrack({
+  enable: true,
+  type: 'session',
+  options: {
+    attributes: {
+      customizableField: 'attr'
+    }
+  }
+});
+```
+
+By default, when the page or app transitions to the foreground, the Analytics module will send an event to the Amazon Pinpoint Service. This behavior can be disabled by calling `configureAutoTrack` with `enable` set to `false`.
+
+Page View Tracking is used to track the most frequently viewed pages or URLs in your web app. It automatically sends events containing URL information when a page is visited. This can be enabled or disabled using the `configureAutoTrack` function with `type` set to 'pageView'.
+
+For example:
+```javascript
+import { configureAutoTrack } from 'aws-amplify/analytics';
+
+configureAutoTrack({
+  enable: true,
+  type: 'pageView',
+  options: {
+    attributes: {
+      customizableField: 'attr'
+    },
+    eventName: 'pageView',
+    appType: 'singlePageApp',
+    urlProvider: () => {
+      return window.location.origin + window.location.pathname;
+    }
+  }
+});
+```
+
+Page Event Tracking is used to track user interactions with specific elements on a page. This can be enabled or disabled using the `configureAutoTrack` function with `type` set to 'event'.
+
+For example:
+```javascript
+import { configureAutoTrack } from 'aws-amplify/analytics';
+
+configureAutoTrack({
+  enable: true,
+  type: 'event',
+  options: {
+    attributes: {
+      customizableField: 'attr'
+    },
+    events: ['click'],
+    selectorPrefix: 'data-amplify-analytics-'
+  }
+});
+```
+
+You can then add attributes to your HTML elements using the `data-amplify-analytics-` prefix. For example:
+```html
+<button
+  data-amplify-analytics-on="click"
+  data-amplify-analytics-name="click"
+  data-amplify-analytics-attrs="attr1:attr1_value,attr2:attr2_value"
+/>
+```
+
+Note that Amplify does not capture location automatically. Instead, you can add location information in the default config when you configure Analytics or while updating the endpoint.
+
+When submitting an app to the App Store, Apple requires developers to provide a data usage policy. The Amplify Library gathers API usage metrics from AWS services accessed, which involves adding a user agent to the request made to the AWS service. This user-agent header includes information about the Amplify Library version, operating system name, and version. AWS collects this data to generate metrics related to library usage, but it is not linked to the user's identity and not used for tracking purposes.
+
+The Amplify Library collects various types of data, including name, email address, phone number, photos or videos, audio data, user ID, device ID, OS version, OS name, locale info, app version, and other device information. The purpose of collecting this data is for app functionality, analytics, or authentication. Some of this data is linked to the user's identity, but it is not used for tracking purposes.
+
+Some Amplify categories, such as Analytics and Auth, persist data to the local device. When a user uninstalls the app from the device, some of this data is automatically removed. However, Auth information is stored in the local system keychain, which does not guarantee that the data will be removed when the app is uninstalled.
+
+To clear Auth information, app developers should decide when to clear the data by signing out. One strategy for accomplishing this is to use a mechanism to detect whether the app is launching for the first time and invoke a sign-out function if the app has not been launched before. In a React app, this could be achieved by using a state management system or a local storage solution to store a flag indicating whether the app has been launched before, and then calling the `Auth.signOut()` function if the flag is not set.
+
+For example, in a React app, you could use the `useState` hook to store a flag indicating whether the app has been launched before, and then call the `Auth.signOut()` function if the flag is not set:
+```javascript
+import { useState, useEffect } from 'react';
+import { Auth } from 'aws-amplify';
+
+function App() {
+  const [hasLaunchedBefore, setHasLaunchedBefore] = useState(false);
+
+  useEffect(() => {
+    const hasLaunchedBeforeFlag = localStorage.getItem('hasLaunchedBefore');
+    if (!hasLaunchedBeforeFlag) {
+      Auth.signOut();
+    }
+    setHasLaunchedBefore(true);
+    localStorage.setItem('hasLaunchedBefore', 'true');
+  }, []);
+
+  return <div>App content</div>;
+}
+```
+
+To disable analytics in your app, you can use the disable function. By default, analytics are enabled when you configure it in your app. 
+
+To disable analytics in a React app, you can use the following code:
+```javascript
+import { disable } from 'aws-amplify/analytics';
+
+disable();
+```
+
+To enable analytics, you can use the enable function in your app. 
+
+To enable analytics in a React app, you can use the following code:
+```javascript
+import { enable } from 'aws-amplify/analytics';
+
+enable();
+```
+
+To use existing Amazon Pinpoint resources with your Amplify backend or frontend application, you need to surface the backend resource outputs to the `amplify_outputs.json` file. You can do this by using the `addOutput` method.
+
+For example, in your `amplify/backend.ts` file, you would add the following code:
+```javascript
+import { defineBackend } from "@aws-amplify/backend"
+
+const backend = defineBackend({})
+
+backend.addOutput({
+  analytics: {
+    amazon_pinpoint: {
+      aws_region: "your-aws-region",
+      app_id: "your-pinpoint-app-id",
+    },
+  },
+})
+```
+Alternatively, you can configure the client library directly using `Amplify.configure()`. This manual setup enables you to use your existing Amazon Pinpoint resource in your app.
+
+For example, in your React application, you would add the following code:
+```javascript
+import { Amplify } from 'aws-amplify';
+
+Amplify.configure({
+  Analytics: {
+    Pinpoint: {
+      appId: 'your-pinpoint-app-id',
+      region: 'your-aws-region',
+      bufferSize: 1000,
+      flushSize: 100,
+      flushInterval: 5000,
+      resendLimit: 5
+    }
+  }
+});
+```
+Note that you need to replace `your-aws-region` and `your-pinpoint-app-id` with your actual AWS region and Pinpoint app ID.
+
+Additionally, Amazon Pinpoint requires an AWS Identity and Access Management (IAM) policy to use the `record` and `identifyUser` APIs. You need to update your IAM policy to include the following:
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["mobiletargeting:UpdateEndpoint", "mobiletargeting:PutEvents"],
+      "Resource": ["arn:aws:mobiletargeting:*:your-account-id:apps/your-pinpoint-app-id*"]
+    }
+  ]
+}
+```
+Make sure to replace `your-account-id` and `your-pinpoint-app-id` with your actual AWS account ID and Pinpoint app ID.
+
+This call sends information that you have specified about the user to Amazon Pinpoint. This could be for an unauthenticated or an authenticated user. 
+
+In addition, customProperties and userAttributes can also be provided when invoking identifyUser. The Amazon Pinpoint console makes that data available as part of the criteria for segment creation. Attributes passed in via customProperties will appear under Custom Endpoint Attributes, while userAttributes will appear under Custom User Attributes.
+
+You can get the current user's ID from the Amplify Auth category. Be sure you have it added and setup per the Auth category documentation.
+
+If you have asked for location access and received permission, you can also provide that in UserProfile.Location.
+
+To identify a user in React, you can use the following code:
+```javascript
+import { identifyUser } from 'aws-amplify/analytics';
+import { getCurrentUser } from 'aws-amplify/auth';
+
+const location = {
+  latitude: 47.606209,
+  longitude: -122.332069,
+  postalCode: '98122',
+  city: 'Seattle',
+  region: 'WA',
+  country: 'USA'
+};
+
+const customProperties = {
+  plan: ['plan'],
+  phoneNumber: ['+11234567890'],
+  age: ['25']
+};
+
+const userProfile = {
+  location,
+  name: 'username',
+  email: 'name@example.com',
+  customProperties
+};
+
+async function sendUserData() {
+  const user = await getCurrentUser();
+
+  identifyUser({
+    userId: user.userId,
+    userProfile
+  });
+}
+```
+Sending user information allows you to associate a user to their user profile and activities or actions in your app. The user's actions and attributes can also be tracked across devices and platforms by using the same userId. 
+
+Some scenarios for identifying a user and their associated app activities are:
+* When a user completes app sign up
+* When a user completes sign in process
+* When a user launches your app
+* When a user modifies or updates their user profile
+
+Amazon Personalize can create recommendations by using event data, historical data, or a combination of both. The event data can then be used to create recommendations.
+
+To record event data, you need the following:
+* A dataset group
+* An event tracker
+
+For more information, see Record Events.
+
+After creating the Amazon Personalize dataset group, you need to add the personalize:PutEvents permission to your AWS Identity and Access Management (IAM) user roles. An example IAM policy is:
+```
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": "personalize:PutEvents",
+    "Resource": "arn:aws:personalize:<your-aws-region>:<your-account-id>:event-tracker/<your-resource-name>"
+  }]
+}
+```
+You need the tracking ID of your event tracker. 
+
+Configure Amazon Personalize in your React application:
+```javascript
+import { Amplify } from 'aws-amplify';
+Amplify.configure({
+  Analytics: {
+    Personalize: {
+      trackingId: '<tracking-id>',
+      region: 'us-east-1',
+      flushSize: 10,
+      flushInterval: 5000 
+    }
+  }
+});
+```
+You can use the Identify event type to track a user identity by specifying a unique identifier for the userId property. Consider recording Identify events after a user registers, logs in, updates their information, or loads pages accessible by a logged-in user.
+```javascript
+import { record } from 'aws-amplify/analytics/personalize';
+
+record({
+  eventType: 'Identify',
+  properties: {
+    userId: '<user-id>'
+  }
+});
+```
+You can send events to Amazon Personalize by calling the record operation. If you already use Identify to track end-user data, you can skip the userId.
+```javascript
+import { record } from 'aws-amplify/analytics/personalize';
+
+record({
+  eventType: '<event-type>',
+  properties: {
+    itemId: '<item-id>',
+    eventValue: '<event-value>'
+  }
+});
+```
+You can track iframe and HTML5 media types by using the MediaAutoTrack event type.
+```javascript
+import { record } from 'aws-amplify/analytics/personalize';
+
+record({
+  eventType: 'MediaAutoTrack',
+  properties: {
+    domElementId: 'media-dom-element-id',
+    itemId: '<item-d>'
+  }
+});
+```
+The recorded events are saved in a buffer and sent to the remote server periodically. If needed, you have the option to manually clear all the events from the buffer by using the flushEvents API.
+```javascript
+import { flushEvents } from 'aws-amplify/analytics/personalize';
+
+flushEvents();
+```
+
+To record events in Amplify, you can use the `recordEvent` API. This API allows you to record custom events within your app, and it handles retry logic in case the device loses network connectivity. It also automatically batches requests to reduce network bandwidth.
+
+Here is an example of how to record a custom event in React:
+```javascript
+import Amplify from 'aws-amplify';
+import Analytics from '@aws-amplify/analytics';
+
+const recordEvent = async () => {
+  const event = {
+    name: 'PasswordReset',
+    attributes: {
+      Channel: 'SMS',
+      Successful: true,
+    },
+    metrics: {
+      ProcessDuration: 792,
+      UserAge: 120.3,
+    },
+  };
+
+  await Analytics.record(event);
+};
+```
+
+You can also record authentication events, such as sign-ins, sign-ups, and authentication failures. To do this, you can use the following event types:
+- `_userauth.sign_in`
+- `_userauth.sign_up`
+- `_userauth.auth_fail`
+
+Here is an example of how to record an authentication event in React:
+```javascript
+import Amplify from 'aws-amplify';
+import Analytics from '@aws-amplify/analytics';
+
+const recordAuthenticationEvent = async () => {
+  const event = {
+    name: '_userauth.sign_in',
+  };
+
+  await Analytics.record(event);
+};
+```
+
+You can also register global properties that will be sent along with all recorded events. To do this, you can use the `registerGlobalProperties` API.
+
+Here is an example of how to register global properties in React:
+```javascript
+import Amplify from 'aws-amplify';
+import Analytics from '@aws-amplify/analytics';
+
+const registerGlobalProperties = async () => {
+  const properties = {
+    AppStyle: 'DarkMode',
+  };
+
+  await Analytics.registerGlobalProperties(properties);
+};
+```
+
+To unregister global properties, you can use the `unregisterGlobalProperties` API.
+
+Here is an example of how to unregister global properties in React:
+```javascript
+import Amplify from 'aws-amplify';
+import Analytics from '@aws-amplify/analytics';
+
+const unregisterGlobalProperties = async () => {
+  await Analytics.unregisterGlobalProperties(['AppStyle', 'OtherProperty']);
+};
+```
+
+Note that the Amazon Pinpoint event count updates in minutes after recording your event. However, it can take upwards of 30 minutes for the event to display in the Filter section, and for its custom attributes to appear in Pinpoint.
+
+You can also manually flush events using the `flushEvents` API.
+
+Here is an example of how to flush events in React:
+```javascript
+import Amplify from 'aws-amplify';
+import Analytics from '@aws-amplify/analytics';
+
+const flushEvents = async () => {
+  await Analytics.flushEvents();
+};
+```
+
+This page is for formatting only
+
+To set up Amplify Analytics, you need to enable Amazon Kinesis or Amazon Pinpoint using the AWS Cloud Development Kit (AWS CDK). The Analytics category uses Amazon Cognito identity pools to identify users in your app. Cognito allows you to receive data from authenticated and unauthenticated users in your app.
+
+First, you need to set up the analytics backend. You can do this by using the AWS CDK to create an analytics resource powered by Amazon Pinpoint.
+
+Next, you need to install the Amplify libraries. The installation process varies depending on the platform you are using. For JavaScript, Angular, React, Vue, React Native, and Next.js, you can install the `aws-amplify` library using npm. For Swift, you need to add the Amplify Library for Swift to your project using Xcode. For Android, you need to add the Amplify API dependencies to your build.gradle.kts file. For Flutter, you need to add the Amplify Analytics Pinpoint and Amplify Auth Cognito libraries to your pubspec.yaml file.
+
+After installing the Amplify libraries, you need to initialize Amplify Analytics. You can do this by importing and loading the configuration file in your app. You should add the Amplify configuration step to your app's root entry point.
+
+To initialize Amplify Analytics in a React app, you can use the following code:
+```javascript
+import { Amplify } from 'aws-amplify';
+import { record } from 'aws-amplify/analytics';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure({
+  ...Amplify.getConfig(),
+  Analytics: amplifyconfig.Analytics,
+});
+```
+Make sure to replace `amplifyconfig` with your actual Amplify configuration.
+
+For a Next.js app, you can use the following code:
+```javascript
+import { Amplify } from 'aws-amplify';
+import { record } from 'aws-amplify/analytics';
+import outputs from '@/amplify_outputs.json';
+
+Amplify.configure({
+  ...Amplify.getConfig(),
+  Analytics: amplifyconfig.Analytics,
+});
+```
+Again, replace `amplifyconfig` with your actual Amplify configuration.
+
+After initializing Amplify Analytics, you can start recording events and tracking sessions. You can find more information on how to do this in the Amplify Analytics documentation.
+
+It's also important to note that there may be known issues when using certain features, such as Amazon Kinesis or Amazon Kinesis Data Firehose. You can find more information on how to resolve these issues in the Amplify Analytics documentation.
+
+In summary, to set up Amplify Analytics, you need to:
+
+1. Set up the analytics backend using the AWS CDK.
+2. Install the Amplify libraries.
+3. Initialize Amplify Analytics in your app.
+4. Record events and track sessions using Amplify Analytics.
+
+You can find more information on how to do this in the Amplify Analytics documentation.
+
+The Amazon Data Firehose analytics provider allows you to send analytics data to an Amazon Data Firehose stream for reliably storing data. 
+
+To set up a Firehose stream, you need to create a storage bucket to store the data from the Firehose stream and then create the Firehose resource. 
+
+You can use the AWS Cloud Development Kit (AWS CDK) to create the Analytics resource powered by Amazon Data Firehose. 
+
+First, create a storage bucket to store the data from the Firehose stream. 
+
+Then, create the Firehose resource. You need to create a new IAM role for the Firehose, grant the Firehose role read/write permissions to the S3 bucket, and create a new Firehose delivery stream. 
+
+You also need to create a new IAM policy to allow users to write to the Firehose and attach the policy to the authenticated and unauthenticated IAM roles. 
+
+To install and configure the Firehose, ensure you have set up IAM permissions for firehose:PutRecordBatch. 
+
+Here is an example IAM policy for Amazon Data Firehose:
+
+```javascript
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": "firehose:PutRecordBatch",
+    "Resource": "arn:aws:firehose:<your-aws-region>:<your-aws-account-id>:deliverystream/<your-stream-name>"
+  }]
+}
+```
+
+Configure Firehose by importing Amplify from 'aws-amplify' and calling Amplify.configure with the Analytics configuration:
+
+```javascript
+import { Amplify } from 'aws-amplify';
+
+Amplify.configure({
+  Analytics: {
+    KinesisFirehose: {
+      region: 'us-east-1',
+      bufferSize: 1000,
+      flushSize: 100,
+      flushInterval: 5000,
+      resendLimit: 5
+    }
+  }
+});
+```
+
+To store data, you can send data to a Firehose stream with the standard record method:
+
+```javascript
+import { record } from 'aws-amplify/analytics/kinesis-firehose';
+
+record({
+  data: {
+    // The data blob to put into the record
+  },
+  streamName: 'myFirehose'
+});
+```
+
+You can also manually clear all the events from the buffer by using the 'flushEvents' API:
+
+```javascript
+import { flushEvents } from 'aws-amplify/analytics/kinesis-firehose';
+
+flushEvents();
+```
+
+The Amazon Kinesis analytics provider allows you to send analytics data to an Amazon Kinesis stream for real-time processing.
+
+To set up a Kinesis stream, you can use the AWS Cloud Development Kit (AWS CDK) to create the Analytics resource powered by Amazon Kinesis. Here's an example of how to create a new Kinesis stream with one shard:
+ 
+You would create a new stack for the Kinesis stream, then create a new Kinesis stream. After that, you would create a new policy to allow PutRecords to the Kinesis stream and apply the policy to the authenticated and unauthenticated roles.
+
+If you did not use the CLI, ensure you have setup IAM permissions for kinesis:PutRecords. You can add the following policy to your IAM role:
+ 
+```javascript
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": "kinesis:PutRecords",
+    "Resource": "arn:aws:kinesis:<your-aws-region>:<your-aws-account-id>:stream/<your-stream-name>"
+  }]
+}
+```
+ 
+Replace the template fields with your actual AWS region, account ID, and stream name.
+
+To configure Kinesis in your React application, you can use the following code:
+```javascript
+import { Amplify } from 'aws-amplify';
+
+Amplify.configure({
+  Analytics: {
+    Kinesis: {
+      region: 'us-east-1',
+      bufferSize: 1000,
+      flushSize: 100,
+      flushInterval: 5000,
+      resendLimit: 5
+    }
+  }
+});
+```
+You can send data to a Kinesis stream using the record method:
+```javascript
+import { record } from 'aws-amplify/analytics/kinesis';
+
+record({
+  data: {
+    // The data blob to put into the record
+  },
+  partitionKey: 'myPartitionKey',
+  streamName: 'myKinesisStream'
+});
+```
+The recorded events are saved in a buffer and sent to the remote server periodically. You can manually clear all the events from the buffer by using the flushEvents API:
+```javascript
+import { flushEvents } from 'aws-amplify/analytics/kinesis';
+
+flushEvents();
+```

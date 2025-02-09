@@ -1,0 +1,782 @@
+Amplify Geo provides solutions for common use cases with Amazon Location Service, but for any functionality that is not currently supported by Amplify Geo, you can access the Amazon Location Service SDK directly.
+
+To get started with the AWS SDK for Amazon Location Service using Amplify Auth credentials, follow this guide.
+
+First, install the necessary dependencies with the command npm add @aws-sdk/client-location.
+
+To connect your app to the Amazon Location Service, initialize the Amazon Location Service client by calling the following function in your React app:
+
+```javascript
+import { Amplify } from 'aws-amplify';
+import { fetchAuthSession } from 'aws-amplify/auth';
+import {
+  LocationClient,
+  AssociateTrackerConsumerCommand
+} from '@aws-sdk/client-location';
+import outputs from '../amplify_outputs.json';
+Amplify.configure(outputs);
+
+const createClient = async () => {
+  const session = await fetchAuthSession();
+  const client = new LocationClient({
+    credentials: session.credentials,
+    region: amplifyconfig.aws_project_region
+  });
+  return client;
+};
+```
+
+To use the Amazon Location Service APIs, ensure you've provisioned resources and configured your app using the instructions in the Amplify Geo Maps docs or the Amazon Location Service console. You can check out the Amazon Location API Reference documentation for a complete list of supported features.
+
+For example, to update a device position and get a device position using the tracker, use the following code:
+
+```javascript
+// UpdateDevicePosition API
+const params = {
+  TrackerName: 'trackerId',
+  Updates: [
+    {
+      DeviceId: 'deviceId',
+      Position: [-122.431297, 37.773972],
+      SampleTime: new Date()
+    }
+  ]
+};
+const command = new BatchUpdateDevicePositionCommand(params);
+client.send(command, (err, data) => {
+  if (err) console.error(err);
+  if (data) console.log(data);
+});
+
+// GetDevicePosition API
+const client = await createClient();
+const params = {
+  TrackerName: 'trackerId',
+  DeviceId: 'deviceId'
+};
+const command = new GetDevicePositionCommand(params);
+client.send(command, (err, data) => {
+  if (err) console.error(err);
+  if (data) console.log(data);
+});
+```
+
+If you need functionality in the AWS services used by the Amplify Geo category that isn't available, Amplify provides an escape hatch to access the low-level client instance for Amazon Location Service.
+
+For platforms other than React, the escape hatch is also available.
+
+Documentation resources are available for managing Amazon Location Service resources, using Amazon Location Maps, searching place and geolocation data, and managing tracker resources.
+
+A Geofence is a virtual perimeter for a real-world geographic area, formed by points or vertices that create a closed boundary, defining an area of interest. Geofence collections store one or multiple Geofences. 
+
+To set up a new Geofence Collection, you start by creating a location services geofence collection. This involves defining a collection name, pricing plan, and tags. For example, in a React application using AWS Amplify, you would use the AWS Location service to create a geofence collection.
+
+To create a new geofence collection, you would use the AWS SDK for JavaScript, specifically the AWS Location service. Here is an example of how you might create a geofence collection in a React application:
+```javascript
+import { LocationClient, CreateGeofenceCollectionCommand } from "@aws-sdk/client-location";
+
+const locationClient = new LocationClient({ region: "your-region" });
+const createGeofenceCollectionCommand = new CreateGeofenceCollectionCommand({
+  CollectionName: "myGeofenceCollection",
+  PricingPlan: "RequestBasedUsage",
+  Tags: [
+    {
+      Key: "name",
+      Value: "myGeofenceCollection",
+    },
+  ],
+});
+
+locationClient.send(createGeofenceCollectionCommand).then((data) => {
+  console.log(data);
+}).catch((error) => {
+  console.error(error);
+});
+```
+
+The pricing plan for the Geofence Collection will be set to `RequestBasedUsage`. It's recommended to review the AWS Location service pricing and terms to learn more about the pricing plan.
+
+To scope access permissions based on Cognito User Groups, you would create a Cognito User Pool Group and add permissions to the group role. For example:
+```javascript
+import { CognitoIdentityServiceProviderClient, AdminAddUserToGroupCommand } from "@aws-sdk/client-cognito-identity-service-provider";
+
+const cognitoClient = new CognitoIdentityServiceProviderClient({ region: "your-region" });
+const adminAddUserToGroupCommand = new AdminAddUserToGroupCommand({
+  GroupName: "User",
+  UserPoolId: "your-user-pool-id",
+  Username: "username",
+});
+
+cognitoClient.send(adminAddUserToGroupCommand).then((data) => {
+  console.log(data);
+}).catch((error) => {
+  console.error(error);
+});
+```
+
+Note that if you combine `Auth/Guest user access` and `Individual Group access`, users who are members of a group will only be granted the permissions of the group, and not the authenticated user permissions. The permissions apply to ALL Geofences in a collection.
+
+After provisioning the Geofence Collection, you can add Geofences to the collection programmatically using the AWS SDK for JavaScript. Refer to the API documentation for more information. For example:
+```javascript
+import { LocationClient, CreateGeofenceCommand } from "@aws-sdk/client-location";
+
+const locationClient = new LocationClient({ region: "your-region" });
+const createGeofenceCommand = new CreateGeofenceCommand({
+  CollectionName: "myGeofenceCollection",
+  GeofenceId: "geofence-id",
+  // geofence details
+});
+
+locationClient.send(createGeofenceCommand).then((data) => {
+  console.log(data);
+}).catch((error) => {
+  console.error(error);
+});
+```
+
+Amplify's geo category allows you to search by places, addresses, and coordinates in your app with place index resources. 
+
+To set up a new location search index, you need to create a location services map and a place index. The map is used to store the geospatial data, and the place index is used to search for places in your application.
+
+In a React application, you can use the Amplify Location library to interact with the location services map and place index. 
+
+Here's an example of how to create a location services map and place index using Amplify Location in a React application:
+
+First, you need to set up the Amplify Location library in your React application. 
+
+Next, you can use the Amplify Location library to create a location services map and place index. 
+
+To create a location services map, you can use the following code:
+```javascript
+import Amplify from 'aws-amplify';
+import { Location } from 'aws-amplify';
+
+// Create a location services map
+const map = await Location.createMap({
+  mapName: 'myMap',
+  description: 'Map',
+  configuration: {
+    style: 'VectorEsriNavigation',
+  },
+  pricingPlan: 'RequestBasedUsage',
+  tags: [
+    {
+      key: 'name',
+      value: 'myMap',
+    },
+  ],
+});
+```
+
+To create a location services place index, you can use the following code:
+```javascript
+// Create a location services place index
+const placeIndex = await Location.createPlaceIndex({
+  indexName: 'myPlaceIndex',
+  dataSource: 'Here',
+  dataSourceConfiguration: {
+    intendedUse: 'SingleUse',
+  },
+  pricingPlan: 'RequestBasedUsage',
+  tags: [
+    {
+      key: 'name',
+      value: 'myPlaceIndex',
+    },
+  ],
+});
+```
+
+The pricing plan for the search index will be set to RequestBasedUsage. It's recommended to review the location service pricing and terms to learn more about the pricing plan.
+
+You can also configure the data provider and result storage location for your location search index. The available data providers for geospatial data are Here and Esri. 
+
+To use Here as the data provider, you can specify the dataSource as 'Here' when creating the place index:
+```javascript
+const placeIndex = await Location.createPlaceIndex({
+  indexName: 'myPlaceIndex',
+  dataSource: 'Here',
+  //...
+});
+```
+
+To use Esri as the data provider, you can specify the dataSource as 'Esri' when creating the place index:
+```javascript
+const placeIndex = await Location.createPlaceIndex({
+  indexName: 'myPlaceIndex',
+  dataSource: 'Esri',
+  //...
+});
+```
+
+Note that if your application is tracking or routing assets you use in your business, you may only use Here as your geolocation provider.
+
+You can also specify the result storage location for the search operation. You can choose to store the results in a database or cache them. 
+
+To specify the result storage location, you can use the intendedUse property when creating the place index:
+```javascript
+const placeIndex = await Location.createPlaceIndex({
+  indexName: 'myPlaceIndex',
+  dataSourceConfiguration: {
+    intendedUse: 'SingleUse',
+  },
+  //...
+});
+```
+
+You can also specify the result storage location as 'Storage' to store the results in a database or cache:
+```javascript
+const placeIndex = await Location.createPlaceIndex({
+  indexName: 'myPlaceIndex',
+  dataSourceConfiguration: {
+    intendedUse: 'Storage',
+  },
+  //...
+});
+```
+
+To use existing Amazon Location Services resources with your Amplify backend or frontend application, you need to surface backend resource outputs to the `amplify_outputs.json` file. This can be achieved by using the `addOutput` method.
+
+For example, you can add your existing Amazon Location Service resources to your Amplify backend configuration like this:
+```javascript
+const backend = {
+  geo: {
+    awsRegion: "your-aws-region",
+    maps: {
+      items: {
+        "your-friendly-map-name": {
+          name: "your-map-name",
+          style: "your-map-style",
+        },
+      },
+      default: "your-friendly-map-name",
+    },
+  },
+}
+```
+Before you can use your existing Amazon Location Service resources with Amplify Geo, you need to ensure your role has the right authorization permissions through Cognito. There are two roles created by Cognito: an "authenticated role" that grants signed-in-user-level access and an "unauthenticated role" that allows unauthenticated access to resources. You need to attach the necessary policies for the appropriate resources and roles.
+
+The policies should include the following actions:
+- `geo:GetMapTile`
+- `geo:GetMapSprites`
+- `geo:GetMapGlyphs`
+- `geo:GetMapStyleDescriptor`
+- `geo:SearchPlaceIndexForPosition`
+- `geo:SearchPlaceIndexForText`
+- `geo:GetGeofence`
+- `geo:PutGeofence`
+- `geo:BatchPutGeofence`
+- `geo:BatchDeleteGeofence`
+- `geo:ListGeofences`
+
+These policies should be attached to the Amazon Location Service resources, including maps, place indices, and geofence collections.
+
+Here is an example of what the policy might look like:
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "GetTiles",
+      "Effect": "Allow",
+      "Action": [
+        "geo:GetMapTile",
+        "geo:GetMapSprites",
+        "geo:GetMapGlyphs",
+        "geo:GetMapStyleDescriptor"
+      ],
+      "Resource": "arn:aws:geo:your-geo-region:your-account-id:map/your-map-name"
+    },
+    {
+      "Sid": "Search",
+      "Effect": "Allow",
+      "Action": [
+        "geo:SearchPlaceIndexForPosition",
+        "geo:SearchPlaceIndexForText"
+      ],
+      "Resource": "arn:aws:geo:your-geo-region:your-account-id:place-index/your-index-name"
+    },
+    {
+      "Sid": "Geofence",
+      "Effect": "Allow",
+      "Action": [
+        "geo:GetGeofence",
+        "geo:PutGeofence",
+        "geo:BatchPutGeofence",
+        "geo:BatchDeleteGeofence",
+        "geo:ListGeofences",
+      ],
+      "Resource": "arn:aws:geo:your-geo-region:your-account-id:geofence-collection/your-collection-name"
+    }
+  ]
+}
+```
+To configure the client library directly, you can import and configure the generated `amplify_outputs.json` file, then manually configure Amplify Geo. Here is an example of how to do this:
+```javascript
+import { Amplify } from 'aws-amplify';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure(outputs);
+Amplify.configure({
+  Geo: {
+    LocationService: {
+      maps: {
+        items: {
+          "your-map-name": {
+            style: 'VectorEsriStreets'
+          }
+        },
+        default: 'your-preferred-default-map'
+      },
+      searchIndices: {
+        items: ['your-geo-index'],
+        default: 'your-default-index'
+      },
+      geofenceCollections: {
+        items: ['your-geo-collection'],
+        default: 'your-default-collection'
+      },
+      region: 'your-geo-region'
+    }
+  }
+});
+```
+After configuring Amplify Geo, you can proceed to display a map or add location search to your app.
+
+To work with geofences in your application using Amplify Geo, you need to provision a geofence collection resource and configure your app. You can do this by following the instructions in either Configure a geofence collection or Use existing Amazon Location Service resources, and also set up displaying a map in your application.
+
+To manage geofences in your application, you can use the amplify-geofence-control component. First, install the necessary dependencies with the command npm add aws-amplify @aws-amplify/geo @aws-amplify/ui-react @aws-amplify/ui-react-geo. Make sure that aws-amplify @aws-amplify/geo version 6.0.0 or above are installed.
+
+To add the geofence management component to your map, create a map and then import AmplifyGeofenceControl from maplibre-gl-js-amplify, create a new instance of this control, and add it to your MapLibre map instance. The user will need to be authenticated with the administrative Cognito user associated with the Geofence Collection you created. 
+
+Here is an example of how to use AmplifyGeofenceControl in a React application:
+```javascript
+import { useEffect, useRef } from "react";
+import { createMap, AmplifyGeofenceControl } from "maplibre-gl-js-amplify";
+import { withAuthenticator } from "@aws-amplify/ui-react";
+import "@aws-amplify/ui-react/styles.css";
+import "maplibre-gl-js-amplify/dist/public/amplify-ctrl-geofence.css";
+import "maplibre-gl/dist/maplibre-gl.css";
+
+function Map() {
+  const mapRef = useRef(null); 
+
+  useEffect(() => {
+    let map;
+    async function initializeMap() {
+      if (mapRef.current!= null) {
+        map = await createMap({
+          container: mapRef.current,
+          center: [-122.431297, 37.773972],
+          zoom: 11,
+        });
+      }
+
+      const control = new AmplifyGeofenceControl()
+      map.addControl(control);
+    }
+    initializeMap();
+
+    return function cleanup() {
+      if (map!= null) map.remove();
+    };
+  }, []);
+
+ return (
+   <div className="App">
+     <div ref={mapRef} id="map" />
+   </div>
+ );
+}
+
+export default withAuthenticator(Map);
+```
+
+Alternatively, you can use the Amplify React MapView component and the useControl hook from react-map-gl to render the Geofence control component.
+```javascript
+import React from 'react';
+import { Amplify } from 'aws-amplify';
+import { withAuthenticator } from '@aws-amplify/ui-react';
+import { MapView } from '@aws-amplify/ui-react-geo';
+import { useControl } from 'react-map-gl';
+import { AmplifyGeofenceControl } from 'maplibre-gl-js-amplify';
+
+function Geofence() {
+  useControl(() => new AmplifyGeofenceControl());
+
+  return null;
+}
+
+function App({ signOut }) {
+  return (
+    <div className="App">
+      <MapView
+        initialViewState={{
+          latitude: 37.8,
+          longitude: -122.4,
+          zoom: 14
+        }}
+      >
+        <Geofence />
+      </MapView>
+    </div>
+  );
+}
+
+export default withAuthenticator(App);
+```
+
+If you are using a different mapping library or need a programmatic approach to managing geofences, you can use the @aws-amplify/geo package. This package provides methods for managing geofences, including saveGeofences, getGeofence, listGeofences, and deleteGeofences.
+
+The saveGeofences method is used to save geofences to your collection. It can take a single geofence or an array of geofences.
+```javascript
+let saveGeofenceResults;
+try {
+  saveGeofenceResults = await Geo.saveGeofences({
+    geofenceId: 'my-geofence',
+    geometry: {
+      polygon: [
+        [-123.14695358276366, 49.290090146520434],
+        [-123.1358814239502, 49.294960279811974],
+        [-123.15021514892577, 49.29300108863353],
+        [-123.14909934997559, 49.29132171993048],
+        [-123.14695358276366, 49.290090146520434]
+      ]
+    }
+  });
+} catch (error) {
+  throw error;
+}
+```
+
+The getGeofence method is used to get a single geofence from a collection.
+```javascript
+let response;
+try {
+  response = await Geo.getGeofence('geofenceId');
+} catch (error) {
+  throw error;
+}
+```
+
+The listGeofences method is used to get a list of geofences from a collection. It has pagination built in and will return 100 geofences per page.
+```javascript
+let response;
+try {
+  response = await Geo.listGeofences();
+  response.entries.forEach((geofence) => console.log(geofence.geofenceId));
+} catch (error) {
+  throw error;
+}
+```
+
+The deleteGeofences method is used to delete a geofences from a collection. It can delete a single or multiple geofences at once.
+```javascript
+let response;
+try {
+  response = await Geo.deleteGeofences(
+    [
+      "geofence1",
+      "geofence2",
+      "geofence3",
+    ]
+  )
+} catch (error) {
+  throw error;
+}
+```
+
+Are you using Google Maps or another similar Map Provider and would like to switch over to using Amplify Geo or Amazon Location Service? This tutorial will show you how to take your existing Google Maps APIs and switch over to using Amplify Geo.
+
+To get started with Amplify Geo, you should be familiar with the Google Maps JavaScript API and with front-end web development concepts including HTML, CSS, and JavaScript. 
+You will need Amplify Geo and a text editor to complete this tutorial.
+
+A key difference to notice between using Amplify Geo and Google Maps is the convention for specifying coordinates. With Google Maps Platform, the convention is [lat, lng], but with Amplify Geo, the order is swapped to be [lng, lat]. This was done to match the geojson spec which is also used by MapLibre.
+
+When using Google Maps Platform or other similar services like Mapbox, you will first be prompted to go to the Google Cloud Console to set up APIs and create an API key. With Amplify Geo, you will instead setup Amplify Auth and the MapView component will read the auth configuration from the amplify_outputs.json file. Behind the scenes, Amplify Auth uses Amazon Cognito to set up client credentials with access to Location Service and Geo will use those credentials when making any location-related API calls.
+
+To create a webpage with a map using Amplify Geo, you can start by creating a new HTML file and adding the necessary scripts and styles to import MapLibre GL JS and CSS, and Amplify JS. You will also need to create a div element with an id of 'map' that will be the map's container.
+
+To display a map, you can use the createMap function from AmplifyMapLibre, passing in the container, center coordinates, and zoom level as options. For example:
+```js
+const map = await createMap({
+  container: document.getElementById('map'), 
+  center: [-122.4783, 37.8199], 
+  zoom: 13 
+});
+```
+To display a marker, you can use the Marker class from maplibregl, setting the lngLat and adding it to the map. For example:
+```js
+const marker = new maplibregl.Marker().setLngLat([-122.4783, 37.8199]).addTo(map);
+```
+To add a popup, you can use the Popup class from maplibregl, setting the HTML content and adding it to the marker. For example:
+```js
+const popup = new maplibregl.Popup().setHTML(
+  `<h3>Golden Gate Bridge</h3><p>The hex code for the bridge's color is: #c0362c</p>`
+);
+
+const marker = new maplibregl.Marker()
+ .setLngLat([-122.4783, 37.8199])
+ .setPopup(popup)
+ .addTo(map);
+```
+To add a search component, you can use the createAmplifyGeocoder function from AmplifyMapLibre, adding the geocoder control to the map. For example:
+```js
+const geocoder = createAmplifyGeocoder();
+map.addControl(geocoder);
+```
+To add a standalone search component, you can create a div element and append the geocoder control to it. For example:
+```js
+const el = document.createElement("div");
+el.setAttribute("id", "search");
+document.body.appendChild(el);
+
+const geocoder = createAmplifyGeocoder();
+document.getElementById("search").appendChild(geocoder.onAdd());
+```
+
+To add location search functionality to a map in a React application, you can use the `maplibre-gl-geocoder` library in conjunction with Amplify Geo. First, ensure you have provisioned a search index resource and configured your app using the instructions in either Configure Location Search or Use existing Amazon Location Service resources, and that you have already set up displaying a map in your application.
+
+You can use the `Amplify UI Location Search` component to generate and display search results. To add a location search UI component to your map, you will use the `maplibre-gl-geocoder` library. Install the necessary dependencies with the command `npm add @maplibre/maplibre-gl-geocoder maplibre-gl@1 maplibre-gl-js-amplify`.
+
+Create a map onto which you want to add the location search UI component. Then, use the `createAmplifyGeocoder()` function from `maplibre-gl-js-amplify` to get a new instance of `MaplibreGeocoder` and add the location search UI component to the map.
+
+Here's an example of how to initialize the map and add the location search UI component:
+
+```javascript
+import { createMap, createAmplifyGeocoder } from "maplibre-gl-js-amplify";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+import "@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css";
+import "maplibre-gl-js-amplify/dist/public/amplify-geocoder.css"; 
+
+async function initializeMap() {
+    const el = document.createElement("div");
+    el.setAttribute("id", "map");
+    document.body.appendChild(el);
+
+    const map = await createMap({
+        container: "map",
+        center: [-123.1187, 49.2819], 
+        zoom: 11,
+    })
+
+    map.addControl(createAmplifyGeocoder());
+}
+
+initializeMap();
+```
+
+You can also use `maplibre-gl-geocoder` to display the location search UI component anywhere in your application, even outside the map, by extracting the HTML element using the `onAdd()` function and attaching it anywhere in your DOM instead of adding it via the map's `addControl()` function.
+
+```javascript
+const geocoder = createAmplifyGeocoder();
+document.getElementById("search").appendChild(geocoder.onAdd());
+```
+
+To customize the search icons used by the `maplibre-gl-geocoder`, you can pass a custom image to the `createAmplifyGeocoder()` function.
+
+```javascript
+import myIcon from "./myIcon.svg" 
+
+const icon = new Image(100, 100);
+icon.src = myIcon;
+
+const geocoder = createAmplifyGeocoder({ showResultMarkers: { element: icon } });
+map.addControl(geocoder);
+```
+
+Amplify Geo enables you to search for locations by text, addresses, or geo-coordinates using the `Geo.searchByText()`, `Geo.searchByCoordinates()`, `Geo.searchForSuggestions()`, and `Geo.searchByPlaceId()` APIs.
+
+To search for locations by text, you can use the `Geo.searchByText()` API, which enables you to search for places or points of interest by free-form text, such as an address, name, city, or region.
+
+```javascript
+import { Geo } from "@aws-amplify/geo"
+
+Geo.searchByText("Amazon Go Store")
+```
+
+You can customize your search results by providing parameters such as `countries`, `maxResults`, `biasPosition`, `searchAreaConstraints`, and `searchIndexName`.
+
+```javascript
+const searchOptionsWithBiasPosition = {
+  countries: string[], 
+  maxResults: number, 
+  biasPosition: [
+    longitude 
+    latitude 
+  ], 
+  searchIndexName: string, 
+}
+
+const searchOptionsWithSearchAreaConstraints = {
+  countries: ["USA"], 
+  maxResults: 25, 
+  searchAreaConstraints: [SWLongitude, SWLatitude, NELongitude, NELatitude], 
+  searchIndexName: string, 
+}
+
+Geo.searchByText('Amazon Go Stores', searchOptionsWithBiasPosition)
+```
+
+To search for locations by coordinates, you can use the `Geo.searchByCoordinates()` API, which is a reverse Geocoder that takes a coordinate point and returns information about what it finds at that point on the map.
+
+```javascript
+import { Geo } from "@aws-amplify/geo"
+
+Geo.searchByCoordinates([longitudePoint, latitudePoint])
+```
+
+You can also search for suggestions by using the `Geo.searchForSuggestions()` API, which enables you to search for suggestions by free-form text, such as a place, address, city, or region.
+
+```javascript
+import { Geo } from "@aws-amplify/geo"
+
+Geo.searchForSuggestions("Amazon Go Store")
+```
+
+Additionally, you can search for a place by its `placeId` using the `Geo.searchByPlaceId()` API.
+
+```javascript
+import { Geo } from "@aws-amplify/geo"
+
+Geo.searchByPlaceId(placeId)
+```
+
+To work with maps in your application, you need to provision an Amazon Location Service Map resource and configure your app using the instructions in the guides for setting up maps or using existing resources. Here's how you can display a map in your React app:
+
+First, you need to install the required libraries. You can do this by running the following command in your terminal:
+```
+npm add maplibre-gl maplibre-gl-js-amplify
+```
+Then, you need to import the library into your application:
+```javascript
+import { createMap } from 'maplibre-gl-js-amplify';
+import 'maplibre-gl/dist/maplibre-gl.css';
+```
+Next, you need to create and render the map with the help of the `createMap` function:
+```javascript
+async function initializeMap() {
+  const map = await createMap({
+    container: 'map', 
+    center: [-123.1187, 49.2819], 
+    zoom: 11
+  });
+}
+
+initializeMap();
+```
+Make sure you have a `div` with an `id="map"` in your HTML file before making the call to `createMap`.
+
+To render a map using a class name or something other than the ID, you can pass in a reference to the HTML element itself:
+```javascript
+const element = document.getElementsByClassName("class")[0];
+
+const map = await createMap({
+  container: element,
+ ...
+})
+```
+The MapLibre canvas requires a defined height to display properly. You can add some CSS to set the height of the map component. For example:
+```css
+html,
+body,
+#root {
+  height: 100%;
+}
+
+#map {
+  height: 50%;
+}
+```
+To display markers on a map, you can use the `drawPoints` function. This function expects the source name, coordinate data, and a maplibre-gl-js map:
+```javascript
+import { drawPoints } from 'maplibre-gl-js-amplify';
+
+map.on('load', function () {
+  drawPoints(
+    'mySourceName', 
+    [
+      {
+        coordinates: [-122.483696, 37.833818], 
+        title: 'Golden Gate Bridge',
+        address: 'A suspension bridge spanning the Golden Gate'
+      },
+      {
+        coordinates: [-122.477, 37.8105] 
+      }
+    ], 
+    map,
+    {
+      showCluster: true,
+      unclusteredOptions: {
+        showMarkerPopup: true
+      },
+      clusterOptions: {
+        showCount: true
+      }
+    }
+  );
+});
+```
+If you want to display different map styles, you can use the `getAvailableMaps` API to fetch information for all maps that are available to be displayed. Then, you can set a different style to your map using the `setStyle` method:
+```javascript
+const availableMaps = await Geo.getAvailableMaps();
+
+map.setStyle(availableMaps[0].mapName);
+```
+Note that when changing a map with Amplify and MapLibre, the `setStyle` function should be called with the name of the Location Service map, not the style.
+
+Finally, when it's time to remove the map from the DOM, you can use the `remove` method of the generated map:
+```javascript
+map.remove();
+```
+This will clean up and release all resources associated with the map. After calling `remove`, you must not call any other methods on the map.
+
+To set up Amplify Geo, you need to create a Geo resource powered by Amazon Location Services. You can use the AWS Cloud Development Kit (AWS CDK) to create the resource. 
+
+First, you need to install the necessary dependencies, including `aws-amplify` and `@aws-amplify/geo`. You can do this by running the command `npm add aws-amplify @aws-amplify/geo` in your terminal.
+
+Next, you need to import and load the configuration file in your app. You can do this by adding the following code to your app's root entry point:
+```javascript
+import { Amplify } from 'aws-amplify';
+import outputs from '../amplify_outputs.json';
+Amplify.configure(outputs);
+```
+If you are using Next.js, you need to add the following code to your `pages/_app.js` file instead:
+```javascript
+import { Amplify } from 'aws-amplify';
+import outputs from '@/amplify_outputs.json';
+Amplify.configure(outputs);
+```
+Make sure to call `Amplify.configure` as early as possible in your application's life cycle.
+
+To initialize Amplify Geo, you need to add the AWS Location Geo plugin to your app. You can do this by using the `Amplify.addPlugin` method.
+
+To display a map in your application, you can use the Amplify React MapView component or the MapLibre GL library with the `maplibre-gl-js-amplify` library.
+
+Note that the Geo plugin has a dependency on Cognito Auth, so you need to install and configure Cognito Auth as well.
+
+For Android and iOS, you need to install the Amplify Libraries and initialize Amplify Geo using the `Amplify.addPlugin` method.
+
+If you want to use existing Amazon Location Service resources, you can follow a different guide. If you want to use Amazon Location Service APIs not directly supported by Geo, you can use the escape hatch to access the Amazon Location Service SDK.
+
+The pricing plan for the Map example is set to `RequestBasedUsage`. You should review the location service pricing and terms to learn more about the pricing plan. 
+
+Here is an example of how to create a map using the Amplify MapView component:
+```javascript
+import { MapView } from '@aws-amplify/geo';
+
+const MyMap = () => {
+  return (
+    <MapView
+      style={{
+        flex: 1,
+        height: '100%',
+        width: '100%',
+      }}
+    />
+  );
+};
+```
+This will render a map in your application. You can customize the map by using various props and methods provided by the MapView component.

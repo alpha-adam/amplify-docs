@@ -1,0 +1,2423 @@
+## Advanced Workflows
+
+Advanced workflows in the Amplify auth category include subscribing to events, identity pool federation, auth-related Lambda triggers, and working with AWS service objects.
+
+### Identity Pool Federation
+
+Identity pool federation allows users to sign in using a well-known external identity provider (IdP), such as Login with Amazon, Facebook, Google, or any other OpenID Connect (OIDC)-compatible IdP. They can receive an authentication token and then exchange that token for temporary security credentials in AWS that map to an IAM role with permissions to use the resources in your AWS account.
+
+To use identity pool federation, you don't need to create custom sign-in code or manage your own user identities. Instead, users of your app can sign in using an external IdP, and then you can use the `federateToIdentityPool` API to get AWS credentials directly from Cognito Federated Identities.
+
+### Federate to Identity Pool
+
+You can use the `federateToIdentityPool` API to get AWS credentials directly from Cognito Federated Identities. If you have logged in with `Auth.signIn`, you cannot call `federateToIdentityPool` as Amplify will perform this federation automatically for you in the background. In general, you should only call `Auth.federatedSignIn` when using OAuth flows.
+
+Here is an example of how to use `federateToIdentityPool` in React:
+```javascript
+import { Auth } from 'aws-amplify';
+
+const federateToIdentityPool = async (token, provider) => {
+  try {
+    const session = await Auth.federateToIdentityPool(token, provider);
+    console.log(session);
+  } catch (error) {
+    console.error(error);
+  }
+};
+```
+
+### Retrieve Session
+
+After federated login, you can retrieve the session using the `Auth.fetchAuthSession` API.
+
+### Token Refresh
+
+Automatic authentication token refresh is not supported when federated. By default, Amplify will not automatically refresh the tokens from the federated providers. You will need to handle the token refresh logic and provide the new token to the `federateToIdentityPool` API.
+
+### Clear Session
+
+You can clear the federated session using the `Auth.clearFederationToIdentityPool` API.
+
+### Provide Custom Identity ID
+
+You can provide a custom identity ID to the `federateToIdentityPool` API. This is useful when you want to use the same identity ID across multiple devices.
+
+### Subscribing to Events
+
+You can take specific actions when users sign-in or sign-out by subscribing to authentication events in your app.
+
+### Lambda Triggers
+
+With the triggers property of `defineAuth` and `defineFunction` from the new Functions implementation, you can define Lambda Triggers for your Cognito User Pool. These enable you to add custom functionality to your registration and authentication flows.
+
+### Pre Authentication and Pre Sign-up Lambda Triggers
+
+If you have a Pre Authentication Lambda trigger enabled, you can pass `clientMetadata` as an option for `signIn`. This metadata can be used to implement additional validations around authentication.
+
+### Passing Metadata to Other Lambda Triggers
+
+Many Cognito Lambda Triggers also accept unsanitized key-value pairs in the form of a `clientMetadata` attribute. This attribute can be specified for various Auth APIs which result in Cognito Lambda Trigger execution.
+
+### Working with AWS Service Objects
+
+You can use AWS Service Interface Objects to work with AWS Services in an authenticated state. You can call methods on any AWS Service interface object by passing your credentials from Amplify `fetchAuthSession` to the service call constructor.
+
+Here is an example of how to use AWS Service Interface Objects in React:
+```javascript
+import { Auth } from 'aws-amplify';
+import { Route53 } from 'aws-sdk/clients/route53';
+
+const changeResourceRecordSets = async () => {
+  try {
+    const { credentials } = await Auth.fetchAuthSession();
+    const route53 = new Route53({
+      apiVersion: '2013-04-01',
+      credentials,
+    });
+    // More code working with route53 object
+  } catch (error) {
+    console.error(error);
+  }
+};
+```
+
+### Custom Token Providers
+
+Create a custom Auth token provider for situations where you would like to provide your own tokens for a service. For example, using OIDC Auth with AppSync. You must supply the token provider to Amplify via the `Amplify.configure` method call.
+
+Here is an example of how to create a custom token provider in React:
+```javascript
+import { Amplify } from 'aws-amplify';
+import { TokenProvider } from 'aws-amplify/auth';
+
+const myTokenProvider: TokenProvider = {
+  async getTokens({ forceRefresh } = {}) {
+    if (forceRefresh) {
+      // Try to obtain new tokens if possible
+    }
+
+    const accessTokenString = '<insert JWT from provider>';
+    const idTokenString = '<insert JWT from provider>';
+
+    return {
+      accessToken: {
+        // token details
+      },
+      idToken: {
+        // token details
+      },
+    };
+  },
+};
+
+Amplify.configure(awsconfig, {
+  Auth: {
+    tokenProvider: myTokenProvider,
+  },
+});
+```
+
+When a user uninstalls an app that uses AWS Amplify, some data may be persisted on the device. This is because certain Amplify categories, such as Analytics and Auth, store data locally on the device.
+
+For Android devices, when an app is uninstalled, the data is removed. However, if the Android Auto Backup for Apps service is enabled, it may attempt to restore the application data when the app is reinstalled. Amplify Auth uses EncryptedSharedPreferences to store auth data, which is encrypted using keys from the Android Keystore. When an app is uninstalled, these keys are deleted, and the encrypted data is no longer readable. As a result, auth information cannot be restored when an app is reinstalled, and the user will need to re-authenticate.
+
+For iOS devices, Amplify stores auth information in the system keychain, which does not guarantee that data will be removed when an app is uninstalled. To handle this situation, app developers should decide when to clear auth data by signing out. One strategy is to use UserDefaults to detect if the app is launching for the first time and invoke `Auth.signOut()` if it has not been launched before.
+
+To accomplish this in a React app, you can use the `useEffect` hook to check if the app is launching for the first time and sign out if necessary. Here is an example:
+```javascript
+import { useEffect } from 'react';
+import { Auth } from 'aws-amplify';
+
+useEffect(() => {
+  const isFirstLaunch = localStorage.getItem('isFirstLaunch');
+  if (!isFirstLaunch) {
+    Auth.signOut();
+    localStorage.setItem('isFirstLaunch', 'true');
+  }
+}, []);
+```
+This code uses the `localStorage` API to store a flag indicating whether the app has been launched before. If the flag is not set, it signs out the user using `Auth.signOut()` and sets the flag to `true`.
+
+By default, Amplify Auth uses email as the default method for user sign-in. This is set up when you scaffold Amplify Auth. 
+
+To set this up, you define the auth configuration with the `defineAuth` function from `@aws-amplify/backend` and specify that you want to use email for login. 
+
+Here is an example in JavaScript:
+```javascript
+import { defineAuth } from "@aws-amplify/backend";
+
+const auth = defineAuth({
+  loginWith: {
+    email: true,
+  },
+});
+```
+
+This sets up an `email` attribute that is required for sign-up and cannot be changed. 
+
+To use this auth configuration in your React application, you can then call the `signIn` API to sign in users. You can also customize the emails that are sent to users during the sign-in process. 
+
+For more information, you can learn how to use the `signIn` API, customize emails, or configure your auth resource for production workloads.
+
+Before you configure external sign-in with Amplify Auth, you need to set up your developer account with each provider you are using. 
+
+To do this, follow these steps for each provider:
+
+### Facebook Login
+
+1. Create a developer account with Facebook.
+2. Sign in with your Facebook credentials.
+3. Choose "My Apps" from the top navigation bar and create a new app.
+4. Set up Facebook Login for your app.
+5. Note the App ID and App Secret, which you will use later.
+
+### Google Sign-In
+
+1. Go to the Google Developer Console.
+2. Create a new project.
+3. Select "APIs & Services" and then "Credentials".
+4. Create a new OAuth client ID for a web application.
+5. Note the Client ID and Client Secret, which you will use later.
+
+### Login with Amazon
+
+1. Create a developer account with Amazon.
+2. Sign in with your Amazon credentials.
+3. Create a new security profile to receive the Amazon Client ID and Client Secret.
+4. Note the Client ID and Client Secret, which you will use later.
+
+### Sign in with Apple
+
+1. Sign in to the Apple Developer portal.
+2. Create a new App ID and enable Sign in with Apple.
+3. Create a new Service ID and enable Sign in with Apple.
+4. Note the Client ID, Key ID, Private Key, and Team ID, which you will use later.
+
+After setting up your developer accounts, you need to configure the external sign-in backend. In your `amplify/auth/resource.ts` file, add the external providers:
+
+```typescript
+import { defineAuth, secret } from '@aws-amplify/backend';
+
+export const auth = defineAuth({
+  loginWith: {
+    email: true,
+    externalProviders: {
+      google: {
+        clientId: secret('GOOGLE_CLIENT_ID'),
+        clientSecret: secret('GOOGLE_CLIENT_SECRET')
+      },
+      signInWithApple: {
+        clientId: secret('SIWA_CLIENT_ID'),
+        keyId: secret('SIWA_KEY_ID'),
+        privateKey: secret('SIWA_PRIVATE_KEY'),
+        teamId: secret('SIWA_TEAM_ID')
+      },
+      loginWithAmazon: {
+        clientId: secret('LOGINWITHAMAZON_CLIENT_ID'),
+        clientSecret: secret('LOGINWITHAMAZON_CLIENT_SECRET')
+      },
+      facebook: {
+        clientId: secret('FACEBOOK_CLIENT_ID'),
+        clientSecret: secret('FACEBOOK_CLIENT_SECRET')
+      },
+      callbackUrls: [
+        'http://localhost:3000/profile',
+        'https://mywebsite.com/profile'
+      ],
+      logoutUrls: ['http://localhost:3000/', 'https://mywebsite.com']
+    }
+  }
+});
+```
+
+You also need to inform your external provider of the newly configured authentication resource and its OAuth redirect URI.
+
+For Facebook, go to your Facebook developer account, select your app, and add the OAuth redirect URI to the "Valid OAuth Redirect URIs" field.
+
+For Google, go to the Google Developer Console, select your project, and add the OAuth redirect URI to the "Authorized Redirect URIs" field.
+
+For Login with Amazon, go to the Amazon Developer Console, select your security profile, and add the OAuth redirect URI to the "Allowed Return URLs" field.
+
+For Sign in with Apple, go to the Apple Developer portal, select your App ID, and add the OAuth redirect URI to the "Return URLs" field.
+
+You can customize the scopes for retrieving user data from external providers by adding a `scopes` property to the external provider configuration. For example:
+
+```typescript
+import { defineAuth } from '@aws-amplify/backend';
+
+export const auth = defineAuth({
+  loginWith: {
+    email: true,
+    externalProviders: {
+      loginWithAmazon: {
+        clientId: secret('LOGINWITHAMAZON_CLIENT_ID'),
+        clientSecret: secret('LOGINWITHAMAZON_CLIENT_SECRET'),
+        scopes: ['profile']
+      }
+    }
+  }
+});
+```
+
+You can also map attributes between your external identity provider and your users created in Cognito by adding an `attributeMapping` property to the external provider configuration. For example:
+
+```typescript
+import { defineAuth } from '@aws-amplify/backend';
+
+export const auth = defineAuth({
+  loginWith: {
+    email: true,
+    externalProviders: {
+      loginWithAmazon: {
+        clientId: secret('LOGINWITHAMAZON_CLIENT_ID'),
+        clientSecret: secret('LOGINWITHAMAZON_CLIENT_SECRET'),
+        attributeMapping: {
+          email: 'email'
+        }
+      }
+    }
+  }
+});
+```
+
+To configure an OIDC provider, you can add an `oidc` property to the external provider configuration. For example:
+
+```typescript
+import { defineAuth, secret } from '@aws-amplify/backend';
+
+export const auth = defineAuth({
+  loginWith: {
+    email: true,
+    externalProviders: {
+      oidc: [
+        {
+          name: 'MicrosoftEntraID',
+          clientId: secret('MICROSOFT_ENTRA_ID_CLIENT_ID'),
+          clientSecret: secret('MICROSOFT_ENTRA_ID_CLIENT_SECRET'),
+          issuerUrl: '<your-issuer-url>'
+        }
+      ]
+    }
+  }
+});
+```
+
+To configure a SAML provider, you can add a `saml` property to the external provider configuration. For example:
+
+```typescript
+import { defineAuth } from '@aws-amplify/backend';
+
+export const auth = defineAuth({
+  loginWith: {
+    email: true,
+    externalProviders: {
+      saml: {
+        name: 'MicrosoftEntraIDSAML',
+        metadata: {
+          metadataContent: '<your-url-hosting-saml-metadata>',
+          metadataType: 'URL'
+        }
+      }
+    }
+  }
+});
+```
+
+To initiate sign-in with an external identity provider, use the `signInWithRedirect` API:
+
+```typescript
+import { signInWithRedirect } from 'aws-amplify/auth';
+
+signInWithRedirect({
+  provider: 'Apple'
+});
+```
+
+To complete external sign-in after redirect, use the `getCurrentUser` and `fetchUserAttributes` APIs:
+
+```typescript
+import { getCurrentUser, fetchUserAttributes } from 'aws-amplify/auth';
+
+const user = await getCurrentUser();
+const userAttributes = await fetchUserAttributes();
+console.log({ user, userAttributes });
+```
+
+You can also specify a redirect URL on sign out by using the `signOut` API with the `oauth` option:
+
+```typescript
+import { signOut } from 'aws-amplify/auth';
+
+signOut({
+  global: false,
+  oauth: {
+    redirectUrl: 'https://authProvider/logout?logout_uri=https://mywebsite.com/'
+  }
+});
+```
+
+The Auth Plugin in AWS Amplify Gen 2 can be set up to automatically get guest credentials when a device is online. This allows you to use certain features without needing to sign in. However, you won't be able to do things that require a user account, such as changing your password or updating your profile. You can still get a unique ID for the device using the fetchAuthSession method.
+
+For Amplify Auth, this guest access is also available and works the same way. The unique ID can be obtained through the fetchAuthSession method.
+
+In Amplify Gen 2, guest access is allowed by default. To turn it off, you need to update the backend settings. You can do this by changing the backend.ts file to include the following code:
+
+```javascript
+const { cfnIdentityPool } = backend.auth.resources.cfnResources;
+cfnIdentityPool.allowUnauthenticatedIdentities = false;
+```
+
+This code turns off guest access by setting allowUnauthenticatedIdentities to false.
+
+Amplify helps you secure your application while providing an easy sign-in experience for your users, influenced by your security strategy. This security strategy includes the authentication method, security credentials, and enabling additional verification when needed.
+
+There are two main concepts: authentication and authorization. Authentication is the process of validating who you are, often referred to as AuthN, and is typically done by an Identity Provider or IdP, such as Apple, Facebook, Google, or Amazon. Authorization, on the other hand, is the process of validating what you can access, often referred to as AuthZ, and is sometimes done by looking at tokens with custom logic, predefined rules, or signed requests with policies.
+
+Common authentication methods and associated risks include external provider federation, which enables easier access for your users but shares data with third parties. To improve security credentials and verification for these authentication methods, you can modify the default password policy to ensure your users create stronger passwords, require additional contact information from users before they can reset passwords, and enable multi-factor authentication (MFA), which adds a layer of security at sign-in but may also add friction for your users.
+
+Amplify Auth is powered by Amazon Cognito, an identity and access management service that enables you to secure your web or mobile applications. Amazon Cognito is comprised of two services: Amazon Cognito User Pools, a full-featured user directory service to handle user registration, authentication, and account recovery, and Amazon Cognito Federated Identities or Identity Pools, a service used to authorize your users to interact with other AWS services.
+
+Amplify interfaces with User Pools to store your user information, including federation with other OpenID providers, and leverages federated identities to manage user access to AWS resources. Authorization is often done in one of two ways: clients pass tokens to the backend that perform custom logic to allow or deny actions, or clients sign requests and the backend validates the signature, allowing or denying actions depending on predefined policy.
+
+Before building, it's essential to understand that some initial configuration options in Amazon Cognito cannot be changed after the backend resources are configured. These include user attributes, sign-in methods, verification methods, and the sub attribute, which is a unique identifier within each user pool. Additionally, if MFA is set to required with phone number for all users, you will need to include MFA setup when users sign up. 
+
+In a React application, you can implement authentication and authorization using Amazon Cognito and Amplify. For example, you can use the `Auth` class from `@aws-amplify/auth` to authenticate users and then use the `Hub` class from `@aws-amplify/core` to authorize access to AWS resources. 
+
+```javascript
+import Amplify from '@aws-amplify/core';
+import Auth from '@aws-amplify/auth';
+
+// Initialize Amplify
+Amplify.configure({
+  Auth: {
+    // Your Amazon Cognito User Pool configuration
+  }
+});
+
+// Authenticate a user
+Auth.signIn(username, password)
+  .then((user) => {
+    // User is authenticated, you can now authorize access to AWS resources
+  })
+  .catch((error) => {
+    // Handle authentication error
+  });
+```
+
+It's recommended to visit the Amazon Cognito documentation for more details on these settings, including user pool attributes and adding MFA to a user pool.
+
+Amplify Auth supports multi-factor authentication (MFA) for user sign-in flows. MFA is an extra layer of security used to make sure that users trying to gain access to an account are who they say they are. It requires users to provide additional information to verify their identity. Amplify Auth supports MFA with time-based one-time passwords (TOTP), text messages (SMS), and email.
+
+To set up MFA, use the `defineAuth` function to enable MFA for your app. You can set up MFA with TOTP, SMS, or email. If you plan to use SMS for MFA, the `phoneNumber` attribute must be marked as required in your `userAttributes`. If you plan to use email for MFA, the `email` attribute must also be marked as required in your `userAttributes`.
+
+When MFA is `REQUIRED` with SMS in your backend auth resource, you will need to pass the phone number during sign-up API call. If you are using the `email` or `username` as the primary sign-in mechanism, you will need to pass the `phoneNumber` attribute as a user attribute. Similarly, when MFA is `REQUIRED` with email as your delivery mechanism, you will need to pass an email address during the sign-up API call.
+
+To set up TOTP for a user, you need to call the `setUpTOTP` API to generate a `TOTPSetupDetails` object, which should be used to configure an Authenticator app like Microsoft Authenticator or Google Authenticator. Once the Authenticator app is set up, the user can generate a TOTP code and provide it to the library to complete the sign-in process.
+
+To enable EMAIL MFA during sign-up, you need to pass `email` as a user attribute to enable email MFA for your users during sign-up. By default, you have to verify a user account after they sign up using the `confirmSignUp` API, which will send a one-time password to the user's phone number or email, depending on your Amazon Cognito configuration.
+
+After a user signs in, if they have MFA enabled for their account, a challenge will be issued that requires calling the `confirmSignIn` API with the user-provided confirmation code sent to their email address. If MFA is `ON` or enabled for the user, you must call `confirmSignIn` with the OTP sent to their email address.
+
+To set up a user's preferred MFA method, you can use the `fetchMFAPreference` API to get the current MFA preference and enabled MFA types, if any, for the current user. You can then use the `updateMFAPreference` API to update the MFA preference for the current user.
+
+Remembering a device is useful in conjunction with MFA because it allows the second factor requirement to be automatically met when your user signs in on that device and reduces friction in their sign-in experience. By default, this feature is turned off. You can configure device tracking with the `deviceTracking` construct.
+
+There are differences to keep in mind when working with remembered, forgotten, and tracked devices. Tracked devices are those that have been assigned a device key and secret pair. Remembered devices are also tracked, but the user has chosen to remember the device. Not-remembered devices are tracked devices where the user has chosen not to remember the device. Forgotten devices are those that have been removed from being remembered and tracked.
+
+You can use the `forgetDevice` API to remove devices from being both remembered and tracked. You can also use the `ConfirmDevice` API to confirm a device and make it remembered. 
+
+Here is how you would set up MFA in a React application, let's say with SMS:
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+export default async functionotpSetup(req, res) {
+  const { Auth } = withSSRContext({ req });
+
+  try {
+    const username = 'your-username';
+    const password = 'your-password';
+    const result = await Auth.signIn(username, password);
+
+    if (result.nextStep === 'CONFIRM_SIGN_IN_WITH_SMS_CODE') {
+      const confirmationCode = 'your-confirmation-code';
+      const result = await Auth.confirmSignIn({
+        challengeResponse: confirmationCode,
+      });
+    }
+  } catch (error) {
+    // handle error
+  }
+}
+```
+To update the user's device preference, use `updateMFAPreference` like so:
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+export default async function updateDevicePreference(req, res) {
+  const { Auth } = withSSRContext({ req });
+
+  try {
+    const preference = {
+      sms: 'PREFERRED',
+    };
+    const result = await Auth.updateMFAPreference(preference);
+  } catch (error) {
+    // handle error
+  }
+}
+```
+Note that the actual implementation may vary based on your specific requirements and application architecture.
+
+Amplify supports the use of passwordless authentication flows using the following methods: 
+- SMS-based one-time password (SMS OTP)
+- Email-based one-time password (Email OTP)
+- WebAuthn passkey
+
+Passwordless authentication removes the security risks and user friction associated with traditional passwords.
+
+**Important Note:** Passwordless configuration is currently not available in defineAuth. We are currently working towards enabling support for passwordless configurations.
+
+To implement passwordless sign-in flows, you need to override the Cognito UserPool to enable the sign-in methods. 
+
+### SMS OTP
+
+SMS-based authentication uses phone numbers as the identifier and text messages as the verification channel. Here's how it works: 
+1. The user enters their phone number to sign up or sign in
+2. They receive a text message with a time-limited code
+3. After the user enters their code, they are authenticated
+
+To use SMS-based one-time password, your Amazon Cognito user pool needs to be configured to use Amazon Simple Notification Service (SNS) to send text messages. 
+
+### Email OTP
+
+Email-based authentication uses email addresses for identification and verification. Here's how it works: 
+1. The user enters their email address to sign up or sign in
+2. They receive an email message with a time-limited code
+3. After the user enters their code, they are authenticated
+
+To use email-based one-time password, your Amazon Cognito user pool needs to be configured to use Amazon Simple Email Service (SES) to send email messages. 
+
+### WebAuthn Passkey
+
+WebAuthn uses biometrics or security keys for authentication, leveraging device-specific security features. Here's how it works: 
+1. The user chooses to register a passkey
+2. Their device prompts for biometric or security key verification
+3. For future logins, they authenticate using the same method
+
+To learn more about using WebAuthn passkeys, SMS OTP, and Email OTP in your React application code, you can visit the relevant documentation pages. Additionally, you can learn more about managing WebAuthn credentials. 
+
+For example, to use SMS OTP in a React application, you would typically use the `Auth` class from `@aws-amplify/auth` to send a verification code to the user's phone number, and then use the `Auth` class again to confirm the verification code. 
+
+```javascript
+import { Auth } from '@aws-amplify/auth';
+
+// Send a verification code to the user's phone number
+Auth.sendCustomAuthorizer demographics = { phoneNumber: '+1234567890' })
+ .then(data => console.log(data))
+ .catch(err => console.log(err));
+
+// Confirm the verification code
+Auth.confirmSignUp('username', 'verificationCode')
+ .then(data => console.log(data))
+ .catch(err => console.log(err));
+```
+
+By default, Amplify Auth allows users to sign in using their email address. However, you can change or extend this to also allow users to sign in using their phone number. 
+
+To do this, you need to configure the phone sign-in method in your authentication settings. Here is an example of how to do this in your Amplify Auth configuration:
+```javascript
+const auth = {
+  loginWith: {
+    phone: true,
+  },
+}
+```
+This configuration will require users to provide a phone number when signing up, and this attribute cannot be changed. 
+
+After setting up phone sign-in, you can use the `signIn` API to allow users to sign in with their phone number. You can also customize the SMS messages sent to users during the sign-in process. 
+
+To learn more about using the `signIn` API and configuring your account for production SMS workloads, see the next steps below:
+ 
+- Learn how to use the `signIn` API
+- Learn how to configure your account for production SMS workloads
+
+Amplify Auth interacts with its underlying Amazon Cognito user pool as an OpenID Connect (OIDC) provider. When users successfully authenticate, you receive OIDC-compliant JSON web tokens (JWT). These tokens are used to identify your user and access resources.
+
+There are two types of tokens: access tokens and ID tokens. Access tokens are used to verify the bearer of the token is authorized to perform an action against a resource. ID tokens are intended to be used within your frontend application only and contain personally identifiable information (PII). They should not be used to authorize access against a resource.
+
+Access tokens have a payload that includes information such as the user's sub (subject), issuer, client ID, and expiration time. For example:
+```json
+{
+  "sub": "54288468-e051-706d-a73f-03892273d7e9",
+  "iss": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_yoKn9s4Tq",
+  "client_id": "1sg675g08g6g0e9f64grv9n5sk",
+  "origin_jti": "0eadb994-a6e0-419e-b309-a7a0d522d72f",
+  "event_id": "b180897a-181c-4f73-94bb-a2946e8b4ef1",
+  "token_use": "access",
+  "scope": "aws.cognito.signin.user.admin",
+  "auth_time": 1714241873,
+  "exp": 1714245473,
+  "iat": 1714241873,
+  "jti": "57f10a4d-a1f2-453b-8672-d1cfa8187047",
+  "username": "54288468-e051-706d-a73f-03892273d7e9"
+}
+```
+
+ID tokens also have a payload that includes information such as the user's sub, email, and email verified status. For example:
+```json
+{
+  "sub": "54288468-e051-706d-a73f-03892273d7e9",
+  "email_verified": true,
+  "iss": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_yoKn9s4Tq",
+  "cognito:username": "54288468-e051-706d-a73f-03892273d7e9",
+  "origin_jti": "0eadb994-a6e0-419e-b309-a7a0d522d72f",
+  "aud": "1sg675g08g6g0e9f64grv9n5sk",
+  "event_id": "b180897a-181c-4f73-94bb-a2946e8b4ef1",
+  "token_use": "id",
+  "auth_time": 1714241873,
+  "exp": 1714245473,
+  "iat": 1714241873,
+  "jti": "bb69af10-3ce0-47c2-8d8d-5bdc8630ab58",
+  "email": "hello@mycompany.com"
+}
+```
+
+You can customize the token management options in Amplify Auth. Token keys are automatically rotated for added security, but you can update how they are stored, customize the refresh rate and expiration times, and revoke tokens on sign-out.
+
+To update the token-saving mechanism, you can choose from several storage options, including local storage, cookie storage, and session storage. You can also implement your own custom storage mechanism.
+
+For example, to use local storage in a React application, you can use the following code:
+```javascript
+import { cognitoUserPoolsTokenProvider } from 'aws-amplify/auth/cognito';
+import { defaultStorage } from 'aws-amplify/utils';
+
+cognitoUserPoolsTokenProvider.setKeyValueStorage(defaultStorage);
+```
+
+To use cookie storage, you can use the following code:
+```javascript
+import { cognitoUserPoolsTokenProvider } from 'aws-amplify/auth/cognito';
+import { CookieStorage } from 'aws-amplify/utils';
+
+cognitoUserPoolsTokenProvider.setKeyValueStorage(new CookieStorage());
+```
+
+You can also implement your own custom storage mechanism by creating a class that implements the storage interface. For example:
+```javascript
+import { cognitoUserPoolsTokenProvider } from 'aws-amplify/auth/cognito';
+import { KeyValueStorageInterface } from 'aws-amplify/utils';
+
+class MyCustomStorage implements KeyValueStorageInterface {
+  storageObject: Record<string, string> = {};
+  async setItem(key: string, value: string): Promise<void> {
+    this.storageObject[key] = value;
+  }
+  async getItem(key: string): Promise<string | null> {
+    return this.storageObject[key];
+  }
+  async removeItem(key: string): Promise<void> {
+    delete this.storageObject[key];
+  }
+  async clear(): Promise<void> {
+    this.storageObject = {};
+  }
+}
+
+cognitoUserPoolsTokenProvider.setKeyValueStorage(new MyCustomStorage());
+```
+
+Token revocation is enabled automatically in Amplify Auth. To revoke tokens, you can set up global sign-out with `signOut({ global: true })` to globally sign out your user from all of their devices.
+
+For example, in a React application, you can use the following code:
+```javascript
+import { signOut } from 'aws-amplify/auth';
+
+signOut({ global: true });
+```
+
+You can learn more about customizing the ID token, bringing your own tokens from external providers, and using cookie storage server-side in the Amplify documentation.
+
+Amplify Auth stores user profile information in user attributes. When a user signs in, Amplify Auth will automatically configure an email or phone number attribute that is required for sign-in.
+
+To extend a user profile beyond the default email or phone number attribute, you can configure attributes with the userAttributes property. However, after creating an auth resource, you cannot switch an attribute between required and not required.
+
+For example, you can configure an attribute such as birthdate by defining your auth resource as follows 
+```javascript
+import { defineAuth } from "@aws-amplify/backend"
+
+export const auth = defineAuth({
+  loginWith: {
+    email: true,
+  },
+  userAttributes: {
+    birthdate: {
+      mutable: true,
+      required: false,
+    }
+  },
+})
+```
+
+User attributes are defined as Cognito Standard Attributes. Attributes can be configured to be required for user sign-up and whether the values are mutable. When configuring your resource to allow users to login with email, an email must be specified for user sign-up and cannot be changed later. However, additional attributes can be configured to be optional and mutable after sign-up.
+
+In addition to the provided standard attributes, you can configure Custom Attributes. These are attributes that are unique to your use case, such as a tenant ID or a user's display name. Custom attributes are identified by the custom: prefix. 
+
+For example 
+```javascript
+import { defineAuth } from "@aws-amplify/backend"
+
+export const auth = defineAuth({
+  loginWith: {
+    email: true,
+  },
+  userAttributes: {
+    "custom:display_name": {
+      dataType: "String",
+      mutable: true,
+      maxLen: 16,
+      minLen: 1,
+    },
+    "custom:favorite_number": {
+      dataType: "Number",
+      mutable: true,
+      min: 1,
+      max: 100,
+    },
+    "custom:is_beta_user": {
+      dataType: "Boolean",
+      mutable: true,
+    },
+    "custom:started_free_trial": {
+      dataType: "DateTime",
+      mutable: true,
+    },
+  },
+})
+```
+
+Unlike standard attributes, custom attributes cannot natively be required for sign-up, however, can be required by validating user attributes upon sign-up with a pre-sign-up trigger.
+
+Custom attributes can also be configured with specific data types, including String, Number, Boolean, and DateTime. String and Number can be assigned minimum and maximum constraints, which is useful for simple validations.
+
+Next steps include learning how attributes are surfaced to tokens and learning how to manage your user attributes.
+
+Amplify Auth provides a mechanism that allows you to group users. Assigning users to groups enables you to customize access for a collection of users, or leverage for auditing purposes. For example, only "ADMINS" users are permitted to delete posts from a bulletin, or only "EDITORS" are permitted to modify posts in a "draft" state. To get started with groups, configure the groups property.
+
+To configure the groups property in a React application, you would need to define your authentication resource. Here's an example of how you can do this:
+
+```javascript
+const auth = {
+  loginWith: {
+    email: true,
+  },
+  groups: ["ADMINS", "EDITORS"],
+}
+```
+
+Note that there are a few limitations with groups, including a limit of 10,000 groups per user pool.
+
+Amplify resources enable you to define access for groups using common language. For example, you can use `allow.groups` in data. Here's an example of how you can define access for groups in a React application:
+
+```javascript
+const schema = {
+  Article: {
+    authorization: (allow) => [
+      allow.groups(["EDITORS"]).to(["read", "update"])
+    ]
+  }
+}
+```
+
+Or in storage:
+
+```javascript
+const storage = {
+  name: "articles",
+  access: (allow) => ({
+    "drafts/*": [allow.groups(["EDITORS"]).to(["read", "write"])],
+  }),
+}
+```
+
+By defining access with groups, Amplify configures authorization rules to read from the current user's groups. User pool groups are available as a claim in the user's ID token and access token as `cognito:groups`. Requests can be made to secure resources using the access token and validated against this claim to permit action on the resource.
+
+Each Cognito user pool group is assigned an IAM role. IAM roles can be modified to extend access to other AWS resources. Roles can be accessed from your backend on the `role` property of your group. Here's an example of how you can access the role of a group in a React application:
+
+```javascript
+const { groups } = auth;
+const adminRole = groups["ADMINS"].role;
+```
+
+For more information on group roles and how to use them to secure access to your resources, you can refer to the AWS documentation on IAM roles. 
+
+To learn more about using groups with Amplify Auth, you can check out the following resources:
+
+- Learn how to automatically add a user to a group upon account confirmation
+- Learn how to secure access to data models using groups
+- Learn how to secure access to storage objects using groups
+
+Amplify Auth does not support signing in with only a username and password. However, it can be configured to enable usernames for display purposes. Amazon Cognito offers two ways to provision login mechanisms: username attributes and alias attributes.
+
+Username attributes allow you to customize which attribute can be used as the username, such as allowing users to sign in with an email or phone number instead of a username. Alias attributes allow you to specify which attributes can be used with sign-in in addition to a username.
+
+In Amazon Cognito, usernames are immutable, meaning that after the initial sign-up, users cannot change their username later. This may be undesirable in some applications, which can motivate the use of alias attributes. Alias attributes allow you to define a mutable preferred username in addition to an immutable username.
+
+Amplify Auth uses username attributes to configure Cognito to accept an email or phone number as the username. Users will then need to verify their ownership of the specified email or phone number to confirm their account.
+
+You can also configure your auth resource to accept a preferred username to be used as the display name. This is not a username the user will be able to sign in with, but it can be used to mask their personal information such as their email or phone number when displaying publicly.
+
+To configure a preferred username, you can define your auth resource in a file such as `amplify/auth/resource.ts` with the following code:
+```typescript
+import { defineAuth } from '@aws-amplify/backend';
+
+export const auth = defineAuth({
+  loginWith: {
+    email: true,
+  },
+  userAttributes: {
+    preferredUsername: {
+      mutable: true,
+      required: false
+    }
+  }
+});
+```
+This will allow users to enter a preferred username when they sign up, which can be used as their display name.
+
+If you want to override the default behavior and allow your users to sign up with an immutable username, you can use CDK to modify your auth resource's configuration directly. You can do this by adding the following code to your `amplify/backend.ts` file:
+```typescript
+import { defineBackend } from "@aws-amplify/backend"
+import { auth } from "./auth/resource"
+import { data } from "./data/resource"
+
+const backend = defineBackend({
+  auth,
+  data,
+})
+
+const { cfnUserPool } = backend.auth.resources.cfnResources
+cfnUserPool.usernameAttributes = []
+```
+This will allow users to sign up with a username that cannot be changed later.
+
+To learn more about configuring email sign-up or phone sign-up, you can visit the relevant documentation pages.
+
+Enabling users to delete their account can improve trust and transparency. Amplify Auth allows you to programmatically enable self-service account deletion.
+
+To set up account deletion, you can use the Amplify Libraries. The `deleteUser` API will delete a user from the Auth category and sign out the user. If your application uses a Cognito User Pool, this action will only delete the user from the Cognito User Pool and will not affect Cognito Identity Pool alone.
+
+Before deleting a user, you may need to delete associated user data that is not stored in Cognito, such as data stored with Amplify Data. This is to comply with guidelines like GDPR that require deleting data associated with a deleted account.
+
+To enable account deletion in a React application, you can use the following method:
+```javascript
+import { Auth } from 'aws-amplify';
+
+async function handleDeleteUser() {
+  try {
+    await Auth.deleteUser();
+  } catch (error) {
+    console.log(error);
+  }
+}
+```
+This code will delete the user's account and sign them out. You should update your UI to let users know that their account is deleted and test the functionality with a test user. Note that the user will be signed out of your application when they delete their account.
+
+Amplify Auth emits events during authentication flows, which enables you to react to user flows in real time and trigger custom business logic. For example, you may want to capture data, synchronize your app's state, and personalize the user's experience. You can listen to and respond to events across the Auth lifecycle such as sign-in and sign-out.
+
+You can use Amplify Hub with its built-in Amplify Auth events to subscribe a listener using a publish-subscribe pattern and capture events between different parts of your application. The Amplify Auth category publishes in the `auth` channel when auth events such as `signedIn` or `signedOut` happen independent from your app code.
+
+Here is a basic example of setting up a listener that logs an event emitted through the `auth` channel:
+```js
+import { Hub } from 'aws-amplify/utils';
+
+Hub.listen('auth', (data) => {
+  console.log(data)
+});
+```
+
+Once your app is set up to subscribe and listen to specific event types from the `auth` channel, the listeners will be notified asynchronously when an event occurs. This pattern allows for a one-to-many relationship where one auth event can be shared with many different listeners that have been subscribed. This lets your app react based on the event rather than proactively poll for information.
+
+You can also set up your listener to extract data from the event payload and execute a callback that you define. For example, you might update UI elements in your app to reflect your user's authenticated state after the `signedIn` or `signedOut` events.
+
+One of the most common workflows will be to log events. In this example you can see how you can listen and target specific `auth` events using a `switch` to log your own messages:
+```js
+import { Hub } from 'aws-amplify/utils';
+
+Hub.listen('auth', ({ payload }) => {
+  switch (payload.event) {
+    case 'signedIn':
+      console.log('user have been signedIn successfully.');
+      break;
+    case 'signedOut':
+      console.log('user have been signedOut successfully.');
+      break;
+    case 'tokenRefresh':
+      console.log('auth tokens have been refreshed.');
+      break;
+    case 'tokenRefresh_failure':
+      console.log('failure while refreshing auth tokens.');
+      break;
+    case 'signInWithRedirect':
+      console.log('signInWithRedirect API has successfully been resolved.');
+      break;
+    case 'signInWithRedirect_failure':
+      console.log('failure while trying to resolve signInWithRedirect API.');
+      break;
+    case 'customOAuthState':
+      console.log('custom state returned from CognitoHosted UI');
+      break;
+  }
+});
+```
+
+You can also stop listening for messages by calling the result of the `Hub.listen()` function. This may be useful if you no longer need to receive messages in your application flow. This can also help you avoid any memory leaks on low powered devices when you are sending large amounts of data through Amplify Hub on multiple channels.
+
+To stop listening to a certain event, you need to wrap the listener function with a variable and call it once you no longer need it:
+```js
+const hubListenerCancelToken = Hub.listen('auth', (data) => {
+  console.log('Listening for all auth events: ', data.payload.data);
+});
+
+hubListenerCancelToken(); // stop listening for messages
+```
+
+Note that channels are logical group names that help you organize dispatching and listening. However, some channels are protected and cannot be used to publish custom events, and `auth` is one of these channels. Sending unexpected payloads to protected channels can have undesirable side effects such as impacting authentication flows. 
+
+The Amplify Hub guide provides more information on protected channels and how to use them. 
+
+Some examples of listening to auth events are:
+- Update UI elements in response to user authentication state
+- Capture data and synchronize the app's state in response to authentication events
+- Trigger custom business logic in response to authentication events
+
+Overall, listening to auth events with Amplify Hub provides a powerful way to react to user authentication flows in real time and create a more personalized and responsive user experience.
+
+User attributes such as email address and phone number help identify individual users. Defining the user attributes included in user profiles makes user data easy to manage at scale. This information helps personalize user journeys, tailor content, provide intuitive account control, and more. You can capture information upfront during sign-up or enable customers to update their profile after sign-up.
+
+### Pass User Attributes During Sign-up
+
+You can create user attributes during sign-up or when the user is authenticated. To do this as part of sign-up, you can pass them in the `userAttributes` object of the `signUp` API. For example, in a React application using AWS Amplify:
+```typescript
+import { signUp } from 'aws-amplify/auth';
+
+await signUp({
+  username: 'jdoe',
+  password: 'mysecurerandompassword#123',
+  options: {
+    userAttributes: {
+      email: 'me@domain.com',
+      phone_number: '+12128601234', 
+      given_name: 'Jane',
+      family_name: 'Doe',
+      nickname: 'Jane',
+    },
+  },
+});
+```
+### Configure Custom User Attributes During Sign-up
+
+Custom attributes can be passed in with the `userAttributes` option of the `signUp` API. For example:
+```typescript
+import { signUp } from 'aws-amplify/auth';
+
+await signUp({
+  username: 'john.doe@example.com',
+  password: 'hunter2',
+  options: {
+    userAttributes: {
+      'custom:display_name': 'john_doe123',
+    }
+  }
+});
+```
+### Retrieve User Attributes
+
+You can retrieve user attributes for your users to read in their profile using the `fetchUserAttributes` API. For example:
+```typescript
+import { fetchUserAttributes } from 'aws-amplify/auth';
+
+await fetchUserAttributes();
+```
+### Update User Attribute
+
+You can use the `updateUserAttribute` API to create or update existing user attributes. For example:
+```typescript
+import { updateUserAttribute } from 'aws-amplify/auth';
+
+async function handleUpdateUserAttribute(attributeKey, value) {
+  try {
+    const output = await updateUserAttribute({
+      userAttribute: {
+        attributeKey,
+        value
+      }
+    });
+    // handle next steps
+  } catch (error) {
+    console.log(error);
+  }
+}
+```
+Note that if you change an attribute that requires confirmation, the user will receive a confirmation code. This code can be used with the `confirmUserAttribute` API to confirm the change.
+
+### Update User Attributes
+
+You can use the `updateUserAttributes` API to create or update multiple existing user attributes. For example:
+```typescript
+import { updateUserAttributes } from 'aws-amplify/auth';
+
+await updateUserAttributes({
+  userAttributes: {
+    email: 'me@domain.com',
+    name: 'Jon Doe',
+  },
+});
+```
+### Verify User Attribute
+
+Some attributes require confirmation for the attribute update to complete. If the attribute needs to be confirmed, part of the result of the `updateUserAttribute` or `updateUserAttributes` APIs will indicate that a confirmation code was sent. When the user gets the confirmation code, you can present a UI to the user to enter the code and invoke the `confirmUserAttribute` API with their input:
+```typescript
+import { confirmUserAttribute } from 'aws-amplify/auth';
+
+async function handleConfirmUserAttribute({ userAttributeKey, confirmationCode }) {
+  try {
+    await confirmUserAttribute({ userAttributeKey, confirmationCode });
+  } catch (error) {
+    console.log(error);
+  }
+}
+```
+### Send User Attribute Verification Code
+
+If an attribute needs to be verified while the user is authenticated, invoke the `sendUserAttributeVerificationCode` API:
+```typescript
+import { sendUserAttributeVerificationCode } from 'aws-amplify/auth';
+
+async function handleSendUserAttributeVerificationCode(key) {
+  try {
+    await sendUserAttributeVerificationCode({
+      userAttributeKey: key
+    });
+  } catch (error) {
+    console.log(error);
+  }
+}
+```
+### Delete User Attributes
+
+The `deleteUserAttributes` API allows deleting one or more user attributes:
+```typescript
+import { deleteUserAttributes } from 'aws-amplify/auth';
+
+async function handleDeleteUserAttributes(keys) {
+  try {
+    await deleteUserAttributes({
+      userAttributeKeys: ['custom:my_custom_attribute',...keys]
+    });
+  } catch (error) {
+    console.log(error);
+  }
+}
+```
+Next steps include learning how to set up password change and recovery, and learning how to set up custom attributes.
+
+Amplify Auth provides access to current user sessions and tokens to help you retrieve your user's information to determine if they are signed in with a valid session and control their access to your app.
+
+To get information about the currently authenticated user, including the username, user ID, and sign-in details, you can use the `getCurrentUser` API. 
+
+```javascript
+import { getCurrentUser } from 'aws-amplify/auth';
+
+const { username, userId, signInDetails } = await getCurrentUser();
+
+console.log("username", username);
+console.log("user id", userId);
+console.log("sign-in details", signInDetails);
+```
+
+This method can be used to check if a user is signed in. It throws an error if the user is not authenticated. However, note that the user's sign-in details are not supported when using the Hosted UI or the `signInWithRedirect` API.
+
+To get session details, you can use the `fetchAuthSession` API, which returns a tokens object containing the JSON Web Tokens (JWT).
+
+```javascript
+import { fetchAuthSession } from 'aws-amplify/auth';
+
+const session = await fetchAuthSession();
+
+console.log("id token", session.tokens.idToken)
+console.log("access token", session.tokens.accessToken)
+```
+
+The `fetchAuthSession` API automatically refreshes the user's session when the authentication tokens have expired and a valid refresh token is present. You can also refresh the session explicitly by calling the `fetchAuthSession` API with the `forceRefresh` flag enabled.
+
+```javascript
+import { fetchAuthSession } from 'aws-amplify/auth';
+
+await fetchAuthSession({ forceRefresh: true });
+```
+
+Note that by default, sessions from external identity providers cannot be refreshed.
+
+After a user has finished signup, they can proceed to sign in. Amplify Auth signin flows can be multi-step processes. The required steps are determined by the configuration you provided when you define your auth resources. 
+
+Depending on the configuration, you may need to call various APIs to finish authenticating a user's signin attempt. To identify the next step in a signin flow, inspect the nextStep parameter in the signin result.
+
+When called successfully, the signin APIs will return an AuthSignInResult. Inspect the nextStep property in the result to see if additional signin steps are required.
+
+The nextStep property is of type object that contains a property called signInStep. The signInStep can be one of the following: 
+- CONFIRM_SIGN_IN_WITH_SMS_CODE: Amplify Auth has sent the user a random code over SMS and is waiting for the user to verify that code.
+- CONFIRM_SIGN_IN_WITH_TOTP_CODE: Amplify Auth is waiting for the user to enter the TOTP code from their associated authenticator app during set up.
+- CONFIRM_SIGN_IN_WITH_EMAIL_CODE: Amplify Auth has sent the user a random code to their email address and is waiting for the user to verify that code.
+- CONFIRM_SIGN_IN_WITH_PASSWORD: The user must provide their password as the first factor authentication method.
+- CONTINUE_SIGN_IN_WITH_MFA_SELECTION: The user must select the MFA method to use.
+- CONTINUE_SIGN_IN_WITH_EMAIL_SETUP: The user must provide an email address to complete the sign in process.
+- CONTINUE_SIGN_IN_WITH_TOTP_SETUP: The user must provide a TOTP code to complete the sign in process.
+- CONTINUE_SIGN_IN_WITH_MFA_SETUP_SELECTION: The user must select the MFA method to setup.
+- CONTINUE_SIGN_IN_WITH_FIRST_FACTOR_SELECTION: The user must select an authentication factor to use.
+- CONFIRM_SIGN_IN_WITH_CUSTOM_CHALLENGE: Amplify Auth is awaiting completion of a custom authentication challenge.
+- CONFIRM_SIGN_IN_WITH_NEW_PASSWORD: Amplify Auth requires the user choose a new password they proceeding with the sign in.
+- RESET_PASSWORD: Amplify Auth requires that the user reset their password before proceeding.
+- CONFIRM_SIGN_UP: Amplify Auth requires that the user confirm their email or phone number before proceeding.
+- DONE: The sign-in flow is complete, which means the user is successfully authenticated.
+
+To confirm sign-in with SMS MFA, you need to prompt the user to enter the code and then pass the value to the confirmSignIn API.
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+async function confirmSignInWithSmsMfa(code) {
+  try {
+    const result = await withSSRContext({ req: {} }).Auth.confirmSignIn({
+      challengeResponse: code,
+    });
+    if (result.isSignedIn) {
+      console.log('Confirm sign in succeeded');
+    } else {
+      console.log('Confirm sign in not complete');
+      console.log('Next step:', result.nextStep);
+    }
+  } catch (error) {
+    console.log('Confirm sign in failed:', error);
+  }
+}
+```
+
+To confirm sign-in with TOTP MFA, you need to prompt the user to enter the TOTP code and then pass the value to the confirmSignIn API.
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+async function confirmSignInWithTotpMfa(code) {
+  try {
+    const result = await withSSRContext({ req: {} }).Auth.confirmSignIn({
+      challengeResponse: code,
+    });
+    if (result.isSignedIn) {
+      console.log('Confirm sign in succeeded');
+    } else {
+      console.log('Confirm sign in not complete');
+      console.log('Next step:', result.nextStep);
+    }
+  } catch (error) {
+    console.log('Confirm sign in failed:', error);
+  }
+}
+```
+
+To confirm sign-in with Email MFA, you need to prompt the user to enter the code and then pass the value to the confirmSignIn API.
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+async function confirmSignInWithEmailMfa(code) {
+  try {
+    const result = await withSSRContext({ req: {} }).Auth.confirmSignIn({
+      challengeResponse: code,
+    });
+    if (result.isSignedIn) {
+      console.log('Confirm sign in succeeded');
+    } else {
+      console.log('Confirm sign in not complete');
+      console.log('Next step:', result.nextStep);
+    }
+  } catch (error) {
+    console.log('Confirm sign in failed:', error);
+  }
+}
+```
+
+To continue sign-in with MFA selection, you need to prompt the user to select the MFA method and then pass the selected method to the confirmSignIn API.
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+async function continueSignInWithMfaSelection(mfaMethod) {
+  try {
+    const result = await withSSRContext({ req: {} }).Auth.confirmSignIn({
+      challengeResponse: mfaMethod,
+    });
+    if (result.isSignedIn) {
+      console.log('Confirm sign in succeeded');
+    } else {
+      console.log('Confirm sign in not complete');
+      console.log('Next step:', result.nextStep);
+    }
+  } catch (error) {
+    console.log('Confirm sign in failed:', error);
+  }
+}
+```
+
+To continue sign-in with Email setup, you need to prompt the user to enter the email address and then pass the email address to the confirmSignIn API.
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+async function continueSignInWithEmailSetup(email) {
+  try {
+    const result = await withSSRContext({ req: {} }).Auth.confirmSignIn({
+      challengeResponse: email,
+    });
+    if (result.isSignedIn) {
+      console.log('Confirm sign in succeeded');
+    } else {
+      console.log('Confirm sign in not complete');
+      console.log('Next step:', result.nextStep);
+    }
+  } catch (error) {
+    console.log('Confirm sign in failed:', error);
+  }
+}
+```
+
+To continue sign-in with TOTP setup, you need to prompt the user to enter the TOTP code and then pass the TOTP code to the confirmSignIn API.
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+async function continueSignInWithTotpSetup(code) {
+  try {
+    const result = await withSSRContext({ req: {} }).Auth.confirmSignIn({
+      challengeResponse: code,
+    });
+    if (result.isSignedIn) {
+      console.log('Confirm sign in succeeded');
+    } else {
+      console.log('Confirm sign in not complete');
+      console.log('Next step:', result.nextStep);
+    }
+  } catch (error) {
+    console.log('Confirm sign in failed:', error);
+  }
+}
+```
+
+To confirm sign-in with a custom challenge, you need to prompt the user to enter the custom challenge answer and then pass the answer to the confirmSignIn API.
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+async function confirmSignInWithCustomChallenge(answer) {
+  try {
+    const result = await withSSRContext({ req: {} }).Auth.confirmSignIn({
+      challengeResponse: answer,
+    });
+    if (result.isSignedIn) {
+      console.log('Confirm sign in succeeded');
+    } else {
+      console.log('Confirm sign in not complete');
+      console.log('Next step:', result.nextStep);
+    }
+  } catch (error) {
+    console.log('Confirm sign in failed:', error);
+  }
+}
+```
+
+To confirm sign-in with a new password, you need to prompt the user to enter the new password and then pass the new password to the confirmSignIn API.
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+async function confirmSignInWithNewPassword(password) {
+  try {
+    const result = await withSSRContext({ req: {} }).Auth.confirmSignIn({
+      challengeResponse: password,
+    });
+    if (result.isSignedIn) {
+      console.log('Confirm sign in succeeded');
+    } else {
+      console.log('Confirm sign in not complete');
+      console.log('Next step:', result.nextStep);
+    }
+  } catch (error) {
+    console.log('Confirm sign in failed:', error);
+  }
+}
+```
+
+To reset the password, you need to invoke the resetPassword API and follow the reset password flow.
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+async function resetPassword(username) {
+  try {
+    const result = await withSSRContext({ req: {} }).Auth.resetPassword(username);
+    console.log('Reset password succeeded');
+    console.log('Next step:', result.nextStep);
+  } catch (error) {
+    console.log('Reset password failed:', error);
+  }
+}
+```
+
+To confirm sign-up, you need to invoke the confirmSignUp API and follow the confirm sign-up flow.
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+async function confirmSignUp(username, confirmationCode) {
+  try {
+    const result = await withSSRContext({ req: {} }).Auth.confirmSignUp(username, confirmationCode);
+    console.log('Confirm sign up succeeded');
+  } catch (error) {
+    console.log('Confirm sign up failed:', error);
+  }
+}
+```
+
+The sign-in flow is complete when the next step is DONE, which means the user is successfully authenticated. As a convenience, the SignInResult also provides the isSignedIn property, which will be true if the next step is DONE. 
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+async function getSignInResult() {
+  try {
+    const result = await withSSRContext({ req: {} }).Auth.currentAuthenticatedUser();
+    if (result.isSignedIn) {
+      console.log('Sign in is complete');
+    } else {
+      console.log('Sign in is not complete');
+      console.log('Next step:', result.nextStep);
+    }
+  } catch (error) {
+    console.log('Sign in failed:', error);
+  }
+}
+```
+
+Amplify provides a client library that enables you to interact with backend resources such as Amplify Auth. The quickest way to get started with Amplify Auth in your frontend application is with the Authenticator component, which provides a customizable UI and complete authentication flows.
+
+To use the signIn API, you need to call the signIn function and pass in the username and password. The API will return a result that includes a nextStep property, which can be used to determine if further action is required. For example, if the user needs to confirm their sign in with a code sent via SMS or email, the nextStep property will be set to CONFIRM_SIGN_IN_WITH_SMS_CODE or CONFIRM_SIGN_IN_WITH_EMAIL_CODE.
+
+You can handle the next steps by calling the confirmSignIn function and passing in the challenge response. For example, if the user needs to confirm their sign in with a code sent via SMS, you can call confirmSignIn and pass in the code received via SMS.
+
+Here is an example of how to use the signIn API in React:
+```tsx
+import { signIn } from 'aws-amplify/auth';
+
+async function handleSubmit(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const username = form.elements.email.value;
+  const password = form.elements.password.value;
+  try {
+    const result = await signIn({
+      username,
+      password,
+    });
+    if (result.nextStep.signInStep === 'CONFIRM_SIGN_IN_WITH_SMS_CODE') {
+      // prompt user for otp code delivered via SMS
+      const code = prompt('Enter the code sent via SMS');
+      const confirmResult = await confirmSignIn({
+        challengeResponse: code,
+      });
+      if (confirmResult.nextStep.signInStep === 'DONE') {
+        console.log('Sign in successful!');
+      }
+    } else if (result.nextStep.signInStep === 'DONE') {
+      console.log('Sign in successful!');
+    }
+  } catch (error) {
+    console.error('Error signing in:', error);
+  }
+}
+```
+You can also use the signIn API with other authentication methods such as passwordless authentication with SMS or email OTP, or with external identity providers like Google or Facebook.
+
+To sign in with an external identity provider, you can use the signInWithRedirect function and pass in the provider. For example:
+```ts
+import { signInWithRedirect } from 'aws-amplify/auth';
+
+signInWithRedirect({ provider: 'Google' });
+```
+You can also use the autoSignIn API to automatically sign in a user when it was previously enabled by the signUp API.
+
+To use passwordless authentication with SMS or email OTP, you can pass the preferredChallenge parameter to the signIn API. For example:
+```ts
+import { signIn } from 'aws-amplify/auth';
+
+async function handleSubmit(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const username = form.elements.email.value;
+  try {
+    const result = await signIn({
+      username,
+      options: {
+        authFlowType: 'USER_AUTH',
+        preferredChallenge: 'SMS_OTP',
+      },
+    });
+    if (result.nextStep.signInStep === 'CONFIRM_SIGN_IN_WITH_SMS_CODE') {
+      // prompt user for otp code delivered via SMS
+      const code = prompt('Enter the code sent via SMS');
+      const confirmResult = await confirmSignIn({
+        challengeResponse: code,
+      });
+      if (confirmResult.nextStep.signInStep === 'DONE') {
+        console.log('Sign in successful!');
+      }
+    }
+  } catch (error) {
+    console.error('Error signing in:', error);
+  }
+}
+```
+
+The quickest way to get started with Amplify Auth in your frontend application is with the Authenticator component, which provides a customizable UI and complete authentication flows.
+
+To sign a user out of your application, use the `signOut` API. Here's an example:
+```ts
+import { signOut } from 'aws-amplify/auth';
+
+await signOut();
+```
+
+You can also sign out users from all devices by performing a global sign-out. This will also invalidate all refresh tokens issued to a user. The user's current access and ID tokens will remain valid on other devices until the refresh token expires (access and ID tokens expire one hour after they are issued). Here's an example:
+```ts
+import { signOut } from 'aws-amplify/auth';
+
+await signOut({ global: true });
+```
+
+Here's a practical example of how to use the `signOut` API in a React application:
+```tsx
+import { Amplify } from "aws-amplify"
+import { signOut } from "aws-amplify/auth"
+import outputs from "../amplify_outputs.json"
+
+Amplify.configure(outputs)
+
+export default function App() {
+  async function handleSignOut() {
+    await signOut()
+  }
+
+  return (
+    <button type="button" onClick={handleSignOut}>
+      Sign out
+    </button>
+  )
+}
+```
+Note that you need to configure Amplify with your application's outputs before using the `signOut` API.
+
+Amplify provides a client library that enables you to interact with backend resources such as Amplify Auth. The quickest way to get started with Amplify Auth in your frontend application is with the Authenticator component, which provides a customizable UI and complete authentication flows.
+
+To get started, you can use the `signUp()` API to create a new user in your backend. The `signUp` API response will include a `nextStep` property, which can be used to determine if further action is required. It may return the following next steps: 
+- `CONFIRM_SIGN_UP`: The sign up needs to be confirmed by collecting a code from the user and calling `confirmSignUp`.
+- `DONE`: The sign up process has been fully completed.
+- `COMPLETE_AUTO_SIGN_IN`: The sign up process needs to complete by invoking the `autoSignIn` API.
+
+Here's an example of how to use the `signUp` API in React:
+```tsx
+import { signUp } from "aws-amplify/auth"
+
+const { isSignUpComplete, userId, nextStep } = await signUp({
+  username: "hello@mycompany.com",
+  password: "hunter2",
+  options: {
+    userAttributes: {
+      email: "hello@mycompany.com",
+      phone_number: "+15555555555" 
+    },
+  }
+});
+```
+You can confirm the sign-up after receiving a confirmation code from the user:
+```typescript
+import { confirmSignUp } from 'aws-amplify/auth';
+
+const { isSignUpComplete, nextStep } = await confirmSignUp({
+  username: "hello@mycompany.com",
+  confirmationCode: "123456"
+});
+```
+Your application's users can also sign up using passwordless methods. To learn more, visit the concepts page for passwordless.
+
+For passwordless sign-up with SMS OTP, you can use the following code:
+```typescript
+// Sign up using a phone number
+const { nextStep: signUpNextStep } = await signUp({
+	username: 'hello',
+	options: {
+		userAttributes: {
+			phone_number: '+15555551234',
+		},
+	},
+});
+
+// Confirm sign up with the OTP received
+const { nextStep: confirmSignUpNextStep } = await confirmSignUp({
+	username: 'hello',
+	confirmationCode: '123456',
+});
+```
+For passwordless sign-up with Email OTP, you can use the following code:
+```typescript
+// Sign up using an email address
+const { nextStep: signUpNextStep } = await signUp({
+	username: 'hello',
+	options: {
+		userAttributes: {
+			email: 'hello@example.com',
+		},
+	},
+});
+
+// Confirm sign up with the OTP received
+const { nextStep: confirmSignUpNextStep } = await confirmSignUp({
+	username: 'hello',
+	confirmationCode: '123456',
+});
+```
+For auto sign-in, you can use the following code:
+```typescript
+// Call `signUp` API with `USER_AUTH` as the authentication flow type for `autoSignIn`
+const { nextStep: signUpNextStep } = await signUp({
+	username: 'hello',
+	options: {
+		userAttributes: {
+			email: 'hello@example.com',
+			phone_number: '+15555551234',
+		},
+		autoSignIn: {
+			authFlowType: 'USER_AUTH',
+		},
+	},
+});
+
+// Call `confirmSignUp` API to complete the flow
+const { nextStep: confirmSignUpNextStep } = await confirmSignUp({
+	username: 'hello',
+	confirmationCode: '123456',
+});
+
+// Call `autoSignIn` API to complete the flow
+const { nextStep } = await autoSignIn();
+```
+
+AWS Amplify provides various authentication flows for signing in users, including `userSRP`, `userPassword`, `customWithSRP`, `customWithoutSRP`, and `userAuth`. 
+
+The `userSRP` flow uses the Secure Remote Password protocol, where the password never leaves the client and is unknown to the server. This is the recommended flow and is used by default.
+
+The `userPassword` flow sends user credentials to the backend without applying SRP encryption. This flow is useful when migrating users to Cognito using the "Migration" trigger, as it allows users to verify their credentials without resetting their passwords.
+
+The `customWithSRP` and `customWithoutSRP` flows allow for custom challenge types, such as CAPTCHAs or dynamic challenge questions, in addition to a password. These flows can be used to meet specific requirements and can be initiated by calling `signIn` with the corresponding auth flow type.
+
+The `userAuth` flow is a choice-based authentication flow that allows users to choose from available authentication methods, such as `emailOTP`, `smsOTP`, `webAuthn`, `password`, or `passwordSRP`. This flow is useful when providing users with the option to choose their authentication method.
+
+To switch between authentication flows, you can configure the flow in the `amplify_outputs.json` file or pass the `authFlowType` as a runtime parameter to the `signIn` API call. Runtime configuration takes precedence over any auth flow type configuration present in `amplify_outputs.json`.
+
+Here's an example of how to initiate a custom authentication flow in React:
+```javascript
+import { Amplify, Auth } from 'aws-amplify';
+
+//...
+
+const signIn = async () => {
+  try {
+    const result = await Auth.signIn({
+      username: 'username',
+      password: 'password',
+      options: {
+        authFlowType: 'CUSTOM_WITH_SRP',
+      },
+    });
+    // Handle the result
+  } catch (error) {
+    // Handle the error
+  }
+};
+```
+For the `userAuth` flow, you can provide the user with a list of available authentication methods and allow them to choose their preferred method. Here's an example:
+```javascript
+import { Amplify, Auth } from 'aws-amplify';
+
+//...
+
+const signIn = async () => {
+  try {
+    const result = await Auth.signIn({
+      username: 'username',
+      options: {
+        authFlowType: 'USER_AUTH',
+      },
+    });
+    // Handle the result, which may include a list of available authentication methods
+  } catch (error) {
+    // Handle the error
+  }
+};
+```
+You can then use the `confirmSignIn` API to complete the sign-in process with the user's chosen authentication method.
+
+In terms of migrating users with Amazon Cognito, you can use the "Migration" trigger to migrate users from an existing user directory into Cognito. This trigger invokes a Lambda function that validates user credentials against the existing directory and returns a response object containing user attributes and status on success.
+
+For custom authentication flows, you need to implement three Lambda triggers for Amazon Cognito: `defineAuthChallenge`, `createAuthChallenge`, and `verifyAuthChallengeResponse`. These triggers allow you to define custom challenge types and verify user responses to these challenges.
+
+Overall, AWS Amplify provides a flexible and customizable authentication system that can meet various use cases and requirements. By choosing the right authentication flow and configuring it appropriately, you can provide a secure and user-friendly authentication experience for your users.
+
+The quickest way to get started with Amplify Auth in your React application is with the Authenticator component, which provides a customizable UI and complete authentication flows. This component is automatically configured based on the outputs generated from your backend.
+
+To use the Authenticator component in your React application, you can import it from `@aws-amplify/ui-react` and configure Amplify with your backend outputs. Here's an example of how to use the Authenticator component:
+
+```tsx
+import { Authenticator } from '@aws-amplify/ui-react';
+import { Amplify } from 'aws-amplify';
+import '@aws-amplify/ui-react/styles.css';
+import outputs from "../amplify_outputs.json";
+
+Amplify.configure(outputs);
+
+export default function App() {
+  return (
+    <Authenticator>
+      {({ signOut, user }) => (
+        <main>
+          <h1>Hello {user?.username}</h1>
+          <button onClick={signOut}>Sign out</button>
+        </main>
+      )}
+    </Authenticator>
+  );
+}
+```
+
+Alternatively, you can bring your own UI and leverage the library from `aws-amplify` to handle authentication flows manually. To learn more about the Authenticator and how to customize its appearance, visit the Amplify UI documentation.
+
+The Auth category can be configured to perform a custom authentication flow defined by you. The following guide shows how to setup a simple passwordless authentication flow in a React application.
+
+## Prerequisites
+An application with Amplify libraries integrated.
+
+## Configure Auth
+The custom auth flow can be configured manually.
+
+## Sign in a user
+Implement a UI to get the username from the user. After the user enters the username you can start the sign in flow by calling the following method:
+```javascript
+import Amplify from 'aws-amplify';
+import Auth from '@aws-amplify/auth';
+
+async function signIn(username) {
+  try {
+    const result = await Auth.signIn(username);
+    if (result.nextStep === 'confirmSignInWithCustomChallenge') {
+      // Ask the user to enter the custom challenge.
+    } else {
+      console.log('Sign in succeeded');
+    }
+  } catch (error) {
+    console.log('Sign in failed', error);
+  }
+}
+```
+
+## Confirm sign in with custom challenge
+To get a custom challenge from the user, create an appropriate UI for the user to submit the required value, and pass that value into the `confirmSignIn()` API.
+```javascript
+async function confirmSignIn(response) {
+  try {
+    const result = await Auth.confirmSignIn(response);
+    console.log('Confirm sign in succeeded');
+  } catch (error) {
+    console.log('Confirm sign in failed', error);
+  }
+}
+```
+
+## Lambda Trigger Setup
+AWS Amplify now supports creating functions as part of its new backend experience. For more information on the Functions and how to start with them check out the Amplify Functions documentation. In addition, more information on available triggers can be found in the Cognito documentation.
+
+## Custom Auth Flow with Secure Remote Password (SRP)
+Cognito User Pool allows to start the custom authentication flow with SRP as the first step. If you would like to use this flow, setup Define Auth Lambda trigger to handle SRP_A as the first challenge.
+```javascript
+exports.handler = (event, context) => {
+  if (event.request.session.length == 1 && 
+      event.request.session[0].challengeName == 'SRP_A') {
+        event.response.issueTokens = false;
+        event.response.failAuthentication = false;
+        event.response.challengeName = 'PASSWORD_VERIFIER';
+  } else if (event.request.session.length == 2 && 
+      event.request.session[1].challengeName == 'PASSWORD_VERIFIER' && 
+      event.request.session[1].challengeResult == true) {
+        event.response.issueTokens = false;
+        event.response.failAuthentication = false;
+        event.response.challengeName = 'CUSTOM_CHALLENGE';
+  } else if (event.request.session.length == 3 && 
+      event.request.session[2].challengeName == 'CUSTOM_CHALLENGE' && 
+      event.request.session[2].challengeResult == true) {
+        event.response.issueTokens = true;
+        event.response.failAuthentication = false;
+  } else {
+      event.response.issueTokens = false;
+      event.response.failAuthentication = true;
+  }
+  context.done(null, event);
+};
+```
+If your lambda is setup to start with `SRP` as the first step, make sure to initiate the signIn process with `customWithSRP` as the authentication flow:
+```javascript
+import Amplify from 'aws-amplify';
+import Auth from '@aws-amplify/auth';
+
+async function signInWithSRP(username, password) {
+  try {
+    const options = {
+      authFlowType: 'CUSTOM_AUTH_WITH_SRP',
+    };
+    const result = await Auth.signIn(username, password, options);
+    console.log('Sign in result', result);
+  } catch (error) {
+    console.log('Sign in failed', error);
+  }
+}
+```
+
+To customize the emails your users receive when signing up with AWS Amplify, you can modify the default behavior of the email attribute in the auth settings. 
+
+When users sign up, they receive a verification email to confirm their email address. You can customize this email by changing the email attribute from true to an object. This object can have several properties, including verificationEmailStyle, verificationEmailSubject, and verificationEmailBody. 
+
+For example, you can set the verificationEmailStyle to "CODE" and specify a custom subject and body for the email. The verificationEmailBody is a function that takes a createCode function as an argument, which generates the verification code. You can use this code in the email body.
+
+In React, you can achieve this by modifying the auth settings as follows:
+```javascript
+import { defineAuth } from "@aws-amplify/backend"
+
+export const auth = defineAuth({
+  loginWith: {
+    email: {
+      verificationEmailStyle: "CODE",
+      verificationEmailSubject: "Welcome to my app!",
+      verificationEmailBody: (createCode) => `Use this code to confirm your account: ${createCode()}`,
+    },
+  },
+})
+```
+
+You can also customize the invitation email that is sent to users when you set up a user account on their behalf in the Amplify console. To do this, you can override the userInvitation attribute of the email object. This attribute has two properties: emailSubject and emailBody. The emailBody is a function that takes two arguments: user and code. These arguments are functions that must be called to get the user's username and temporary password.
+
+In React, you can customize the invitation email as follows:
+```javascript
+import { defineAuth } from "@aws-amplify/backend"
+
+export const auth = defineAuth({
+  loginWith: {
+    email: {
+      verificationEmailStyle: "CODE",
+      verificationEmailSubject: "Welcome to my app!",
+      verificationEmailBody: (createCode) => `Use this code to confirm your account: ${createCode()}`,
+      userInvitation: {
+        emailSubject: "Welcome to my app!",
+        emailBody: (user, code) =>
+          `We're happy to have you! You can now login with username ${user()} and temporary password ${code()}`,
+      },
+    },
+  },
+})
+```
+
+You can customize Amplify Auth's behavior using triggers. A trigger is a function that executes during the authentication flow. This allows you to add custom logic, such as validating email domains, adding users to groups, or creating user profiles upon account confirmation.
+
+Triggers are essentially Cognito user pool Lambda triggers. When a Lambda trigger is assigned to your user pool, Amazon Cognito interrupts its default flow and requests information from your function. It generates a JSON event containing user request information, such as creating a user account, signing in, resetting a password, or updating an attribute. Your function can then take action or send the event back unmodified.
+
+To get started with triggers in a React application, you would define a function and specify the triggers property on your auth resource. Here is an example of how to do this in React:
+
+```javascript
+import { defineAuth } from "@aws-amplify/backend";
+
+const auth = defineAuth({
+  loginWith: {
+    email: true,
+  },
+  triggers: {}
+});
+```
+
+You can learn more about use cases for triggers by visiting the Functions examples. This will provide you with more information on how to implement triggers in your React application.
+
+Apple requires app developers to provide the data usage policy of the app when submitting their app to the App Store. The Amplify Library is used to interact with AWS resources and gathers API usage metrics from the AWS services accessed. This process involves adding a user agent to the request made to the AWS service, which includes information about the Amplify Library version, operating system name, and version. AWS collects this data to generate metrics related to library usage, but it is not linked to the user's identity and not used for tracking purposes.
+
+The Amplify Library collects various types of data, which can be categorized into several groups. These groups include contact info, user content, identifiers, and other data. The contact info group includes data such as name, email address, and phone number, which are linked to the user's identity and used for app functionality. The user content group includes data such as photos or videos and audio data, which are not linked to the user's identity and used for app functionality.
+
+The identifiers group includes data such as user ID and device ID, which are linked to the user's identity and used for app functionality and analytics. The other data group includes data such as OS version, OS name, locale info, app version, and network information, which are not linked to the user's identity and used for analytics and app functionality.
+
+Some Amplify categories, such as Analytics and Auth, persist data to the local device. This data is automatically removed when a user uninstalls the app from the device. However, Amplify stores Auth information in the local system keychain, which does not guarantee any particular behavior around whether data is removed when an app is uninstalled.
+
+To clear auth information, app developers should decide when to clear the data by signing out. One strategy for accomplishing this would be to detect whether or not the app is launching for the first time and invoke Auth.signOut() if the app has not been launched before. In a React application, this could be implemented using the following code:
+```
+import { Auth } from '@aws-amplify/auth';
+
+// Detect whether or not the app is launching for the first time
+const isFirstLaunch = localStorage.getItem('isFirstLaunch') === null;
+
+if (isFirstLaunch) {
+  // Invoke Auth.signOut() if the app has not been launched before
+  Auth.signOut();
+  localStorage.setItem('isFirstLaunch', 'false');
+}
+```
+
+Microsoft Entra ID can be used as a SAML provider with Amazon Cognito. To integrate Entra ID, you can sign in with your existing enterprise users and maintain profiles unique to the Amplify Auth resource. 
+
+To configure Entra ID, start by defining your auth resource with the appropriate redirect URIs. You can do this by using the Amplify CLI to create an auth resource with the necessary configuration.
+
+Next, deploy your changes to your personal cloud sandbox using the Amplify CLI. This will generate a domain that you can use to configure your new Entra ID App.
+
+To set up Microsoft Entra ID, navigate to the Azure portal and select Entra ID. Create a new enterprise application and choose to integrate any other application that is not in the gallery. Specify a name for the application and choose to integrate a non-gallery application.
+
+Configure Single Sign-on with SAML by selecting the Single sign-on option and then selecting SAML. You will need to populate the Basic SAML Configuration step with the appropriate values, including the Identifier (Entity ID) and Reply URL (Assertion Consumer Service URL).
+
+The Identifier (Entity ID) should be in the format `urn:amazon:cognito:sp:<your-cognito-user-pool-id>`, and the Reply URL should be in the format `https://<your-cognito-domain>/saml2/idpresponse`.
+
+You can find the necessary values in the `amplify_outputs.json` file, which is generated when you deploy your changes to your personal cloud sandbox.
+
+Once you have configured the Basic SAML Configuration step, you can save the configuration and proceed to the SAML Certificates section. Copy the App Federation Metadata Url, which you will need to configure your auth resource with the new SAML provider.
+
+To configure your backend with Entra ID, you will need to update your auth resource configuration to include the SAML provider. You can do this by adding a new external provider to your auth resource configuration, with the name `MicrosoftEntraIDSAML` and the metadata content set to the App Federation Metadata Url that you copied earlier.
+
+You can also optionally upload the Cognito Signing Certificate to Azure, which can be done by navigating to your Cognito User Pool and selecting the identity provider that you created earlier.
+
+Finally, to connect your frontend to Entra ID, you can use the `signInWithRedirect` function from the Amplify Auth library, and specify the provider name as `MicrosoftEntraIDSAML`. 
+
+For example, in React:
+```javascript
+import { signInWithRedirect } from "aws-amplify/auth"
+
+signInWithRedirect({
+  provider: { custom: "MicrosoftEntraIDSAML" }
+})
+```
+This will redirect the user to the Entra ID login page, where they can sign in with their Entra ID credentials. Once they have signed in, they will be redirected back to your application, where they can access protected resources.
+
+To grant access to auth resources in Amplify Auth, you can define an `access` property that allows other resources to interact with auth by specifying actions. 
+
+This is typically done when defining and configuring your auth resource. 
+
+Here's an example of how to define and configure your auth resource in a React application:
+```javascript
+const auth = {
+  loginWith: {
+    email: true,
+  },
+  access: (allow) => [
+    allow.resource('addUserToGroup').to(['addUserToGroup'])
+  ],
+}
+```
+When you grant a function access to another resource in your Amplify backend, it will configure environment variables for that function to make SDK calls to the AWS services it has access to. 
+
+These environment variables are typed and available as part of the `env` object.
+
+Here's a list of available actions that can be used in the `access` property:
+
+* manageUsers: Grants CRUD access to users in the UserPool
+* manageGroupMembership: Grants permission to add and remove users from groups
+* manageGroups: Grants CRUD access to groups in the UserPool
+* manageUserDevices: Manages devices registered to users
+* managePasswordRecovery: Grants permission to reset user passwords
+* addUserToGroup: Grants permission to add any user to any group
+* createUser: Grants permission to create new users and send welcome messages via email or SMS
+* deleteUser: Grants permission to delete any user
+* deleteUserAttributes: Grants permission to delete attributes from any user
+* disableUser: Grants permission to deactivate any user
+* enableUser: Grants permission to activate any user
+* forgetDevice: Grants permission to deregister any user's devices
+* getDevice: Grants permission to get information about any user's devices
+* getUser: Grants permission to look up any user by user name
+* listUsers: Grants permission to list users and their basic details in the UserPool
+* listDevices: Grants permission to list any user's remembered devices
+* listGroupsForUser: Grants permission to list the groups that any user belongs to
+* listUsersInGroup: Grants permission to list users in the specified group
+* removeUserFromGroup: Grants permission to remove any user from any group
+* resetUserPassword: Grants permission to reset any user's password
+* setUserMfaPreference: Grants permission to set any user's preferred MFA method
+* setUserPassword: Grants permission to set any user's password
+* setUserSettings: Grants permission to set user settings for any user
+* updateDeviceStatus: Grants permission to update the status of any user's remembered devices
+* updateUserAttributes: Grants permission to updates any user's standard or custom attributes
+
+Each action corresponds to specific Cognito IAM actions that are granted when the action is allowed.
+
+Amplify Auth enables you to track devices your users use for auditing, MFA, and more. Before you begin, it is essential to understand the terminology for device statuses:
+- Tracked: Every time the user signs in with a new device, the client is given the device key at the end of a successful authentication event. We use this device key to generate a salt and password verifier which is used to call the ConfirmDevice API. At this point, the device is considered to be tracked. Once the device is in a tracked state, you can use the Amazon Cognito console to see the time it started to be tracked, last authentication time, and other information about that device.
+- Remembered: Remembered devices are also tracked. During user authentication, the device key and secret pair assigned to a remembered device is used to authenticate the device to verify that it is the same device that the user previously used to sign in.
+- Not Remembered: A not-remembered device is a tracked device where Cognito has been configured to require users to "Opt-in" to remember a device, but the user has not opted in to having the device remembered. This use case is used for users signing into their application from a device that they don't own.
+- Forgotten: A forgotten device is one removed from being remembered.
+
+Note that device tracking and remembering features are not available when using federating sign-in with external providers as devices are tracked on the upstream identity provider. These features are also not available when using Cognito's Hosted UI.
+
+To remember devices in a React application, you can use the following code:
+```javascript
+import { rememberDevice } from 'aws-amplify/auth';
+
+await rememberDevice();
+```
+
+To forget devices in a React application, note that forgotten devices are neither remembered nor tracked. You can use the following code:
+```javascript
+import { forgetDevice } from 'aws-amplify/auth';
+
+await forgetDevice();
+```
+
+To fetch a list of remembered devices in a React application, you can use the following code:
+```javascript
+import { fetchDevices } from 'aws-amplify/auth';
+
+const output = await fetchDevices();
+```
+
+You can now set up devices to be remembered, forgotten, and fetched in your React application.
+
+Amplify Auth provides a secure way for your users to change their password or recover a forgotten password. 
+
+By default, your users can retrieve access to their accounts if they forgot their password by using either their phone or email. The default account recovery methods are as follows: 
+- If `phone` is used as a login option, the user account verification channel is their phone number.
+- If `email` is used as a login option, the user account verification channel is their email.
+- If both `email` and `phone` are used as login options, the user account verification channel is their email.
+
+To reset a user's password, you can use the `resetPassword` API. This API sends a reset code to the user based on their settings. 
+
+Here is a React code example of how to reset a user's password:
+```javascript
+import { resetPassword } from 'aws-amplify/auth';
+
+const resetUserPassword = async () => {
+  try {
+    const output = await resetPassword({
+      username: "hello@mycompany.com"
+    });
+
+    const { nextStep } = output;
+    switch (nextStep.resetPasswordStep) {
+      case 'CONFIRM_RESET_PASSWORD_WITH_CODE':
+        const codeDeliveryDetails = nextStep.codeDeliveryDetails;
+        console.log(`Confirmation code was sent to ${codeDeliveryDetails.deliveryMedium}`);
+        // Collect the confirmation code from the user and pass to confirmResetPassword.
+        break;
+      case 'DONE':
+        console.log('Successfully reset password.');
+        break;
+    }
+  } catch (error) {
+    console.log('Error resetting password:', error);
+  }
+};
+```
+
+After sending the reset code, you need to confirm the password reset using the `confirmResetPassword` API. This API takes the username, new password, and the confirmation code as parameters.
+
+Here is a React code example of how to confirm the password reset:
+```javascript
+import { confirmResetPassword } from 'aws-amplify/auth';
+
+const confirmPasswordReset = async () => {
+  try {
+    await confirmResetPassword({
+      username: "hello@mycompany.com",
+      confirmationCode: "123456",
+      newPassword: "hunter3",
+    });
+    console.log('Password reset confirmed');
+  } catch (error) {
+    console.log('Error confirming password reset:', error);
+  }
+};
+```
+
+You can also update a signed-in user's password using the `updatePassword` API. This API takes the old password and the new password as parameters.
+
+Here is a React code example of how to update a user's password:
+```javascript
+import { updatePassword } from 'aws-amplify/auth';
+
+const updateCurrentUserPassword = async () => {
+  try {
+    await updatePassword({
+      oldPassword: "hunter2",
+      newPassword: "hunter3",
+    });
+    console.log('Password updated successfully');
+  } catch (error) {
+    console.log('Error updating password:', error);
+  }
+};
+```
+
+You can override the default user account verification channel by modifying the `accountRecovery` setting in the `auth` resource.
+
+Here is a code example of how to override the default user account verification channel:
+```javascript
+import { defineAuth } from '@aws-amplify/backend';
+
+export const auth = defineAuth({
+  loginWith: {
+    email: true
+  },
+  accountRecovery: 'EMAIL_ONLY'
+});
+```
+
+You can also customize the password policy by modifying the `passwordPolicy` setting in the `cfnUserPool` resource.
+
+Here is a code example of how to override the default password policy:
+```javascript
+import { defineBackend } from '@aws-amplify/backend';
+import { auth } from './auth/resource';
+
+const backend = defineBackend({
+  auth,
+});
+
+const { cfnUserPool } = backend.auth.resources.cfnResources;
+
+cfnUserPool.policies = {
+  passwordPolicy: {
+    minimumLength: 32,
+    requireLowercase: true,
+    requireNumbers: true,
+    requireSymbols: true,
+    requireUppercase: true,
+    temporaryPasswordValidityDays: 20,
+  },
+};
+```
+
+WebAuthn registration and authentication are not currently supported on React Native, other passwordless features are fully supported.
+
+Amplify Auth enables your users to associate, keep track of, and delete passkeys. To register a passkey, the user must be authenticated and have at least one other first-factor authentication mechanism associated with their account.
+
+You can associate a passkey using the following code:
+```javascript
+import { associateWebAuthnCredential } from 'aws-amplify/auth';
+
+await associateWebAuthnCredential();
+```
+This will prompt the user to register a passkey using their local authenticator, which will then be associated with Cognito.
+
+To list registered passkeys, you can use the following code:
+```javascript
+import { listWebAuthnCredentials } from 'aws-amplify/auth';
+
+const result = await listWebAuthnCredentials();
+
+for (const credential of result.credentials) {
+  console.log(`Credential ID: ${credential.credentialId}`);
+  console.log(`Friendly Name: ${credential.friendlyCredentialName}`);
+  console.log(`Relying Party ID: ${credential.relyingPartyId}`);
+  console.log(`Created At: ${credential.createdAt}`);
+}
+```
+To delete a passkey, you can use the following code:
+```javascript
+import { deleteWebAuthnCredential } from 'aws-amplify/auth';
+
+const id = "credential-id-to-delete";
+
+await deleteWebAuthnCredential({
+  credentialId: id
+});
+```
+Here is a practical example that uses the list and delete APIs together. In this example, the user has 3 passkeys registered. They want to list all passkeys while using a `pageSize` of 2 as well as delete the first passkey in the list.
+```javascript
+import { 
+  listWebAuthnCredentials,
+  deleteWebAuthnCredential
+} from 'aws-amplify/auth';
+
+let passkeys = [];
+
+const result = await listWebAuthnCredentials({ pageSize: 2 });
+
+passkeys.push(...result.credentials);
+
+const nextPage = await listWebAuthnCredentials({
+  pageSize: 2,
+  nextToken: result.nextToken,
+});
+
+passkeys.push(...nextPage.credentials);
+
+const id = passkeys[0].credentialId;
+
+await deleteWebAuthnCredential({
+  credentialId: id
+});
+```
+
+To manage users with Admin Actions in Amplify Auth, you can use the AWS SDK's `@aws-sdk/client-cognito-identity-provider` package. This package is intended for server-side use and can be used within a Function. One example of using this package is with the `addUserToGroup` action, which can be defined as a custom mutation.
+
+First, create an "ADMINS" group that will be used to authorize the mutation. This is done by defining authentication settings that include the creation of the "ADMINS" group.
+
+Next, create a Function resource named "add-user-to-group". This function will be used to handle the `addUserToGroup` mutation.
+
+Then, in your authentication resources, grant access for the "add-user-to-group" function to perform the `addUserToGroup` action. This involves specifying the function and the action it is allowed to perform.
+
+After that, define the custom mutation for `addUserToGroup`. This mutation will use the "add-user-to-group" function resource and can only be called by a user in the "ADMINS" group. The mutation takes two arguments: the user ID and the group name.
+
+Finally, create the handler for the "add-user-to-group" function using the AWS SDK's `@aws-sdk/client-cognito-identity-provider` package. The handler function will add a user to a group using the `AdminAddUserToGroupCommand`.
+
+To use the `addUserToGroup` mutation in your React frontend, you can generate a client using the Amplify data API and then call the mutation with the group name and user ID. Here's an example of how to call the mutation:
+
+```javascript
+import Amplify from 'aws-amplify';
+import { API } from 'aws-amplify';
+
+// Initialize Amplify
+Amplify.configure({
+  // your configuration
+});
+
+// Generate the client
+const apiName = 'your-api-name';
+const api = API.graphql({ apiName });
+
+// Call the mutation
+const variables = {
+  groupName: 'ADMINS',
+  userId: '5468d468-4061-70ed-8870-45c766d26225',
+};
+
+const mutation = `
+  mutation AddUserToGroup($groupName: String!, $userId: String!) {
+    addUserToGroup(groupName: $groupName, userId: $userId)
+  }
+`;
+
+api.graphql({
+  query: mutation,
+  variables,
+});
+```
+
+This will add the specified user to the "ADMINS" group using the `addUserToGroup` mutation.
+
+The User management page in the Amplify console provides a user-friendly interface for managing your application's users. You can create and manage users and groups, edit user attributes, and suspend users. 
+
+If you have not yet created an auth resource, you should visit the Auth setup guide to learn how to set this up.
+
+To access the User management page, log in to the Amplify console and choose your app. Select the branch you would like to access, then select Authentication from the left navigation bar, and finally select User management.
+
+To create a user, go to the User management page and select the Users tab. Then select Create user and enter a unique identifier, such as an email address, username, or phone number, and a temporary password. Choose Create user to create the new user. 
+
+A user can be confirmed by using pre-built UI components and Amplify libraries in your React application. For example, you can use the Auth library to confirm a user:
+```javascript
+import { Auth } from 'aws-amplify';
+
+Auth.confirmSignUp(username, code);
+```
+
+To create a group, go to the User management page and choose the Groups tab. Then choose Create group and enter a name for the group. Choose Create group to create the new group.
+
+To add users to a group, go to the User management page and choose the Groups tab. Select the name of the group to add users to, then choose Add users. Choose how you want to search for users to add from the Search menu, add one or multiple users, and then choose Add users.
+
+To delete a group, go to the User management page and choose the Groups tab. Select the name of the group to delete, then choose Delete. A confirmation window will be displayed, enter Delete and choose Confirm deletion to delete the group.
+
+Amplify Auth provides default settings for Amazon Cognito resource definitions. You can customize your authentication resource using AWS Cloud Development Kit (CDK) to make it behave exactly as needed for your use cases.
+
+To override the password policy, you can use the CDK construct and add a property override. For example, you can modify the password policy to require a minimum length of 10 characters, lowercase letters, numbers, symbols, and uppercase letters, and set the temporary password validity to 20 days.
+
+To override the Cognito UserPool multi-factor authentication options, you need to modify the underlying CDK construct. First, ensure your auth resource configuration includes a compatible account recovery option and a custom SES sender. Then, extend the underlying CDK construct by activating Amazon Cognito's Advanced Security Features (ASF) and add EMAIL_OTP to the enabled MFA options.
+
+You can also modify the Cognito UserPool to enable passwordless sign-in methods. This can be done by modifying the underlying Cognito user pool resource to allow sign in with passwordless methods, such as web authentication, email OTP, or SMS OTP.
+
+Here are some examples of how you can achieve this in your React code:
+
+To override the password policy:
+```typescript
+const cfnUserPool = backend.auth.resources.cfnResources.cfnUserPool;
+cfnUserPool.policies = {
+  passwordPolicy: {
+    minimumLength: 10,
+    requireLowercase: true,
+    requireNumbers: true,
+    requireSymbols: true,
+    requireUppercase: true,
+    temporaryPasswordValidityDays: 20,
+  },
+};
+```
+
+To override the Cognito UserPool multi-factor authentication options:
+```typescript
+const { cfnUserPool } = backend.auth.resources.cfnResources;
+cfnUserPool.userPoolAddOns = {
+  advancedSecurityMode: "AUDIT",
+};
+cfnUserPool.enabledMfas = [...(cfnUserPool.enabledMfas || []), "EMAIL_OTP"];
+```
+
+To override the Cognito UserPool to enable passwordless sign-in methods:
+```typescript
+const { cfnResources } = backend.auth.resources;
+const { cfnUserPool, cfnUserPoolClient } = cfnResources;
+cfnUserPool.addPropertyOverride(
+  'Policies.SignInPolicy.AllowedFirstAuthFactors',
+  ['PASSWORD', 'WEB_AUTHN', 'EMAIL_OTP', 'SMS_OTP']
+);
+cfnUserPoolClient.explicitAuthFlows = [
+  'ALLOW_REFRESH_TOKEN_AUTH',
+  'ALLOW_USER_AUTH'
+];
+cfnUserPool.addPropertyOverride('WebAuthnRelyingPartyID', '<RELYING_PARTY>');
+cfnUserPool.addPropertyOverride('WebAuthnUserVerification', 'preferred');
+```
+
+To move your Amplify Auth resources to production, you need to configure them to handle production workloads. By default, Amplify Auth provisions Amazon Cognito resources with limited capabilities for sending email and SMS messages, which is sufficient for developing your application but not for production. 
+
+For email, Cognito has a default email functionality that limits the number of emails that can be sent in one day. To handle production workloads, you can configure Cognito to send emails using Amazon Simple Email Service (Amazon SES). However, new AWS accounts default to a "sandbox" status with Amazon SES, which means you can only send emails to verified email addresses and domains. 
+
+To get started with Amazon SES in production, you need to request production access, which can take up to 24 hours to process. After your account is configured for production access and you have verified your sender email, you can configure your Cognito user pool to send emails using the verified sender. 
+
+Here is an example of how to configure your auth resource to send emails using Amazon SES in a React application:
+```javascript
+import Amplify from 'aws-amplify';
+
+Amplify.configure({
+  Auth: {
+    loginWith: {
+      email: true,
+    },
+    senders: {
+      email: {
+        fromEmail: "registrations@example.com",
+      },
+    },
+  },
+});
+```
+You can also customize the display name of the sender and optionally apply a custom address for your users to reply. 
+```javascript
+import Amplify from 'aws-amplify';
+
+Amplify.configure({
+  Auth: {
+    loginWith: {
+      email: true,
+    },
+    senders: {
+      email: {
+        fromEmail: "registrations@example.com",
+        fromName: "MyApp",
+        replyTo: "inquiries@example.com"
+      },
+    },
+  },
+});
+```
+For SMS authentication codes, you need to request an origination number, which will be used to send authentication codes. If your AWS account is in the SMS sandbox, you also need to add a destination phone number. You can check if your AWS account is in the SMS sandbox by going to the Amazon SNS console and checking the status under the Account information section. 
+
+Note that this process is specific to AWS Amplify and Amazon Cognito, and the code examples provided are for a React application.
+
+Amplify Auth is powered by Amazon Cognito, a robust user directory service that handles user registration, authentication, account recovery, and other operations. To get started with defining your authentication resource, you need to open or create the auth resource file. 
+
+By default, your auth resource is scaffolded using email as the default login mechanism. You can also configure your auth resource to allow signing in with phone numbers or an external provider such as Google, Facebook, Amazon, or Sign in with Apple. At a minimum, you will need to pass a loginWith value to set up how your users sign in to your app. Signing in with email and password is configured by default if you do not provide any value.
+
+To deploy your auth resource, run the command `npx ampx sandbox` in your terminal. This command creates your resource in your personal cloud sandbox and generates an outputs file (amplify_outputs.json) to enable your frontend app to connect to your backend resources.
+
+After a successful deployment, you can connect your application code to your auth resource. Amplify's Authenticator UI component streamlines this process by enabling you to rapidly build the entire authentication flow for your app. The component works seamlessly with the configuration in your auth resource file to automatically connect with your backend resources.
+
+To use the Authenticator component, you need to install the required library for your platform. For React, you can install the @aws-amplify/ui-react library using the command `npm add @aws-amplify/ui-react`. Then, you can add the Authenticator component to your app and configure it to use your auth resource.
+
+Here is an example of how to use the Authenticator component in a React app:
+```typescript
+import { Authenticator } from '@aws-amplify/ui-react';
+import Amplify from 'aws-amplify';
+import outputs from '@/amplify_outputs.json';
+import '@aws-amplify/ui-react/styles.css';
+
+Amplify.configure(outputs);
+
+export default function App() {
+  return (
+    <Authenticator>
+      {({ signOut, user }) => (
+        <main>
+          <h1>Hello {user?.username}</h1>
+          <button onClick={signOut}>Sign out</button>
+        </main>
+      )}
+    </Authenticator>
+  );
+};
+```
+You can also customize the Authenticator component to adjust colors and styling as needed. Once you add the Authenticator component to your app, you can test the sign-up, sign-in, and sign-out functionality.
+
+In addition to React, Amplify provides Authenticator components for other platforms, including Vue, Angular, React Native, Flutter, Android, and Swift. You can follow the same process to install and configure the Authenticator component for your platform.
+
+After setting up authentication in your Amplify app, you may also want to add some additional features, such as learning more about authentication concepts or moving to production.
+
+To enable sign-in with a web UI using Amazon Cognito Auth plugin, follow these steps:
+
+First, ensure you have an app set up according to the getting started walkthrough. 
+
+When configuring social sign-in, exercise caution when designating attributes as "required" because different social identity providers have varied scopes in terms of the information they respond back to Cognito with. User pool attributes that are initially set up as "required" cannot be changed later and may require you to migrate the users or create a new user pool.
+
+The Cognito plugin currently supports the Authorization Code Grant OAuth Flow. To configure Auth, update the auth configuration to include external providers with callback and logout URLs.
+
+For Android, update the AndroidManifest.xml file by adding an activity and intent filter with the redirect URI scheme.
+
+For iOS, update the Info.plist file by adding a URL scheme for the redirect URI. You may also need to enable Keychain Sharing capability in Xcode.
+
+To launch web UI sign-in, use the `signInWithWebUI` method from the Amplify Auth API, passing in the presentation anchor, such as the main window of the app. The `signInWithWebUI` method returns a result indicating whether the sign-in was successful.
+
+You can also specify a provider, such as Google or Facebook, when calling `signInWithWebUI`. Additionally, on iOS, you can set the `preferPrivateSession` flag to true to bypass the permissions dialog during sign-in and sign-out, but this will prevent reuse of existing sessions from the user's browser.
+
+For Flutter, the setup is similar, but you need to configure the platform-specific setup for Android, iOS, macOS, Windows, and Linux. You can then call the `signInWithWebUI` method to launch the web UI sign-in flow.
+
+Here's an example of how to call `signInWithWebUI` in React:
+```javascript
+import Amplify from 'aws-amplify';
+import Auth from '@aws-amplify/auth';
+
+// Configure Auth
+Auth.configure({
+  // Your Auth configuration
+});
+
+// Launch web UI sign-in
+const signIn = async () => {
+  try {
+    const result = await Auth.signInWithWebUI();
+    console.log('Sign in result:', result);
+  } catch (error) {
+    console.log('Error signing in:', error);
+  }
+};
+```
+Note that this example assumes you have already set up Amplify and Auth in your React application.
+
+For advanced use cases where Amplify does not provide the functionality, you can retrieve an escape hatch to access the underlying Amazon Cognito client.
+
+To access the escape hatch in React, you would use the AWS Amplify Auth API to get the AWSCognitoAuthPlugin instance and then retrieve the escape hatch.
+
+Here is a React example of how to get the escape hatch:
+```javascript
+import { Auth } from 'aws-amplify';
+
+const getEscapeHatch = async () => {
+  try {
+    const authPlugin = await Auth.getPlugin('awsCognitoAuthPlugin');
+    const escapeHatch = authPlugin.getEscapeHatch();
+    // Use the escape hatch to access the underlying Amazon Cognito client
+    const cognitoIdentityProviderClient = escapeHatch.cognitoIdentityProviderClient;
+    // Use the cognitoIdentityProviderClient to make requests to Amazon Cognito
+  } catch (error) {
+    console.error('Error getting escape hatch:', error);
+  }
+};
+```
+You can then use the escape hatch to access the underlying Amazon Cognito client and make requests to Amazon Cognito. For example, to resend a confirmation code:
+```javascript
+const resendCodeUsingEscapeHatch = async () => {
+  try {
+    const authPlugin = await Auth.getPlugin('awsCognitoAuthPlugin');
+    const escapeHatch = authPlugin.getEscapeHatch();
+    const cognitoIdentityProviderClient = escapeHatch.cognitoIdentityProviderClient;
+    const request = {
+      ClientId: 'xxxxxxxxxxxxxxxx',
+      Username: 'user1',
+    };
+    const response = await cognitoIdentityProviderClient.resendConfirmationCode(request);
+    console.log('Response:', response);
+  } catch (error) {
+    console.error('Error resending code:', error);
+  }
+};
+```
+
+You can configure Amplify Auth to use an existing Amazon Cognito user pool and identity pool. If you are in a team setting or part of a company that has previously created auth resources, you can configure the client library directly or maintain references with AWS Cloud Development Kit (AWS CDK) in your Amplify backend. 
+
+When using existing auth resources, you may need to add additional policies or permissions for your authenticated and unauthenticated IAM roles, and these changes must be performed manually.
+
+To use existing resources without an Amplify backend, you can configure the client library directly. For example, in a React application, you can configure Amplify like this:
+```javascript
+import Amplify from 'aws-amplify';
+
+Amplify.configure({
+  Auth: {
+    Cognito: {
+      userPoolId: "<your-cognito-user-pool-id>",
+      userPoolClientId: "<your-cognito-user-pool-client-id>",
+      identityPoolId: "<your-cognito-identity-pool-id>",
+      loginWith: {
+        email: true,
+      },
+      signUpVerificationMethod: "code",
+      userAttributes: {
+        email: {
+          required: true,
+        },
+      },
+      allowGuestAccess: true,
+      passwordFormat: {
+        minLength: 8,
+        requireLowercase: true,
+        requireUppercase: true,
+        requireNumbers: true,
+        requireSpecialCharacters: true,
+      },
+    },
+  },
+})
+```
+
+If you have created Amazon Cognito resources outside of the context of your Amplify app, you can use `referenceAuth` to reference the existing resources. It requires a user pool, a user pool client, identity pool, and an authenticated and unauthenticated IAM role configured on your identity pool.
+
+To reference existing resources in a React application, you would typically do this in your Amplify backend configuration. For example:
+```javascript
+import { referenceAuth } from '@aws-amplify/backend';
+
+export const auth = referenceAuth({
+  userPoolId: 'us-east-1_xxxx',
+  identityPoolId: 'us-east-1:b57b7c3b-9c95-43e4-9266-xxxx',
+  authRoleArn: 'arn:aws:iam::xxxx:role/amplify-xxxx-mai-amplifyAuthauthenticatedU-xxxx',
+  unauthRoleArn: 'arn:aws:iam::xxxx:role/amplify-xxxx-mai-amplifyAuthunauthenticate-xxxx',
+  userPoolClientId: 'xxxx',
+});
+```
+
+The configuration of your referenced resources cannot be modified. However, you can grant permissions to your auth resource from other Amplify backend resources using the `access` property.
+
+You can also reference different sets of auth resources depending on the deployment context by using environment variables. 
+
+Finally, to connect your frontend to the auth resources, you would need to follow the instructions for connecting your frontend, which can be found in the next steps section.

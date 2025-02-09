@@ -1,0 +1,368 @@
+In Amplify Gen 2, the CLI generates an `amplify_outputs.json` file that contains your backend's outputs, such as your Data endpoint and Auth metadata. This file is used to configure client libraries to interact with your backend resources. It's created locally when using `ampx sandbox` and automatically in Amplify's CI/CD based on the Amplify app ID and git branch. You can also create it manually using `ampx generate outputs`.
+
+The `amplify_outputs.json` file is designed to be extendable to suit your application's evolving needs. You can use the `addOutput` method from your `backend` to programmatically add configurations, which is useful for customizing outputs not directly exposed through Amplify constructs or for dynamically adjusting your app's configuration.
+
+However, overriding Amplify-managed configurations on `amplify_outputs.json` is not supported.
+
+You can add custom outputs or extend existing configurations without manual file edits. For example, you can add output parameters that specify an S3 bucket and its region for storing files. In your backend, you can use the `addOutput` method to add the configuration:
+```javascript
+const backend = defineBackend({
+  auth, 
+  data, 
+});
+
+backend.addOutput({
+  storage: {
+    aws_region: "us-east-1",
+    bucket_name: "my-externally-managed-bucket",
+  },
+});
+```
+In your React application, you can configure Amplify using the `amplify_outputs.json` file:
+```javascript
+import Amplify from "aws-amplify";
+import outputs from "@/amplify_outputs.json";
+
+Amplify.configure(outputs);
+```
+You can also add custom output parameters to your `amplify_outputs.json` file. This is useful for surfacing arbitrary outputs, values from custom CDK resources, or any other information necessary for your application's logic or configuration. For example:
+```javascript
+const backend = defineBackend({
+  auth, 
+  data, 
+});
+
+backend.addOutput({
+  custom: {
+    api_id: "restAPIId",
+    api_endpoint: "https://api.example.com",
+    api_name: "restApiName",
+  },
+});
+```
+In your React application, you can access these custom configurations as follows:
+```javascript
+import Amplify from "aws-amplify";
+import outputs from "@/amplify_outputs.json";
+
+Amplify.configure(outputs);
+const currentConfig = Amplify.getConfig(); 
+Amplify.configure({
+ ...currentConfig,
+  API: {
+    REST: {
+      [outputs.custom.api_name]: {
+        endpoint: outputs.custom.api_endpoint,
+        region: "us-east-1",
+      },
+    },
+  },
+});
+```
+The Amplify outputs file is defined using a JSON schema, which can be found in the `aws-amplify/amplify-backend` repository. The schema defines the structure of the `amplify_outputs.json` file, including the available properties and their data types.
+
+Constructs are the basic building blocks of AWS Cloud Development Kit (AWS CDK) apps. They simplify the process of configuring cloud resources, allowing you to focus on your application code. The available Amplify backend constructs are summarized below.
+
+Amplify Data is a construct that provides a simplified way to work with the Amplify GraphQL API. It enables quick development and iteration of AppSync APIs that support the Amplify GraphQL directives. You can find more information about the AmplifyData construct on Construct Hub. For data modeling information, you can visit the data modeling documentation.
+
+Amplify Auth is another construct that simplifies authentication in your AWS CDK apps. You can find the official AmplifyAuth construct on the npm registry. 
+
+In a React application using AWS Amplify, you would use these constructs to configure your backend resources, such as setting up authentication and data storage. For example, you might use the `AmplifyData` construct to create a GraphQL API, and the `AmplifyAuth` construct to configure authentication for your app. 
+
+Here is an example of how you might use these constructs in a React application:
+```javascript
+import { Amplify } from 'aws-amplify';
+import { AmplifyData } from '@aws-amplify/data-construct';
+import { AmplifyAuth } from '@aws-amplify/auth-construct';
+
+// configure Amplify
+Amplify.configure({
+  // your AWS configuration
+});
+
+// create a GraphQL API using AmplifyData
+const api = new AmplifyData({
+  // your API configuration
+});
+
+// configure authentication using AmplifyAuth
+const auth = new AmplifyAuth({
+  // your authentication configuration
+});
+```
+
+This page is a reference for commands found in the @aws-amplify/backend-cli package. All commands can be prefixed with AWS CLI environment variables to change the AWS account behavior with Amplify Gen 2 commands.
+
+### npx ampx sandbox
+
+The `npx ampx sandbox` command enables you to develop your backend alongside your frontend's development server. It deploys to your personal cloud sandbox and automatically watches for changes in the amplify/ folder, redeploying each time you save a file.
+
+Options:
+- `--dir-to-watch` (string) - Directory to watch for file changes. Defaults to the amplify directory.
+- `--exclude` (string[]) - An array of paths or glob patterns to ignore.
+- `--identifier` (string) - An optional name to distinguish between different sandbox environments. Default is the name of the system user executing the process.
+- `--outputs-out-dir` (string) - A path to a directory where the client config file is written. If not provided, defaults to the working directory of the current process.
+- `--outputs-format` (string) - Format in which the client config file is written (choices: json, dart).
+- `--outputs-version` (string) - Version of the configuration. Version 0 represents classic amplify-cli config file amplify-configuration and 1 represents newer config file amplify_outputs (choices: 0, 1).
+- `--profile` (string) - An AWS profile name.
+- `--stream-function-logs` (boolean) - Whether to stream function execution logs. (default: false)
+- `--logs-filter` (string[]) - Regex pattern to filter logs from only matched functions.
+- `--logs-out-file` (string) - File to append the streaming logs.
+
+Usage:
+```bash
+npx ampx sandbox
+```
+
+You can use the `--profile` flag to run sandbox with an AWS profile other than default:
+```bash
+npx ampx sandbox --profile my-other-profile
+```
+Alternatively, you can use AWS CLI environment variables to specify a different profile:
+```bash
+AWS_PROFILE=my-other-profile ampx sandbox
+```
+
+You can also use AWS environment variables to deploy to a Region other than your AWS profile's configured Region:
+```bash
+AWS_REGION=us-west-2 ampx sandbox
+```
+
+For mobile applications, you need to set the output directory and format of the generated configuration file:
+```bash
+# for Android
+npx ampx sandbox --outputs-out-dir app/src/main/res
+# for Swift/iOS
+npx ampx sandbox
+# for Flutter
+npx ampx sandbox --outputs-format dart --outputs-out-dir lib
+```
+
+### npx ampx sandbox delete
+
+The `npx ampx sandbox delete` command deletes your personal cloud sandbox. This should only be used if you have an active cloud sandbox that you opted to not delete when exiting `npx ampx sandbox`.
+
+Options:
+- `--name` (string) - An optional name to distinguish between different sandbox environments. Default is the name in your package.json.
+- `--profile` (string) - An AWS profile name.
+- `-y, --yes` (boolean) - Do not ask for confirmation before deleting the sandbox environment.
+
+Usage:
+```bash
+npx ampx sandbox delete
+```
+
+### npx ampx sandbox secret
+
+The `npx ampx sandbox secret` command manages backend secrets used with your personal cloud sandbox.
+
+Options:
+- `--profile` (string) - An AWS profile name.
+
+Usage:
+```bash
+npx ampx sandbox secret
+```
+
+You can use the `--profile` flag to run sandbox with an AWS profile other than default:
+```bash
+npx ampx sandbox secret list --profile my-other-profile
+```
+Alternatively, you can use AWS environment variables to specify a different profile:
+```bash
+AWS_PROFILE=my-other-profile ampx sandbox secret list
+```
+
+To create a secret, use `sandbox secret set`:
+```bash
+npx ampx sandbox secret set LOGINWITHAMAZON_CLIENT_ID
+```
+
+To remove a secret, use `sandbox secret remove`:
+```bash
+npx ampx sandbox secret remove LOGINWITHAMAZON_CLIENT_ID
+```
+
+To list all available secrets, use:
+```bash
+npx ampx sandbox secret list
+```
+
+To get a secret and view its details, use:
+```bash
+npx ampx sandbox secret get LOGINWITHAMAZON_CLIENT_ID
+```
+
+### npx ampx generate
+
+The `npx ampx generate` command is used to generate information or code that is supplemental to your frontend development.
+
+Each subcommand requires either a CloudFormation stack name or an existing Amplify App ID and corresponding git branch:
+```bash
+# with CloudFormation stack name
+npx ampx generate <subcommand> --stack <cloudformation-stack-name>
+# with Amplify App ID and git branch
+npx ampx generate <subcommand> --app-id <app-id> --branch <git-branch-name>
+```
+
+### npx ampx generate outputs
+
+The `npx ampx generate outputs` command generates the backend outputs file (e.g. `amplify_outputs.json`) for your frontend application to consume.
+
+Options:
+- `--profile` (string) - An AWS profile name.
+- `--format` (string) - The format into which the configuration should be exported (choices: json, dart).
+- `--out-dir` (string) - A path to the directory where config is written. If not provided, it defaults to the working directory of the current process.
+- `--outputs-version` (string) - Version of the configuration. Version 0 represents classic amplify-cli config file amplify-configuration and 1 represents newer config file amplify_outputs (choices: 0, 1).
+
+Usage:
+```bash
+npx ampx generate outputs --stack amplify-nextamplifygen2-josef-sandbox-ca85e1081b
+```
+
+For mobile applications, you can specify an alternate outputs file format:
+```bash
+npx ampx generate outputs --stack amplify-nextamplifygen2-josef-sandbox-ca85e1081b
+```
+
+### npx ampx generate graphql-client-code
+
+The `npx ampx generate graphql-client-code` command generates GraphQL statements and types for your frontend application to consume.
+
+Options:
+- `--stack` (string) - A stack name that contains an Amplify backend.
+- `--app-id` (string) - The Amplify App ID of the project.
+- `--branch` (string) - A git branch of the Amplify project.
+- `--out` (string) - Specifies the path to the directory where the config is written. If not provided, defaults to the current process working directory.
+- `--format` (string) - Specifies the format of the GraphQL client code to be generated.
+- `--model-target` (string) - Specifies the modelgen export target.
+- `--statement-target` (string) - Specifies the graphql-codegen statement export target.
+- `--statement-max-depth` (integer) - Specifies the maximum depth of the generated GraphQL statements.
+- `--type-target` (string) - Specifies the optional graphql-codegen type export target.
+- `--all` (boolean) - Shows hidden options.
+- `--profile` (string) - Specifies an AWS profile name.
+- `--debug` (boolean) - Print debug logs to the console.
+- `--help` (boolean) - Displays help information about the command.
+
+Usage:
+```bash
+npx ampx generate graphql-client-code --app-id <your-amplify-app-id> --branch staging
+```
+
+You can generate GraphQL client code for a branch that is connected to Amplify:
+```bash
+npx ampx generate graphql-client-code --branch staging
+```
+
+You can also generate codegen for a CDK app using a joint "AmplifyBackendStack" construct:
+```bash
+npx ampx generate graphql-client-code --stack Backend --platform ts --out./src
+```
+
+You can generate codegen in a specific language and format:
+```bash
+npx ampx generate graphql-client-code --format modelgen --type-target angular
+```
+
+### npx ampx generate forms
+
+The `npx ampx generate forms` command generates React form components derived from your backend data models for your frontend application to consume.
+
+Options:
+- `--stack` (string) - A stack name that contains an Amplify backend.
+- `--branch` (string) - Name of the git branch being deployed.
+- `--app-id` (string) - The app id of the target Amplify app.
+- `--out-dir` (string) - A path to directory where generated forms are written. Defaults to the./ui-components directory.
+- `--models` (array) - Model name to generate.
+- `--profile` (string) - An AWS profile name.
+
+Usage:
+```bash
+npx ampx generate forms --branch $BRANCH_NAME --app-id $AWS_APP_ID --out-dir./src
+```
+
+### npx ampx info
+
+The `npx ampx info` command generates information on system, binaries, npm packages, and environment variables for troubleshooting Amplify issues.
+
+Usage:
+```bash
+npx ampx info
+```
+
+### npx ampx pipeline-deploy
+
+The `npx ampx pipeline-deploy` command deploys the Amplify project in a CI/CD pipeline for a specified Amplify app and branch.
+
+Options:
+- `--branch` (string) - Name of the git branch being deployed.
+- `--app-id` (string) - The app id of the target Amplify app.
+- `--outputs-out-dir` (string) - A path to a directory where the client config file is written. If not provided, defaults to the working directory of the current process.
+- `--outputs-version` (string) - Version of the configuration. Version 0 represents classic amplify-cli config file amplify-configuration and 1 represents newer config file amplify_outputs (choices: 0, 1).
+
+Usage:
+```bash
+npx ampx pipeline-deploy --branch $BRANCH_NAME --app-id $AWS_APP_ID
+```
+
+Amplify Gen 2 backends are defined using TypeScript and allow you to group resources based on their functionality. For example, you can create a post confirmation trigger for Amazon Cognito that generates a user profile record in the same file as your authentication resource.
+
+When you create a new Amplify project, the scaffolding for data and authentication resources is automatically set up. The project structure will have an `amplify` folder with subfolders for `auth` and `data`, as well as a `backend.ts` file and a `package.json` file.
+
+As your project grows, your project structure may become more complex, with additional subfolders and files for custom messages, resolvers, jobs, and storage. Backend resources are defined in `resource` files using helpers like `defineAuth`.
+
+For instance, you can define an authentication resource like this:
+```typescript
+import { defineAuth } from '@aws-amplify/backend';
+
+export const auth = defineAuth({
+  loginWith: {
+    email: true
+  }
+});
+```
+Then, you can set up the backend by importing the authentication resource and defining the backend:
+```typescript
+import { defineBackend } from '@aws-amplify/backend';
+import { auth } from './auth/resource';
+import { data } from './data/resource';
+
+defineBackend({
+  auth,
+  data
+});
+```
+You can also extend your backend using the AWS Cloud Development Kit (AWS CDK), which allows you to use any AWS service. To get started with the CDK, you can add it to your backend and create an Amazon S3 bucket that authenticated users have read and write access to:
+```typescript
+import * as s3 from 'aws-cdk-lib/aws-s3';
+import { defineBackend } from '@aws-amplify/backend';
+import { auth } from './auth/resource';
+import { data } from './data/resource';
+
+const backend = defineBackend({
+  auth,
+  data
+});
+
+const bucketStack = backend.getStack('BucketStack');
+const bucket = new s3.Bucket(bucketStack, 'Bucket', {
+  blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL
+});
+
+const authRole = backend.auth.resources.authenticatedUserIamRole;
+bucket.grantReadWrite(authRole);
+
+const unauthRole = backend.auth.resources.unauthenticatedUserIamRole;
+bucket.grantRead(unauthRole);
+```
+To learn more, you can explore the concepts of Amplify and how to add AWS services to your backend.
+
+Amplify Gen 2 collects anonymous telemetry data about general usage of the Command Line Interface (CLI). This means that when you use the Amplify CLI, some data about how you use it is sent back to Amplify. However, participating in this telemetry program is optional, and you can choose to opt out if you prefer.
+
+If you opt out, none of the Amplify apps you work with on that computer will send telemetry data. To opt out, you can run the command `npx ampx configure telemetry disable` from the root of your Amplify app. This will store your decision to opt out for your user, so you won't have to do it again for each app.
+
+If you change your mind and want to opt back in, you can do so by running the command `npx ampx configure telemetry enable` from the root of your Amplify app. 
+
+In some cases, you might only want to opt out of telemetry for a single session. To do this, you can define an environment variable `AMPLIFY_DISABLE_TELEMETRY` and set it to 1. This will disable telemetry for that one session, without changing your overall preference. 
+
+Note that telemetry collection is not enabled or disabled based on the React code itself, but rather through the use of the Amplify CLI and the commands provided above.

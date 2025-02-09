@@ -1,0 +1,472 @@
+To create an in-app messaging campaign on the AWS Console, you can follow these steps. This is an alternative to writing AWS Cloud Development Kit (CDK) code. 
+
+1. Log in to the AWS Console and search for Pinpoint.
+2. Click on your project from the list of available projects. Your project name would be the name you provided when you created the Pinpoint project using CDK.
+3. Click on Campaigns from the left navigation menu, and then click on Create a campaign.
+4. Add a name to your campaign and select the following options: 
+   - Campaign type: Standard campaign
+   - Channel: In-App messaging
+   - Set prioritization: Fairly important
+   Then click Next.
+5. Click on the Create a segment radio button, add a name for your segment, and then click Next. 
+   You can add as many segments as needed to the campaign. For this quickstart, you can use Include any audiences under the Segment group 1 section.
+   You can also add criteria to your segments to ensure that audiences that satisfy that criteria can receive the in-app message.
+6. Click on the Create a new in-app message radio button.
+7. You can customize the following attributes of the in-app message: 
+   - Layout: Which includes all of the different messaging layout options.
+   - Header: Title of the in-app message, including the text color/alignment.
+   - Message: The body of the message, including the text color/alignment.
+   - Background: Control the background color of the in-app message.
+   - Image URL: Add an image to be displayed as part of the in-app message body.
+   - Primary button: Allows the addition of a button to add functionality to the in-app message.
+   - Secondary button: Allows the addition of an extra button for additional functionality.
+   - Custom Data: Allows the in-app message to pass additional data to the frontend app once it is triggered by an event.
+8. Create a simple message and click on Next.
+9. Under Trigger events, add the name of the analytics trigger that will be sent from your frontend app. 
+   You can customize the trigger to allow only certain attributes or metrics that are passed with the analytics event to trigger the in-app message.
+10. Update the threshold for the number of messages shown per session if necessary.
+11. Review your campaign and then click on Launch campaign.
+
+Note that the campaign start time must be at least 15 minutes in the future. In-app messages can only be synced to a local device once the campaign becomes active. 
+
+When configuring In-App Messaging for React Native, note that SVG rendering is not supported out of the box. For SVG image support with In-App Messaging, a custom UI implementation is required. 
+
+To implement this in your React app, you would need to set up an analytics trigger that will be sent from your frontend app to trigger the in-app message, and then handle the in-app message display in your app. This could be done by adding an event listener to your app to listen for the analytics trigger, and then displaying the in-app message when the trigger is received. 
+
+For example, in your React app, you might have a function to handle the display of in-app messages:
+```javascript
+function handleInAppMessage(message) {
+  // Display the in-app message to the user
+  // This could involve rendering a modal or alert with the message
+}
+```
+Then, when the analytics trigger is received, you would call this function to display the in-app message:
+```javascript
+// Set up an event listener to listen for the analytics trigger
+window.addEventListener('analyticsTrigger', (event) => {
+  // Get the in-app message from the event data
+  const message = event.detail.message;
+  
+  // Call the function to display the in-app message
+  handleInAppMessage(message);
+});
+```
+
+In-app messages are displayed when an In-App Messaging or analytics event is sent and matches the criteria defined by your active In-App Messaging campaigns.
+
+An analytics event triggers the display of an in-app message if it matches the attributes and criteria defined in the message. Any events recorded using the Analytics record API are automatically picked up and processed by In-App Messaging. For example, you can record an event like this:
+```
+import { Analytics } from 'aws-amplify';
+
+Analytics.record({
+  name: 'first_event',
+  attributes: { color: 'red' },
+  metrics: { quantity: 10 }
+});
+```
+If the event name, attributes, and metrics match those set forth by one of your In-App Messaging campaigns, you should see the in-app message displayed in your app.
+
+In addition to or instead of Amplify Analytics events, you can also dispatch In-App Messaging events to trigger an in-app message display programmatically. For example:
+```
+import { InAppMessaging } from 'aws-amplify';
+
+InAppMessaging.dispatchEvent({
+  name: 'first_event',
+  attributes: { color: 'red' },
+  metrics: { quantity: 10 }
+});
+```
+If the event name, attributes, and metrics match those set forth by one of your In-App Messaging campaigns, you should see the in-app message displayed in your app.
+
+To fully harness the potential of In-App Messaging, you must segment and target your In-App Messaging campaigns to specific user subsets. By identifying users with additional information, including their device demographics, location and any attributes of your choosing, you will be able to display intelligent, targeted in-app messages to the right users.
+
+To identify a user, you can use the `identifyUser` function from the `aws-amplify/in-app-messaging` library. This function takes an object with two properties: `userId` and `userProfile`. The `userId` is a unique identifier for the user, and the `userProfile` is an object that contains additional information about the user. 
+
+The `userProfile` object can have several properties, including `email`, `name`, and `plan`, which are used to store basic user information. It can also have a `customProperties` object, which can store any additional attributes of your choosing, such as hobbies or interests. 
+
+Additionally, the `userProfile` object can have a `demographic` property, which contains information about the user's device, such as the app version, locale, make, model, platform, and timezone. It can also have a `location` property, which contains information about the user's location, such as city, country, postal code, region, latitude, and longitude. 
+
+Finally, the `userProfile` object can have a `metrics` property, which can store any metrics or statistics about the user, such as the number of logins. 
+
+Here is an example of how to use the `identifyUser` function in a React application:
+```js
+import { identifyUser } from 'aws-amplify/in-app-messaging';
+
+await identifyUser({
+  userId: 'user-id',
+  userProfile: {
+    email: 'example@service.com',
+    name: 'name-of-the-user',
+    plan: 'plan-they-subscribe-to',
+    customProperties: {
+      hobbies: ['cooking', 'knitting'],
+    },
+    demographic: {
+      appVersion: '1.0',
+      locale: 'en_US',
+      make: 'Apple',
+      model: 'iPhone',
+      modelVersion: '13',
+      platform: 'iOS',
+      platformVersion: '15',
+      timezone: 'Americas/Los_Angeles'
+    },
+    location: {
+      city: 'Seattle',
+      country: 'US',
+      postalCode: '98121',
+      region: 'WA',
+      latitude: 47.6062,
+      longitude: -122.3321
+    },
+    metrics: {
+      logins: 157
+    },
+  },
+});
+```
+
+When using `identifyUser` with Amazon Pinpoint, you can also configure the `address`, `optOut`, and `userAttributes` properties under `options`. Here is an example:
+```js
+import { identifyUser } from 'aws-amplify/in-app-messaging';
+
+await identifyUser({
+  userId: 'user-id',
+  options: {
+    address: 'device-token-or-email-address',
+    optOut: 'ALL',
+    userAttributes: {
+      interests: ['soccer', 'shoes'],
+    }
+  },
+});
+```
+
+To integrate your React application with In-app Messaging, first install the required packages. For React Native, run the following command in your terminal:
+```
+npm add @aws-amplify/react-native @react-native-community/netinfo @react-native-async-storage/async-storage
+```
+For React, run the following command:
+```
+npm add @aws-amplify/ui-react @aws-amplify/ui-react-notifications
+```
+Next, install Amplify UI for your framework. For React Native, run:
+```
+npm add @aws-amplify/ui-react-native react-native-safe-area-context@^4.2.5
+```
+For React, run:
+```
+npm add @aws-amplify/ui-react @aws-amplify/ui-react-notifications
+```
+Now, integrate Amplify UI into your application. For React Native, wrap your application root component in the `withInAppMessaging` Higher-Order Component:
+```javascript
+import { withInAppMessaging } from '@aws-amplify/ui-react-native';
+
+const App = () => (
+  {/* Your application code */}
+);
+
+export default withInAppMessaging(App);
+```
+For React, do the same:
+```javascript
+import { withInAppMessaging } from '@aws-amplify/ui-react-notifications';
+import '@aws-amplify/ui-react/styles.css';
+
+const App = () => (
+  {/* Your application code */}
+);
+
+export default withInAppMessaging(App);
+```
+Your entry file should look like this for React Native:
+```jsx
+import React, { useEffect } from 'react';
+import { Button, View } from 'react-native';
+import {
+  initializeInAppMessaging,
+  syncMessages,
+  dispatchEvent
+} from 'aws-amplify/in-app-messaging';
+import { withInAppMessaging } from '@aws-amplify/ui-react-native';
+import { record } from 'aws-amplify/analytics';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure(outputs);
+initializeInAppMessaging();
+
+const myFirstEvent = { name: 'my_first_event' };
+
+const App = () => {
+  useEffect(() => {
+    syncMessages();
+  }, []);
+
+  return (
+    <View>
+      <Button
+        onPress={() => {
+          record(myFirstEvent);
+        }}
+        title="Record Analytics Event"
+      />
+      <Button
+        onPress={() => {
+          dispatchEvent(myFirstEvent);
+        }}
+        title="Send In-App Messaging Event"
+      />
+    </View>
+  );
+};
+
+export default withInAppMessaging(App);
+```
+And like this for React:
+```jsx
+import React, { useEffect } from 'react';
+import {
+  initializeInAppMessaging,
+  syncMessages,
+  dispatchEvent
+} from 'aws-amplify/in-app-messaging';
+import { Button, View } from '@aws-amplify/ui-react';
+import { withInAppMessaging } from '@aws-amplify/ui-react-notifications';
+import { record } from 'aws-amplify/analytics';
+import '@aws-amplify/ui-react/styles.css';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure(outputs);
+initializeInAppMessaging();
+
+const myFirstEvent = { name: 'my_first_event' };
+
+const App = () => {
+  useEffect(() => {
+    syncMessages();
+  }, []);
+
+  return (
+    <View>
+      <Button
+        onClick={() => {
+          record(myFirstEvent);
+        }}
+      >
+        Record Analytics Event
+      </Button>
+      <Button
+        onClick={() => {
+          dispatchEvent(myFirstEvent);
+        }}
+      >
+        Send In-App Messaging Event
+      </Button>
+    </View>
+  );
+};
+
+export default withInAppMessaging(App);
+```
+You can now build and run your app. If you click on one of the buttons, the in-app message you defined in the Pinpoint console should be displayed in your app.
+
+When an event is sent and meets the criteria for multiple in-app messages, a conflict arises and the library must decide which message to return. To resolve this conflict, In-App Messaging sorts the messages by campaign expiration and returns the message closest to expiry. 
+
+However, you can set a custom conflict handler to resolve conflicts according to your own strategy. Your custom handler must accept an array of in-app messages and return a single in-app message.
+
+For example, you can create a custom conflict handler that returns a random message from the array of conflicting messages. Here's how you can set a custom conflict handler in a React application:
+```
+import { setConflictHandler } from 'aws-amplify/in-app-messaging';
+
+const myConflictHandler = (messages) => {
+  const randomIndex = Math.floor(Math.random() * messages.length);
+  return messages[randomIndex];
+};
+
+setConflictHandler(myConflictHandler);
+```
+
+You can respond with additional behavior to your users interacting with in-app messages by adding interaction event listeners. 
+
+To respond to an in-app message being received, add an `onMessageReceived` listener. This is necessary if you are implementing a custom UI so that your UI can respond to event-triggered campaign messages. Here is an example of how to add this listener in React:
+
+```javascript
+import { onMessageReceived } from 'aws-amplify/in-app-messaging';
+
+const myMessageReceivedHandler = (message) => {
+  // Do something with the received message
+};
+
+const listener = onMessageReceived(myMessageReceivedHandler);
+
+listener.remove(); // Remember to remove the listener when it is no longer needed
+```
+
+To respond to an in-app message being displayed, add an `onMessageDisplayed` listener. Here is an example:
+
+```javascript
+import { onMessageDisplayed } from 'aws-amplify/in-app-messaging';
+
+const myMessageDisplayedHandler = (message) => {
+  // Do something with the displayed message
+};
+
+const listener = onMessageDisplayed(myMessageDisplayedHandler);
+
+listener.remove(); // Remember to remove the listener when it is no longer needed
+```
+
+To respond to an in-app message being dismissed, add an `onMessageDismissed` listener. Here is an example:
+
+```javascript
+import { onMessageDismissed } from 'aws-amplify/in-app-messaging';
+
+const myMessageDismissedHandler = (message) => {
+  // Do something with the dismissed message
+};
+
+const listener = onMessageDismissed(myMessageDismissedHandler);
+
+listener.remove(); // Remember to remove the listener when it is no longer needed
+```
+
+To respond to an action being taken on an in-app message, add an `onMessageActionTaken` listener. Here is an example:
+
+```javascript
+import { onMessageActionTaken } from 'aws-amplify/in-app-messaging';
+
+const myMessageActionTakenHandler = (message) => {
+  // Do something with the message action was taken against
+};
+
+const listener = onMessageActionTaken(myMessageActionTakenHandler);
+
+listener.remove(); // Remember to remove the listener when it is no longer needed
+```
+
+If you are implementing your own UI, it is recommended to notify listeners of interaction events through your UI code so that the library can take further actions. Here is an example:
+
+```javascript
+import { notifyMessageInteraction } from 'aws-amplify/in-app-messaging';
+
+const message = {
+  // In-app message that you want to record an interaction on
+}
+
+// Interaction events that can be notified correspond to their respective listeners:
+//    'messageReceived'
+//    'messageDisplayed'
+//    'messageDismissed'
+//    'messageActionTaken'
+notifyMessageInteraction({ message, type: 'messageDisplayed' });
+```
+
+Amplify allows you to interact with In-App Messaging APIs, which enables you to send messages to your app users. In-App Messaging is a powerful tool to engage with your users and provide them with relevant information. 
+
+A campaign is a messaging initiative that engages a specific audience segment. A campaign sends tailored messages according to a schedule that you define. You can use the AWS Cloud Development Kit (AWS CDK) to create a campaign that sends messages through any single channel that is supported by Amazon Pinpoint, such as Mobile Push, In-App, Email, SMS, or Custom channels.
+
+To create an In-App Messaging resource, you can use the AWS CDK. Note that there are no official hand-written constructs for this service yet. 
+
+When creating a campaign, the start time must be at least 15 minutes in the future. In-app messages can only be synced to the local device once the campaign becomes active, which is indicated by a "Status" of "In Progress" in the campaigns screen of the Pinpoint console.
+
+Here's an example of how to create an In-App Messaging resource using the AWS CDK. This example creates a Pinpoint app, a segment, and a campaign with an event and in-app message template.
+
+To create a Pinpoint app, segment, and campaign in React, you can use the following code:
+```javascript
+import { defineBackend } from "@aws-amplify/backend";
+import { auth } from "./auth/resource";
+import { data } from "./data/resource";
+import {
+  CfnApp,
+  CfnCampaign,
+  CfnSegment,
+} from "aws-cdk-lib/aws-pinpoint";
+import { Policy, PolicyStatement } from "aws-cdk-lib/aws-iam";
+import { Stack } from "aws-cdk-lib/core";
+
+const backend = defineBackend({
+  auth, 
+  data,
+});
+
+const inAppMessagingStack = backend.createStack("inAppMessaging-stack");
+
+// create a Pinpoint app
+const pinpoint = new CfnApp(inAppMessagingStack, "Pinpoint", {
+  name: "myPinpointApp",
+});
+
+// create a segment 
+const mySegment = new CfnSegment(inAppMessagingStack, "Segment", {
+  applicationId: pinpoint.ref,
+  name: "mySegment",
+});
+
+// create a campaign with event and in-app message template
+new CfnCampaign(inAppMessagingStack, "Campaign", {
+  applicationId: pinpoint.ref,
+  name: "MyCampaign",
+  segmentId: mySegment.attrSegmentId,
+  schedule: {
+    startTime: "2024-02-23T14:39:34Z", 
+    endTime: "2024-02-29T14:32:40Z",
+    frequency: "IN_APP_EVENT",
+    eventFilter: {
+      dimensions: {
+        eventType: {
+          dimensionType: "INCLUSIVE",
+          values: ["my_first_event"],
+        },
+      },
+      filterType: "ENDPOINT",
+    },
+  },
+
+  messageConfiguration: {
+    inAppMessage: {
+      layout: "TOP_BANNER",
+      content: [
+        {
+          bodyConfig: {
+            alignment: "CENTER",
+            body: "This is an example in-app message.",
+            textColor: "#FFFFFF",
+          },
+          backgroundColor: "#000000",
+          headerConfig: {
+            alignment: "CENTER",
+            header: "Welcome!",
+            textColor: "#FFFFFF",
+          },
+        },
+      ],
+    },
+  },
+});
+```
+
+To install Amplify libraries, you need to first install the `aws-amplify` library. 
+
+To initialize In-App Messaging, you need to configure your application using the `configure` API and then initialize In-App Messaging by calling the `initializeInAppMessaging` API. 
+
+Here's how to initialize In-App Messaging in a React application:
+```javascript
+import { Amplify } from 'aws-amplify';
+import { initializeInAppMessaging } from 'aws-amplify/in-app-messaging';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure(outputs);
+initializeInAppMessaging();
+```
+
+Make sure you call `Amplify.configure` as early as possible in your application’s life-cycle to avoid any missing configuration or `NoCredentials` errors.
+
+To trigger in-app messages, you need to sync them from your In-App Messaging campaigns to your users' devices. These messages are then displayed when a matching event is triggered, such as an analytics or In-App Messaging event. You have control over when and how often this sync is performed.
+
+To sync messages in a React application, use the `syncMessages` function from the `aws-amplify/in-app-messaging` module. Here's an example:
+```js
+import { syncMessages } from 'aws-amplify/in-app-messaging';
+
+await syncMessages();
+```
+Note that syncing messages will always overwrite any existing messages on the user's device, ensuring they are up to date after each sync.

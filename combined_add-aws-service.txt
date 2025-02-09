@@ -1,0 +1,439 @@
+Custom resources allow you to integrate any AWS service into an Amplify backend. You are responsible for ensuring that your custom resources are secure, adhere to best practices, and work with the resources that Amplify creates for your app.
+
+With Amplify Gen 2, you can add custom AWS resources to an Amplify app using the AWS Cloud Development Kit (AWS CDK), which is installed by default as part of the create-amplify workflow. The AWS CDK is an open source software development framework that defines your cloud application resources using familiar programming languages, such as TypeScript.
+
+The AWS CDK can be used within an Amplify app to add custom resources and configurations beyond what Amplify supports out of the box. For example, a developer could use CDK to hook up a Redis cache, implement custom security rules, deploy containers on AWS Fargate, or use any other AWS service.
+
+The infrastructure defined through the AWS CDK code is deployed along with the Amplify app backend. This provides the simplicity of Amplify combined with the flexibility of CDK for situations where you need more customization.
+
+AWS CDK apps are composed of building blocks known as constructs, which are composed together to form stacks and apps. You can learn more in the Concepts section of the AWS Cloud Development Kit (AWS CDK) v2 Developer Guide.
+
+With the Amplify code-first DX, you can add existing or custom CDK constructs to the backend of your Amplify app.
+
+To add an existing CDK construct, you can use the many existing constructs that come with the AWS CDK. For example, to add an Amazon Simple Queue Service (Amazon SQS) queue and an Amazon Simple Notification Service (Amazon SNS) topic to your backend, you can add the following code to your amplify/backend.ts file.
+
+```typescript
+import * as sns from 'aws-cdk-lib/aws-sns';
+import * as sqs from 'aws-cdk-lib/aws-sqs';
+import { defineBackend } from '@aws-amplify/backend';
+
+const backend = defineBackend({
+  // your existing backend configuration
+});
+
+const customResourceStack = backend.createStack('MyCustomResources');
+
+new sqs.Queue(customResourceStack, 'CustomQueue');
+new sns.Topic(customResourceStack, 'CustomTopic');
+```
+
+Note the use of backend.createStack(). This method instructs the backend to create a new CloudFormation Stack for your custom resources to live in. You can create multiple custom stacks and you can place multiple resources in any given stack.
+
+You can also define a custom CDK construct to encapsulate common patterns into reusable components. A common use case is creating a custom notification construct that combines a Lambda function with Amazon SNS and Amazon Simple Email Service (Amazon SES).
+
+Here's an example of a custom CDK construct that implements a decoupled notification system using Amazon SNS and Lambda.
+
+```typescript
+import * as lambda from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as sns from 'aws-cdk-lib/aws-sns';
+import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
+import { Construct } from 'constructs';
+
+export type Message = {
+  subject: string;
+  body: string;
+  recipient: string;
+};
+
+type CustomNotificationsProps = {
+  /**
+   * The source email address to use for sending emails
+   */
+  sourceAddress: string;
+};
+
+export class CustomNotifications extends Construct {
+  public readonly topic: sns.Topic;
+  constructor(scope: Construct, id: string, props: CustomNotificationsProps) {
+    super(scope, id);
+
+    const { sourceAddress } = props;
+
+    // Create SNS topic
+    this.topic = new sns.Topic(this, 'NotificationTopic');
+
+    // Create Lambda to publish messages to SNS topic
+    const publisher = new lambda.NodejsFunction(this, 'Publisher', {
+      entry: 'publisher.ts',
+      environment: {
+        SNS_TOPIC_ARN: this.topic.topicArn
+      },
+      runtime: lambda.Runtime.NODEJS_18_X
+    });
+
+    // Create Lambda to process messages from SNS topic
+    const emailer = new lambda.NodejsFunction(this, 'Emailer', {
+      entry: 'emailer.ts',
+      environment: {
+        SOURCE_ADDRESS: sourceAddress
+      },
+      runtime: lambda.Runtime.NODEJS_18_X
+    });
+
+    // Subscribe emailer Lambda to SNS topic
+    this.topic.addSubscription(new subscriptions.LambdaSubscription(emailer));
+
+    // Allow publisher to publish to SNS topic
+    this.topic.grantPublish(publisher);
+  }
+}
+```
+
+The Lambda function code for the publisher is:
+
+```typescript
+import { PublishCommand, SNSClient } from '@aws-sdk/client-sns';
+import type { Handler } from 'aws-lambda';
+import type { Message } from './resource';
+
+const client = new SNSClient({ region: process.env.AWS_REGION });
+
+// define the handler that will publish messages to the SNS Topic
+export const handler: Handler<Message, void> = async (event) => {
+  const { subject, body, recipient } = event;
+  const command = new PublishCommand({
+    TopicArn: process.env.SNS_TOPIC_ARN,
+    Message: JSON.stringify({
+      subject,
+      body,
+      recipient
+    })
+  });
+  try {
+    const response = await client.send(command);
+    console.log('published', response);
+  } catch (error) {
+    console.log('failed to publish message', error);
+    throw new Error('Failed to publish message', { cause: error });
+  }
+};
+```
+
+The Lambda function code for the emailer is:
+
+```typescript
+import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
+import type { SNSHandler } from 'aws-lambda';
+import type { Message } from './resource';
+
+const sesClient = new SESClient({ region: process.env.AWS_REGION });
+
+// define the handler to process messages from the SNS topic and send via SES
+export const handler: SNSHandler = async (event) => {
+  for (const record of event.Records) {
+    const message: Message = JSON.parse(record.Sns.Message);
+
+    // send the message via email
+    await sendEmail(message);
+  }
+};
+
+const sendEmail = async (message: Message) => {
+  const { recipient, subject, body } = message;
+
+  const command = new SendEmailCommand({
+    Source: process.env.SOURCE_ADDRESS,
+    Destination: {
+      ToAddresses: [recipient]
+    },
+    Message: {
+      Body: {
+        Text: { Data: body }
+      },
+      Subject: { Data: subject }
+    }
+  });
+
+  try {
+    const result = await sesClient.send(command);
+    console.log(`Email sent to ${recipient}: ${result.MessageId}`);
+  } catch (error) {
+    console.error(`Error sending email to ${recipient}: ${error}`);
+    throw new Error(`Failed to send email to ${recipient}`, { cause: error });
+  }
+};
+```
+
+The CustomNotifications CDK construct can then be added to the Amplify backend one or more times, with different properties for each instance.
+
+```typescript
+import { defineBackend } from '@aws-amplify/backend';
+import { CustomNotifications } from './custom/CustomNotifications/resource';
+
+const backend = defineBackend({
+  // your existing backend configuration
+});
+
+const customNotifications = new CustomNotifications(
+  backend.createStack('CustomNotifications'),
+  'CustomNotifications',
+  { sourceAddress: 'sender@example.com' }
+);
+
+backend.addOutput({
+  custom: {
+    topicArn: customNotifications.topic.topicArn,
+    topicName: customNotifications.topic.topicName,
+  },
+});
+```
+
+You can also use community-driven resources such as the Construct Hub, which is a catalog of reusable infrastructure components, and the example projects using the AWS CDK repository, which contains a number of examples of reusable CDK constructs.
+
+Deleting an Amplify sandbox with a resource enabled with deletion protection will cause the deploy process to fail, and the resource will need to be manually deleted on the AWS console.
+
+You can configure Amplify generated resources to enable deletion protection and backups on supported resources using the AWS Cloud Development Kit (CDK). For example, you can use CDK to enable point-in-time recovery for DynamoDB tables or use AWS Backup for advanced backup options.
+
+You can modify resource configurations using underlying CDK construct properties, which allows you to customize backend resources beyond what is offered via the define functions.
+
+To enable deletion protection on an Auth resource, such as a Cognito user pool resource created by Amplify Auth, you can set the deletionProtection property to "ACTIVE". 
+
+To enable deletion protection on a Data resource, such as all DynamoDB tables created by a GraphQL API, you can set the deletionProtectionEnabled property to true for each table.
+
+You can also enable point-in-time recovery for DynamoDB tables by setting the pointInTimeRecoveryEnabled property to true. This will retain backups for 35 days by default.
+
+If you need backups that extend the default 35 days point-in-time recovery, you can use the AWS Backup service to centralize and automate backups for DynamoDB tables. You can configure a backup plan to run daily at midnight, for example.
+
+To retain resources on stack deletion, you can use the applyRemovalPolicy property on the resource to add a retention policy. However, note that `amplify sandbox delete` ignores any resource removal policy and always deletes all resources.
+
+Here is an example of how you can enable deletion protection and backups in a React application using Amplify:
+```javascript
+// amplify/backend.ts
+import { defineBackend } from '@aws-amplify/backend';
+import { auth } from './auth/resource';
+import { data } from './data/resource';
+
+const backend = defineBackend({
+  auth,
+  data
+});
+
+// Enable deletion protection on Auth resource
+const { cfnUserPool } = backend.auth.resources.cfnResources
+cfnUserPool.deletionProtection = "ACTIVE";
+
+// Enable deletion protection on Data resource
+const { amplifyDynamoDbTables } = backend.data.resources.cfnResources;
+for (const table of Object.values(amplifyDynamoDbTables)) {
+  table.deletionProtectionEnabled = true;
+}
+
+// Enable point-in-time recovery for DynamoDB tables
+for (const table of Object.values(amplifyDynamoDbTables)) {
+  table.pointInTimeRecoveryEnabled = true;
+}
+
+// Enable backups for DynamoDB tables
+import {
+  BackupPlan,
+  BackupPlanRule,
+  BackupResource,
+  BackupVault,
+} from "aws-cdk-lib/aws-backup";
+import { Schedule } from "aws-cdk-lib/aws-events";
+import { Duration } from "aws-cdk-lib/core";
+
+const backupStack = backend.createStack("backup-stack");
+const myTables = Object.values(backend.data.resources.tables);
+
+const vault = new BackupVault(backupStack, "BackupVault", {
+  backupVaultName: "backup-vault",
+});
+
+const plan = new BackupPlan(backupStack, "BackupPlan", {
+  backupPlanName: "backup-plan",
+  backupVault: vault,
+});
+
+plan.addRule(
+  new BackupPlanRule({
+    deleteAfter: Duration.days(60),
+    ruleName: "backup-plan-rule",
+    scheduleExpression: Schedule.cron({
+      minute: "0",
+      hour: "0",
+      day: "*",
+      month: "*",
+      year: "*",
+    }),
+  })
+);
+
+plan.addSelection("BackupPlanSelection", {
+  resources: myTables.map((table) => BackupResource.fromDynamoDbTable(table)),
+  allowRestores: true,
+});
+
+// Retain resources on stack deletion
+backend.storage.resources.bucket.applyRemovalPolicy(RemovalPolicy.RETAIN);
+backend.auth.resources.userPool.applyRemovalPolicy(RemovalPolicy.RETAIN);
+backend.data.resources.cfnResources.amplifyDynamoDbTables["Todo"].applyRemovalPolicy(RemovalPolicy.RETAIN);
+```
+
+To interact with bots in your React application using AWS Amplify, you can send messages to the chatbot backend using the send command. This method returns a promise that includes the chatbot response. 
+
+To send a message, provide a bot name and user input. For example, if a user wants to reserve a hotel for tonight, you can send this input to the chatbot and log the response. 
+
+Here is an example of how to send a message to a bot in React:
+```javascript
+const userInput = "I want to reserve a hotel for tonight";
+const response = await Interactions.send({
+  botName: "TheBotName",
+  message: userInput
+});
+console.log(response.message);
+```
+
+You can also display an end of chat message by registering a function to catch errors or chatbot confirmations when the session successfully ends. This can be done using the onComplete method. 
+
+Here is an example of how to display an end of chat message in React:
+```javascript
+Interactions.onComplete({
+  botName: "TheBotName",
+  callback: (error, completion) => {
+    if (error) {
+      alert('bot conversation failed');
+    } else if (completion) {
+      console.debug('done: ' + JSON.stringify(completion, null, 2));
+      alert('Trip booked. Thank you! What would you like to do next?');
+    }
+  }
+});
+```
+
+AWS Amplify Interactions enables AI-powered chatbots in your web or mobile apps. You can use Interactions to configure your backend chatbot provider and to integrate a chatbot UI into your app with just a single line of code.
+
+Interactions with AWS Amplify supports Amazon Lex as the default chatbots service. Amazon Lex supports creating conversational bots with the same deep learning technologies that power Amazon Alexa.
+
+To set up an Amazon Lex V2 bot, you can create it in the Amazon Lex console by following the steps shown in the Amazon Lex V2 Developer Guide.
+
+After creating your bot, you need to update your IAM policy to use the interactions APIs. The policy should include the following:
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["lex:RecognizeText", "lex:RecognizeUtterance"],
+      "Resource": "arn:aws:lex:<your-app-region>:<your-account-id>:bot-alias/<your-bot-id>/<your-bot-alias-id>"
+    }
+  ]
+}
+```
+
+To configure your frontend, you need to add the aws-amplify and interactions package to your project:
+```bash
+npm add --save @aws-amplify/interactions aws-amplify
+```
+
+For React Native, you need to install additional dependencies:
+```bash
+npm add aws-amplify \
+  @aws-amplify/react-native \
+  @aws-amplify/interactions \
+  @react-native-community/netinfo \
+  @react-native-async-storage/async-storage \
+  react-native-get-random-values
+```
+
+Make sure that the `@aws-amplify/interactions` package has the same version number as the `aws-amplify` package in your `package.json` file.
+
+To configure Amplify, import and load the configuration file in your app. It's recommended you add the Amplify configuration step to your app's root entry point. For example, **App.js** (Expo) or **index.js** (React Native CLI).
+```javascript
+import { Amplify } from 'aws-amplify';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure(outputs);
+Amplify.configure({
+  ...Amplify.getConfig(),
+  Interactions: {
+    LexV2: {
+      '<your-bot-name>': {
+        aliasId: '<your-bot-alias-id>',
+        botId: '<your-bot-id>',
+        localeId: '<your-bot-locale-id>',
+        region: '<your-bot-region>'
+      }
+    }
+  }
+});
+```
+
+For React Native, you need to add the `crypto.getRandomValues` polyfills to your application's entry point file:
+```javascript
+import 'react-native-get-random-values';
+```
+
+Make sure you call `Amplify.configure` as early as possible in your application’s life-cycle. A missing configuration or `NoCredentials` error is thrown if `Amplify.configure` has not been called before other Amplify JavaScript APIs. 
+
+Note: For React Native, you may encounter an error when starting the bundler. This is a known issue and can be resolved by following the steps outlined in the linked issue.
+
+When using AWS Amplify, you can override resources to customize the backend configuration. However, be aware that using overrides can create a backend that Amplify libraries or client config may not be able to interpret properly. Always test changes in a staging environment.
+
+To override resources, you can access underlying AWS Cloud Development Kit (CDK) construct properties in the `amplify/backend.ts` file after the `defineBackend` call has been made. The `backend` object exposes a `resources` property with objects for each component passed into the `defineBackend` function. Each resource object exposes underlying L1 and L2 AWS CDK constructs that you can modify.
+
+For example, to access the Cognito user pool created by `defineAuth` and set a custom removal policy on the resource, you can use the following code:
+```typescript
+const userPool = backend.auth.resources.userPool;
+userPool.applyRemovalPolicy(RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE);
+```
+Most L1 and L2 AWS CDK constructs used by the `define*` functions are accessible in this way.
+
+You can also grant access permissions between resources. For instance, to grant a function created by `defineFunction` access to call the Cognito user pool created by `defineAuth`, you can use the following code:
+```typescript
+const userPool = backend.auth.resources.userPool;
+const lambdaFunction = backend.authAuditorFunction.resources.lambda;
+userPool.grant(lambdaFunction, 'cognito:AdminListUserAuthEvents');
+backend.authAuditorFunction.addEnvironment('USER_POOL_ID', userPool.userPoolId);
+```
+Additionally, you can modify L1 CDK constructs by using `addPropertyOverride` on an AWS CDK construct. To edit the password policies of the Cognito user pool in `defineAuth`, you can use the following code:
+```typescript
+const { cfnUserPool } = backend.auth.resources.cfnResources;
+cfnUserPool.policies = {
+  passwordPolicy: {
+    minimumLength: 10,
+    requireLowercase: true,
+    requireNumbers: true,
+    requireSymbols: true,
+    requireUppercase: true,
+    temporaryPasswordValidityDays: 20,
+  },
+};
+```
+Note that `auth.resources.cfnResources` exposes L1 CDK constructs that map one-to-one with the underlying CloudFormation properties, whereas `auth.resources.userPool` is an L2 CDK construct that provides a convenient interface around several related L1 constructs.
+
+For further customization, you can refer to the documentation on custom resources.
+
+Tags are a key-value pair that are applied to AWS resources to hold metadata. Tags are often used to decorate resources with metadata that helps categorize resources for billing or viewing purposes. Learn more about tags by visiting the AWS documentation for best practices for tagging resources.
+
+Amplify applies the following tags by default:
+
+* For sandbox deployments, tags include `created-by` with the value `amplify` and `amplify:deployment-type` with the value `sandbox`.
+* For branch deployments, tags include `created-by` with the value `amplify`, `amplify:deployment-type` with the value `branch`, `amplify:app-id` with the value of your Amplify app ID, and `amplify:branch-name` with the value of your Git branch name.
+
+To apply custom tags in your Amplify backend, you can use the AWS Cloud Development Kit (CDK) to add tags at the root level, which then cascades to child resources. Here's an example of how to do this in a React project:
+
+```javascript
+import { Tags } from 'aws-cdk-lib';
+import { defineBackend } from '@aws-amplify/backend';
+
+const backend = defineBackend({
+  // add your resources here, such as auth and data
+});
+
+const tags = Tags.of(backend.stack);
+// add a new tag
+tags.add('my-key', 'my-value');
+// remove tags
+tags.remove('my-key');
+```

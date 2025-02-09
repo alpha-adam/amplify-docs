@@ -1,0 +1,426 @@
+To identify entities from images using Amplify, you need to use the `Predictions.identify` function. This function detects entities from an image and potentially related information such as position, faces, and landmarks. It can also identify celebrities and entities that were previously added.
+
+Before you start, make sure to complete the getting started section where you set up the IAM roles with the right policy actions.
+
+The `Predictions.identify` function returns a Promise that resolves to an object with the entities that were identified. The input can be sent directly from the browser using a File object or an ArrayBuffer object, or an Amazon S3 key from a project bucket.
+
+Here are some examples of how to use the `Predictions.identify` function:
+
+Detect entities directly from an image uploaded from the browser:
+```javascript
+const response = await Predictions.identify({
+  entities: {
+    source: {
+      file,
+    },
+  }
+});
+```
+
+Detect entities directly from an image binary from the browser:
+```javascript
+const response = await Predictions.identify({
+  entities: {
+    source: {
+      bytes: imageArrayBuffer,
+    },
+  }
+});
+```
+
+Detect entities from an Amazon S3 key:
+```javascript
+const response = await Predictions.identify({
+  entities: {
+    source: {
+      key: pathToPhoto,
+      level: 'guest' | 'private' | 'protected', 
+    },
+  }
+});
+```
+
+You can also detect the bounding box of faces from an image with its landmarks:
+```javascript
+const { entities } = await Predictions.identify({
+  entities: {
+    source: {
+      file,
+    },
+  }
+})
+for (const { boundingBox, landmarks } of entities) {
+  const { 
+    width, 
+    height, 
+    left, 
+    top 
+  } = boundingBox;
+  
+  for (const landmark of landmarks) {
+    const {
+      type, 
+      x, 
+      y 
+    } = landmark;
+  }
+}
+```
+
+To detect celebrities on an image, you can use the `celebrityDetection` option:
+```javascript
+const { entities } = await Predictions.identify({
+  entities: {
+    source: {
+      file,
+    },
+    celebrityDetection: true 
+  }
+})
+
+for (const { boundingBox, landmarks, metadata } of entities) {
+  const { 
+    name,
+    urls 
+  } = metadata; 
+  
+  //...
+}
+```
+
+You can also detect entities from previously uploaded images:
+```javascript
+const { entities } = await Predictions.identify({
+  entities: {
+    source: {
+      file,
+    },
+    collection: true
+  }
+})
+
+for (const { boundingBox, metadata } of entities) {
+  const {
+    width, 
+    height, 
+    left, 
+    top 
+  } = boundingBox;
+  const { externalImageId } = metadata; 
+}
+```
+
+To identify text from images and documents in your application using AWS Amplify, you first need to complete the getting started section where you set up the IAM roles with the right policy actions.
+
+You can detect text in an input image by sending the input directly from the browser or an Amazon S3 key from your project bucket. To do this, you can use the Predictions.identify function from the @aws-amplify/predictions library.
+
+```javascript
+const response = await Predictions.identify({
+  text: {
+    source: {
+      file
+    }
+  }
+});
+```
+
+You can also identify an image stored in Amazon S3 by providing the key of the image instead of the file.
+
+```javascript
+const response = await Predictions.identify({
+  text: {
+    source: {
+      key: pathToPhoto,
+    }
+  }
+})
+```
+
+When using the Predictions.identify function, you can specify the format of the text asPLAIN, TABLE, FORM, or ALL. For example, to detect plain text, you can use the following code:
+
+```javascript
+const response = await Predictions.identify({
+  text: {
+    source: {
+      file
+    },
+    format: 'PLAIN'
+  }
+});
+
+const {
+  text: {
+    fullText, 
+    lines, 
+    linesDetailed,
+    words
+  }
+} = response;
+```
+
+This will return the full text, lines, lines with detailed information, and words detected in the image.
+
+To detect structured forms, you can use the following code:
+
+```javascript
+const response = await Predictions.identify({
+  text: {
+    source: {
+      file
+    },
+    format: 'FORM'
+  }
+});
+
+const {
+  text: {
+    keyValues
+  }
+} = response;
+```
+
+This will return an array of key-value pairs detected in the image, along with metadata such as the location of the key-value pairs.
+
+To detect structured tables, you can use the following code:
+
+```javascript
+const response = await Predictions.identify({
+  text: {
+    source: {
+      file
+    },
+    format: 'TABLE'
+  }
+});
+
+const {
+  text: {
+    tables
+  }
+} = response;
+```
+
+This will return an array of tables detected in the image, along with metadata such as the size of the table and the text detected in each cell.
+
+To detect both tables and forms, you can use the following code:
+
+```javascript
+const { text } = await Predictions.identify({
+  text: {
+    source: {
+      file
+    },
+    format: 'ALL'
+  }
+});
+```
+
+This will return all the detected text, including plain text, tables, and forms.
+
+Amplify provides a solution for using AI and ML cloud services to enhance your application. Some supported use cases include:
+
+- converting text to speech
+- transcribing audio to text
+- translating text from one language to another
+- identifying text from an image
+- identifying entities from an image
+- identifying real world objects from an image
+- interpreting text
+
+Predictions is broadly organized into 3 key use cases - Identify, Convert, and Interpret. 
+
+- Identify will find text, entities, or real world objects from images.
+- Convert allows you to translate text, generate speech audio from text input, or transcribe an audio input.
+- Interpret allows you to analyze text for language, entities, key phrases, sentiment, and syntax.
+
+Some common use cases are listed below. Predictions comes with built-in support for Amazon Translate, Amazon Polly, Amazon Transcribe, Amazon Rekognition, Amazon Textract, and Amazon Comprehend.
+
+To interpret sentiment, you need to determine key phrases, sentiment, language, syntax, and entities from text using Amplify. Before you start, make sure to complete the getting started section, where you will set up the IAM roles with the right policy actions.
+
+You can analyze text to find key phrases, sentiment (positive, negative, neutral), or the syntax (pronouns, verbs, etc.). You can also find entities in the text such as names or places, or perform language detection.
+
+To do this, you can use the `Predictions` class from `@aws-amplify/predictions`. Here is an example of how to use it in a React application:
+```javascript
+import { Predictions } from '@aws-amplify/predictions';
+
+const textToInterpret = 'Your text to interpret';
+const result = await Predictions.interpret({
+  text: {
+    source: {
+      text: textToInterpret,
+    },
+    type: 'ALL'
+  }
+})
+```
+This code will return an object with the interpretation results, including key phrases, sentiment, syntax, entities, and language detection.
+
+To label objects in an image, you first need to complete the getting started section where you set up the IAM roles with the right policy actions. 
+
+When working with the API, you can detect labels such as identifying objects like desks or chairs in an image. This can be achieved by using the Predictions.identify method, which takes an object with a source and type property. The source property contains the image file, and the type property is set to 'LABELS' to detect labels. 
+
+Here is an example of how to use it in a React application:
+```
+import { Predictions } from '@aws-amplify/predictions';
+
+Predictions.identify({
+  labels: {
+    source: {
+      file: yourImageFile
+    },
+    type: 'LABELS'
+  }
+})
+ .then((response) => {
+    const { labels } = response;
+    labels.forEach((object) => {
+      const { name, boundingBoxes } = object;
+      // do something with the label and bounding box
+    });
+  })
+ .catch((err) => console.log({ err }));
+```
+
+You can also detect unsafe content in an image by setting the type property to 'UNSAFE'. 
+
+Here is an example of how to use it in a React application:
+```
+import { Predictions } from '@aws-amplify/predictions';
+
+const { unsafe } = await Predictions.identify({
+  labels: {
+    source: {
+      file: yourImageFile
+    },
+    type: 'UNSAFE'
+  }
+})
+// do something with the unsafe content
+```
+
+To detect both labels and unsafe content, you can set the type property to 'ALL'. 
+
+Here is an example of how to use it in a React application:
+```
+import { Predictions } from '@aws-amplify/predictions';
+
+const { labels, unsafe } = await Predictions.identify({
+  labels: {
+    source: {
+      file: yourImageFile
+    },
+    type: 'ALL'
+  }
+})
+// do something with the labels and unsafe content
+```
+
+To enable Predictions in your application, you need to set up the appropriate IAM policy for Roles in your Cognito Identity Pool. This policy should include the necessary actions and resources to use the desired machine learning capabilities.
+
+The IAM policy should be configured to enable all supported ML capabilities, but you should only include the actions and resources relevant to your specific use cases. You can learn more about the available ML capabilities in the documentation for Amazon Translate, Amazon Polly, Amazon Transcribe, Amazon Rekognition, Amazon Textract, and Amazon Comprehend.
+
+To configure the policy, you can use the following example as a starting point:
+```javascript
+const policy = new PolicyStatement({
+  actions: [
+    "translate:TranslateText",
+    "polly:SynthesizeSpeech",
+    "transcribe:StartStreamTranscriptionWebSocket",
+    "comprehend:DetectSentiment",
+    "comprehend:DetectEntities",
+    "comprehend:DetectDominantLanguage",
+    "comprehend:DetectSyntax",
+    "comprehend:DetectKeyPhrases",
+    "rekognition:DetectFaces",
+    "rekognition:RecognizeCelebrities",
+    "rekognition:DetectLabels",
+    "rekognition:DetectModerationLabels",
+    "rekognition:DetectText",
+    "rekognition:DetectLabel",
+    "rekognition:SearchFacesByImage",
+    "textract:AnalyzeDocument",
+    "textract:DetectDocumentText",
+    "textract:GetDocumentAnalysis",
+    "textract:StartDocumentAnalysis",
+    "textract:StartDocumentTextDetection",
+  ],
+  resources: ["*"],
+});
+```
+You will also need to add the `addOutput` method to patch the custom Predictions resource to the expected output configuration. This configuration should include the settings for the convert, identify, and interpret features.
+
+To use the Predictions features in your application, you need to install the Amplify library. You can do this by running the following command in your project's root folder:
+```
+npm add aws-amplify @aws-amplify/predictions
+```
+After installing the library, you need to configure the frontend by importing and loading the configuration file in your app. You can do this by adding the following code to your app's root entry point:
+```javascript
+import Amplify from "aws-amplify";
+import outputs from "./amplify_outputs.json";
+
+Amplify.configure(outputs);
+
+Amplify.configure({
+ ...Amplify.getConfig(),
+  Predictions: outputs.custom.Predictions,
+});
+```
+Note that you should replace `./amplify_outputs.json` with the actual path to your configuration file.
+
+To integrate text-to-speech capabilities into your React application using AWS Amplify, start by setting up the necessary IAM roles with the right policy actions as described in the getting started section. 
+
+Once set up, you can use the Predictions API to generate an audio buffer for playback from a text input. You do this by calling the convert method on the Predictions object, passing in an object with the textToSpeech property. This property should contain a source object with the text you want to generate speech from, and a voiceId which specifies the voice to use. 
+
+For example, you can use the following code to generate speech from a text input:
+```javascript
+import { Predictions } from '@aws-amplify/predictions';
+
+const textToGenerateSpeech = 'Hello, world!';
+const result = await Predictions.convert({
+  textToSpeech: {
+    source: {
+      text: textToGenerateSpeech
+    },
+    voiceId: "Amy" 
+  }
+})
+```
+The voiceId should be one of the voices supported by Amazon Polly, such as "Amy". You can find the complete list of voiceId options in the Amazon Polly documentation.
+
+To transcribe audio to text, also known as speech-to-text, in your React application using AWS Amplify, you need to have completed the getting started section first, where you set up the IAM roles with the right policy actions.
+
+You can use the Predictions API to transcribe a PCM audio byte buffer to text, such as a recording from a microphone. 
+```javascript
+const { Predictions } = require('@aws-amplify/predictions');
+const transcription = await Predictions.convert({
+  transcription: {
+    source: {
+      bytes: // your audio byte buffer
+    }
+  }
+})
+```
+The language data input type must support streaming for it to work with Amplify Predictions. For a complete list of supported languages and language-specific features, refer to the AWS Transcribe documentation.
+
+To integrate translation capabilities into your application using AWS Amplify, you need to start by setting up the necessary IAM roles with the right policy actions, as described in the getting started section. 
+
+Once you have completed the setup, you can use the Amplify Predictions API to translate text from one language to another. This is done by calling the convert method on the Predictions object, passing in an object with the text to translate, its source language, and the target language. 
+
+For example, to translate text from Spanish to English in a React application, you can use the following code:
+```javascript
+import { Predictions } from '@aws-amplify/predictions';
+
+const textToTranslate = 'Hola, ¿cómo estás?';
+const result = await Predictions.convert({
+  translateText: {
+    source: {
+      text: textToTranslate,
+      language: 'es'
+    },
+    targetLanguage: 'en'
+  }
+})
+```
+The result will contain the translated text. You can find the complete list of supported languages and their corresponding language codes in the AWS documentation. 
+
+This page is describing how to set up language translation in your react application. Make sure you complete the setup steps before attempting to use this api.

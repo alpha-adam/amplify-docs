@@ -1,0 +1,483 @@
+When using the Amplify Logger in a React application, all logged messages are saved locally on the user's device first before sending them to CloudWatch. This section explains how to configure the maximum amount of local logs that are stored. This can be helpful in determining how much logs are stored locally depending on your network availability and offline use cases.
+
+To change the local storage maximum size, you can update the `localStoreMaxSizeInMB` field in the Amplify configuration. For example, to set the local storage size to 2 MB, you can use the following configuration:
+```json
+{
+  "awsCloudWatchLoggingPlugin": {
+    "enable": true,
+    "logGroupName": "<log-group-name>",
+    "region": "<region>",
+    "localStoreMaxSizeInMB": 2,
+    "flushIntervalInSeconds": 60,
+    "loggingConstraints": {
+      "defaultLogLevel": "WARN"
+    }
+  }
+}
+```
+In a React application, you would typically configure Amplify using the `Amplify.configure` method. To set the local storage size, you would create an `AWSCloudWatchLoggingPluginConfiguration` object and pass it to the `Amplify.addPlugin` method. Here is an example of how you might do this in React:
+```jsx
+import Amplify from 'aws-amplify';
+import { AWSCloudWatchLoggingPlugin } from 'aws-amplify';
+
+const loggingConfiguration = {
+  logGroupName: '<log-group-name>',
+  region: '<region>',
+  localStoreMaxSizeInMB: 2,
+};
+
+const loggingPlugin = new AWSCloudWatchLoggingPlugin(loggingConfiguration);
+
+Amplify.addPlugin(loggingPlugin);
+```
+Note that you will need to replace `<log-group-name>` and `<region>` with the actual values for your AWS CloudWatch log group and region.
+
+You can configure the logging level in your application when using the Amplify logger. This helps you determine the logging level that works best for your use cases and which levels of errors or warnings you want to capture in Amazon Cloudwatch.
+
+To change the default log level, you can update the `defaultLogLevel` field under `loggingConstraints`. Supported log levels include:
+* `ERROR`
+* `WARN`
+* `INFO`
+* `DEBUG`
+* `VERBOSE`
+* `NONE`
+
+Setting the log level to `NONE` effectively disables logging. 
+
+You can set the default log level in a configuration file or through code. In React, you would typically set the log level through code. 
+
+For example, to set the default log level to `WARN`:
+```javascript
+const loggingConstraints = {
+  defaultLogLevel: 'WARN'
+};
+const loggingConfiguration = {
+  logGroupName: '<log-group-name>',
+  region: '<region>',
+  loggingConstraints: loggingConstraints
+};
+Amplify.addPlugin(new AWSCloudWatchLoggingPlugin(loggingConfiguration));
+```
+
+You can also configure the log level by category. Each Amplify category can be configured to have its own logging level. 
+
+To set different logging levels for categories, you can add a `categoryLogLevel` section and specify each category and its log level in the configuration file:
+```json
+{
+  "awsCloudWatchLoggingPlugin": {
+    "enable": true,
+    "logGroupName": "<log-group-name>",
+    "region": "<region>",
+    "localStoreMaxSizeInMB": 1,
+    "flushIntervalInSeconds": 60,
+    "loggingConstraints": {
+      "defaultLogLevel": "ERROR",
+      "categoryLogLevel": {
+        "Authentication": "VERBOSE",
+        "Storage": "DEBUG"
+      }
+    }
+  }
+}
+```
+
+Or, you can provide a dictionary of category and corresponding log levels at initialization and configuration of the `AWSCloudWatchLoggingPlugin`:
+```javascript
+const categoryLogLevels = {
+  'Authentication': 'VERBOSE',
+  'Storage': 'DEBUG'
+};
+const loggingConstraints = {
+  defaultLogLevel: 'ERROR',
+  categoryLogLevel: categoryLogLevels
+};
+const loggingConfiguration = {
+  logGroupName: '<log-group-name>',
+  region: '<region>',
+  loggingConstraints: loggingConstraints
+};
+Amplify.addPlugin(new AWSCloudWatchLoggingPlugin(loggingConfiguration));
+```
+
+To disable logging for a specific category, set the log level to `NONE`. 
+
+Existing Amplify category names that are used by default by Amplify when automatically logging errors from the library include:
+* `Analytics`
+* `API`
+* `Authentication`
+* `DataStore`
+* `Geo`
+* `Hub`
+* `Logging`
+* `Predictions`
+* `PushNotifications`
+* `Storage`
+
+Each Amplify authenticated user can be configured to have their own unique logging configuration. This is helpful in enabling you to debug issues more granularly for your users.
+
+To configure user log levels, you can retrieve the user ID using Amplify Auth. You can do this by using the Amplify Auth category.
+
+In React, you can retrieve the user ID by using the Amplify Auth library. 
+
+To configure user log levels, you can set different default and category log levels for an authenticated user. 
+
+Here is an example of setting different default and category log levels for an authenticated user in React:
+
+```javascript
+import Amplify from 'aws-amplify';
+import { AWSCloudWatchLoggingPlugin } from 'aws-amplify';
+
+const categoryLogLevels = {
+  "Storage": "VERBOSE",
+  "Api": "VERBOSE"
+};
+
+const userLogLevel = {
+  defaultLogLevel: "DEBUG",
+  categoryLogLevel: categoryLogLevels
+};
+
+const userLogLevels = {
+  "xyz-123": userLogLevel
+};
+
+const loggingConstraints = {
+  defaultLogLevel: "ERROR",
+  userLogLevel: userLogLevels
+};
+
+const loggingConfiguration = {
+  logGroupName: "<log-group-name>",
+  region: "<region>",
+  loggingConstraints: loggingConstraints
+};
+
+Amplify.addPlugin(new AWSCloudWatchLoggingPlugin(loggingConfiguration));
+```
+
+Alternatively, you can also configure user log levels by using a configuration file. 
+
+```json
+{
+  "awsCloudWatchLoggingPlugin": {
+    "enable": true,
+    "logGroupName": "<log-group-name>",
+    "region": "<region>",
+    "localStoreMaxSizeInMB": 1,
+    "flushIntervalInSeconds": 60,
+    "loggingConstraints": {
+      "defaultLogLevel": "ERROR",
+      "userLogLevel": {
+        "xyz-123": {
+          "defaultLogLevel": "DEBUG",
+          "categoryLogLevel": {
+            "Storage": "VERBOSE",
+            "Api": "VERBOSE"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+To enable and disable logging when using the Amplify Logger, you can use the following methods. The Amplify Logger is enabled by default, unless it is disabled in the amplifyconfiguration_logging file.
+
+For Android, you can enable the Amplify Logger using 
+```java
+Amplify.Logging.enable();
+```
+and disable it using 
+```java
+Amplify.Logging.disable();
+```
+In React, you would use the Amplify Logger like this 
+```javascript
+import Amplify from 'aws-amplify';
+
+Amplify.Logging.enable();
+Amplify.Logging.disable();
+```
+For Swift, you can enable the Amplify Logger using 
+```swift
+Amplify.Logging.enable()
+```
+and disable it using 
+```swift
+Amplify.Logging.disable()
+```
+
+When using the Amplify Logger, all logged messages are saved locally on the user's device first and then flushed at a set interval that you can customize. You can also choose to flush events manually if needed.
+
+To customize the time interval for when logs are automatically flushed and sent to CloudWatch, you can set the `flushIntervalInSeconds` field in the logging configuration file. For example, to set the time interval to 120 seconds, you would update the configuration file as follows:
+```json
+{
+    "awsCloudWatchLoggingPlugin": {
+        "enable": true,
+        "logGroupName": "<log-group-name>",
+        "region": "<region>",
+        "localStoreMaxSizeInMB": 1,
+        "flushIntervalInSeconds": 120,
+        "loggingConstraints": {
+            "defaultLogLevel": "ERROR"
+        }
+    }
+}
+```
+Alternatively, you can provide a `flushIntervalInSeconds` parameter when initializing and configuring the `AWSCloudWatchLoggingPlugin` in your code.
+
+To manually flush logs, you can use the `flushLogs` function from the `AWSCloudWatchLoggingPlugin`. In React, you would first import the `AWSCloudWatchLoggingPlugin` and then execute the `flushLogs` function. Here's an example:
+```javascript
+import { Amplify } from 'aws-amplify';
+
+// Get the AWSCloudWatchLoggingPlugin
+const cloudWatchPlugin = await Amplify.Logging.getPlugin('awsCloudWatchLoggingPlugin');
+
+// Flush the logs
+cloudWatchPlugin.flushLogs(() => {
+    // logs flushed successfully
+}, (error) => {
+    // failed to flush logs
+});
+```
+Note that in React, you would typically use the `flushLogs` function provided by the `AWSCloudWatchLoggingPlugin` instance, rather than the `try await` syntax shown in the Swift example.
+
+The Amplify Logger sends errors that occur when using it through Amplify Hub. To ensure that errors do not occur when logging, log messages should be validated and follow the best security practices. Additionally, you should ensure that log messages do not exceed the Amazon CloudWatch log event size of 256 KB.
+
+You can get logging error events by listening/subscribing to the logging events from the Amplify Hub.
+
+In React, you can listen to log events using the Amplify Hub. The Hub sends log events when there is an error writing to the local log or sending log events to CloudWatch. 
+
+Here is an example of how you can listen to log events in React:
+
+```javascript
+import { Hub } from 'aws-amplify';
+
+Hub.listen('logging', (data) => {
+  if (data.eventName === 'writeLogFailure') {
+    console.log('Error writing to local log');
+  } else if (data.eventName === 'flushLogFailure') {
+    console.log('Error sending log events to CloudWatch');
+  }
+});
+```
+
+You can remotely configure the Amplify Logger, which allows you to make changes to your logging levels or user allow list in your deployed applications. The logging configurations you set remotely will overwrite the local log level and persist for future app sessions.
+
+To set up remote configuration, you need to create backend resources, including an Amazon CloudWatch log group, an AWS API Gateway, an AWS Lambda function, and an AWS S3 bucket. You can use the Amplify CDK to add custom resources.
+
+The CDK construct provisions the necessary resources and deploys a remote configuration file to the S3 bucket. You can update this file to change the configuration level or user allow list. The construct also creates IAM policies and assigns them to the Amplify authenticated and unauthenticated roles.
+
+To use the remote configuration, you need to replace the placeholder values with your own values, including the log group name, S3 bucket name, and Amplify role names. The CDK construct provides the location and lambda for reading from S3, as well as the location and file name of the log level configuration file.
+
+The API endpoint, CloudWatch log group, and region will be printed out in the terminal. You can use this information to set up the Amplify library.
+
+A sample lambda handler is provided that reads and returns the remote logging constraints from AWS S3. The handler caches the configuration by version using ETag, which allows it to be more efficient and save bandwidth.
+
+A sample remote configuration file is also provided, which overwrites the local file in the mobile application. This file can be deployed to S3 and updated to change the application log levels.
+
+To enable remote configuration in your app, you need to provide the API endpoint and refresh interval for updating the remote configuration locally on the user's device. You can do this by updating the amplify configuration file or using code.
+
+For example, in React, you can enable remote configuration by adding a new section to the amplify configuration file:
+```json
+{
+  "awsCloudWatchLoggingPlugin": {
+    "enable": true,
+    "logGroupName": "<log-group-name>",
+    "region": "<region>",
+    "localStoreMaxSizeInMB": 1,
+    "flushIntervalInSeconds": 60,
+    "loggingConstraints": {
+      "defaultLogLevel": "ERROR"
+    },
+    "defaultRemoteConfiguration": {
+      "endpoint": "<your-api-endpoint>",
+      "refreshIntervalInSeconds": 1200
+    }
+  }
+}
+```
+Alternatively, you can use code to enable remote configuration. For example:
+```javascript
+import Amplify from 'aws-amplify';
+
+Amplify.configure({
+  awsCloudWatchLoggingPlugin: {
+    enable: true,
+    logGroupName: '<log-group-name>',
+    region: '<region>',
+    localStoreMaxSizeInMB: 1,
+    flushIntervalInSeconds: 60,
+    loggingConstraints: {
+      defaultLogLevel: 'ERROR'
+    },
+    defaultRemoteConfiguration: {
+      endpoint: '<your-api-endpoint>',
+      refreshIntervalInSeconds: 1200
+    }
+  }
+});
+```
+
+For advanced use cases where Amplify does not provide the functionality, you can retrieve the escape hatch to access the underlying Amazon CloudWatch client.
+
+On Android, the escape hatch provides access to the underlying `CloudWatchLogsClient` instance. You can retrieve the escape hatch with the following code:
+```java
+AWSCloudWatchLoggingPlugin plugin = (AWSCloudWatchLoggingPlugin)Amplify.Logging.getPlugin("awsCloudWatchLoggingPlugin");
+CloudWatchLogsClient client = plugin.getEscapeHatch();
+```
+or in Kotlin:
+```kotlin
+val plugin = Amplify.Logging.getPlugin("awsCloudWatchLoggingPlugin") as AWSCloudWatchLoggingPlugin
+val client = plugin.escapeHatch
+```
+You will also need to add the necessary Gradle imports:
+```kotlin
+implementation("aws.sdk.kotlin:cloudwatchlogs:KOTLIN_SDK_VERSION")
+```
+On iOS, you can get a direct reference to the instance of CloudWatchLogsClientProtocol and directly interact with AWSCloudWatch via the AWS SDK for Swift. First, add the necessary import statements:
+```swift
+import AWSCloudWatchLoggingPlugin
+import AWSCloudWatchLogs
+```
+Then, you can retrieve the escape hatch with the following code:
+```swift
+let cloudWatchPlugin = try Amplify.Logging.getPlugin(for: "awsCloudWatchLoggingPlugin") as? AWSCloudWatchLoggingPlugin
+let cloudWatchClient: CloudWatchLogsClientProtocol? = cloudWatchPlugin?.getEscapeHatch()
+```
+
+With the Amplify Logger, you can send logs to Amazon CloudWatch from errors that are caught by the Amplify library or by adding your own custom log messages. You can also customize which levels of log messages to send to CloudWatch.
+
+When logging messages, you should follow best security practices, including validating log messages and ensuring they don't contain personally identifiable information and/or sensitive data.
+
+You can log messages using the Amplify logger to a specific namespace to help you group logs that are similar when they are sent to CloudWatch. To accomplish this, get an instance of the Logger and specify a category name and/or namespace. Use the Logger instance to log messages at the desired log level. The category name and namespace values are used to tag your log messages that will appear in CloudWatch.
+
+You can also log JSON formatted log messages to leverage AWS CloudWatch query and filter supports.
+
+Here is an example in React:
+```javascript
+const logger = Amplify.Logging.logger('Authentication', 'my-namespace');
+try {
+  const result = doSomething();
+  logger.debug(`result: ${result}`);
+} catch (error) {
+  logger.error('operation failed', error);
+}
+```
+The following are existing Amplify category names that are used by default by Amplify when automatically logging errors from the library:
+* ANALYTICS
+* API
+* AUTH
+* DATASTORE
+* HUB
+* LOGGING
+* NOTIFICATIONS
+* PREDICTIONS
+* STORAGE
+* GEO
+
+Note that the Amplify category names may vary depending on the platform being used.
+
+The Amplify Logger enables you to troubleshoot and debug issues with your apps, to help you provide the best experience for your customers. You can log messages for errors by the Amplify library and add custom logs as well and send them to Amazon CloudWatch. With the Amplify Logger, you also can remotely change your logging configuration to adjust your logging levels, or add an allow list of customer IDs to help you detect issues more granularly for your apps in production.
+
+## Prerequisites
+To set up Amplify logging, you need to have an Amplify application with the Amplify libraries integrated. For Android, the Amplify Logger is available for versions 2.11.0 and beyond of the Amplify Android SDK. For iOS, the minimum target is iOS 13.0, using Xcode 14.1 or later.
+
+## Install the Amplify library
+To install the Amplify library, you need to add the following dependencies to your build.gradle file:
+```kotlin
+dependencies {
+    implementation("com.amplifyframework:aws-auth-cognito:ANDROID_VERSION")
+    implementation("com.amplifyframework:aws-logging-cloudwatch:ANDROID_VERSION")
+}
+```
+For iOS, you can install the Amplify library using Swift Package Manager or CocoaPods.
+
+## Set up the backend
+To set up the backend, you need to create a log group in Amazon CloudWatch to send logs to. You can create and provision a log group by going through the AWS Console and creating your log group manually or using Amplify and AWS CDK to provision and deploy the AWS resources.
+
+## Initialize Amplify Logging
+To initialize Amplify logging, you need to add the AWSCloudWatchLoggingPlugin to your Amplify configuration. You can do this by creating a configuration file or by adding the plugin to your code.
+
+### With Configuration File
+You can create a configuration file named `amplifyconfiguration_logging.json` with the following content:
+```json
+{
+    "awsCloudWatchLoggingPlugin": {
+        "enable": true,
+        "logGroupName": "<log-group-name>",
+        "region": "<region>",
+        "localStoreMaxSizeInMB": 1,
+        "flushIntervalInSeconds": 60,
+        "loggingConstraints": {
+            "defaultLogLevel": "ERROR"
+        }
+    }
+}
+```
+Then, you can add the following code to your app:
+```java
+Amplify.addPlugin(new AWSCognitoAuthPlugin());
+Amplify.addPlugin(new AWSCloudWatchLoggingPlugin());
+Amplify.configure(AmplifyOutputs.fromResource(R.raw.amplify_outputs), getApplicationContext());
+```
+### With Code
+You can also add the plugin to your code without creating a configuration file:
+```java
+Amplify.addPlugin(new AWSCognitoAuthPlugin());
+AWSCloudWatchLoggingPluginConfiguration config = new AWSCloudWatchLoggingPluginConfiguration (<log-group-name>,<region>,1,60);
+Amplify.addPlugin(new AWSCloudWatchLoggingPlugin(config));
+Amplify.configure(AmplifyOutputs.fromResource(R.raw.amplify_outputs), getApplicationContext());
+```
+Note: Replace `<log-group-name>` and `<region>` with your actual log group name and region.
+
+For React, you would use the following code to initialize Amplify logging:
+```javascript
+import Amplify from 'aws-amplify';
+import AWSCognitoAuthPlugin from '@aws-amplify/auth';
+import AWSCloudWatchLoggingPlugin from '@aws-amplify/logging';
+
+Amplify.addPlugin(new AWSCognitoAuthPlugin());
+const loggingConfig = {
+  logGroupName: '<log-group-name>',
+  region: '<region>',
+  localStoreMaxSizeInMB: 1,
+  flushIntervalInSeconds: 60,
+  loggingConstraints: {
+    defaultLogLevel: 'ERROR'
+  }
+};
+Amplify.addPlugin(new AWSCloudWatchLoggingPlugin(loggingConfig));
+Amplify.configure({
+  Auth: {
+    // your auth configuration
+  },
+  Logging: {
+    logGroupName: '<log-group-name>',
+    region: '<region>',
+  }
+});
+```
+
+To view logs in Amazon CloudWatch, you need to access the log group that you created and specified during the initial setup. Each user's log messages are stored in a user-specific log stream within the log group. The log stream names are generated based on the user's device identifier and user identifier.
+
+For authenticated users, the log stream name is a combination of the device identifier and user identifier, separated by a period. For unauthenticated users, the log stream name is a combination of the device identifier and the string "guest".
+
+You can use the Amplify Auth category to retrieve the user identifier for a specific user if needed. Alternatively, you can retrieve the user identifier by visiting the Amazon Cognito console and inspecting the User ID in User pools.
+
+To access your logs in the AWS Console, follow these steps:
+1. Log into the AWS Console.
+2. Navigate to Amazon CloudWatch.
+3. In the left navigation panel, click on Logs and then click on Log groups.
+4. Enter your log group name in the Filter field.
+5. Click on your log group in the filtered results to view all log streams. 
+
+In a React application using AWS Amplify, you would use the `Auth` category from `@aws-amplify/auth` to retrieve the user identifier. For example:
+```javascript
+import { Auth } from '@aws-amplify/auth';
+
+Auth.currentAuthenticatedUser().then((user) => {
+  const userId = user.username;
+  // Use the user ID to construct the log stream name
+});
+```

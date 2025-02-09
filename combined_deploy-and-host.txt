@@ -1,0 +1,503 @@
+Amplify code-first DX (Gen 2) offers fullstack branch deployments that allow you to automatically deploy infrastructure and application code changes from feature branches. This enables testing changes in an isolated environment before merging to the main branch.
+
+To set up feature branch deployments, start by logging in to the Amplify console and choosing your app. Navigate to App settings > Branch settings, select Edit, and enable Branch auto-detection and Branch auto-disconnection. This will connect any branch in your repository automatically and ensure that deleted branches are also disconnected.
+
+You can define a pattern to connect only certain branches, such as setting dev, staging, and feature/* to connect all three branch types. Once you've enabled auto-detection, push a commit to your feature/A and staging branches that match the pattern, and you should start seeing deployments on the console page.
+
+To promote changes to production, follow the normal Git-based workflow. Make a change in your feature/A branch, commit and push the changes, and then submit a pull request to your main branch. Once your team has validated the changes, merge the pull request to main, which will initiate a build on your main branch and update any frontend or backend resources that you changed.
+
+To generate the config for a branch environment, you can run the following command in your terminal:
+```bash
+npx ampx generate outputs --app-id <your-amplify-app-id> --branch <your-git-branch-name> --out-dir <path/to/config>
+```
+However, for Android and Flutter, you may need to specify a different output directory. For Android, add a "raw" folder under app/src/main/res directory if it doesn't exist, and run:
+```bash
+npx ampx generate outputs --app-id <your-amplify-app-id> --branch <your-git-branch-name> --out-dir app/src/main/res/raw
+```
+For Flutter, run:
+```bash
+npx ampx generate outputs --app-id <your-amplify-app-id> --branch <your-git-branch-name> --format dart --out-dir lib
+```
+For Swift, simply run:
+```bash
+npx ampx generate outputs --app-id <your-amplify-app-id> --branch <your-git-branch-name>
+```
+Then, drag and drop the generated configuration file to your Xcode project. 
+
+For example in a React application, after running the command to generate the config, you would import and use the config in your React app like this:
+```javascript
+import Amplify from 'aws-amplify';
+import awsconfig from './aws-exports';
+
+Amplify.configure(awsconfig);
+```
+
+This guide explains how to set up a cross-account deployment pipeline for applications built with AWS Amplify Gen 2. The pipeline will use Amazon CodeCatalyst and AWS Amplify Hosting.
+
+First, you need to set up an Amazon CodeCatalyst space. This involves creating a new space and following the steps outlined in the Amazon CodeCatalyst guide.
+
+Next, you need to deploy a full-stack Amplify Gen 2 app. You can use the Next.js starter template to create a repository in your GitHub account, and then sign in to the AWS Management Console to create a new app in the Amplify console. Once you've selected the repository and reviewed the details, you can save and deploy the app.
+
+After deploying the app, you need to update the build specification. This involves adding a command to the build spec to generate the latest amplify_outputs.json file for the specified environment. You can do this by adding the following command to the build spec: `npx ampx generate outputs --branch $AWS_BRANCH --app-id $AWS_APP_ID`.
+
+You also need to disable automatic builds on the branch. You can do this by navigating to the app in the Amplify console, selecting App settings, and then selecting Branch settings. From there, you can select the branch and choose Disable auto build from the Actions dropdown menu.
+
+To trigger a build without committing code to your Git repository, you can set up an incoming webhook. You can create an incoming webhook in the Amplify Console by navigating to the app, selecting Hosting, and then selecting Build settings. From there, you can select Create webhook and provide a name for the webhook, as well as select the target branch to build on incoming webhook requests.
+
+Once you've set up the incoming webhook, you can create a new Amazon CodeCatalyst project. This involves following the steps outlined in the Amazon CodeCatalyst guide to create a new project.
+
+To achieve a cross-account deployment, you need to implement the previous steps in a different AWS account. You also need to add the target AWS account to the CodeCatalyst space, and create an IAM role in the target AWS account that will be assumed by the staging environment to perform actions and deploy resources in the production environment.
+
+Finally, you can create a workflow in the Amazon CodeCatalyst project. A workflow is an automated procedure that describes how to build, test, and deploy your code as part of a continuous integration and continuous delivery system. You can create a workflow by navigating to the CI/CD feature in the CodeCatalyst project, selecting Workflows, and then selecting Create workflow.
+
+In the workflow, you can add build actions that deploy the backend for your Amplify Gen 2 app, trigger frontend builds using incoming webhooks, and perform other actions as needed. You can also add environment variables, such as the AWS app ID and branch name, to the build actions.
+
+Here is an example of how you might implement the build actions in the workflow using React:
+```bash
+// Perform a clean install of the dependencies
+npm ci
+
+// Deploy the backend for your Amplify Gen 2 app
+npx ampx pipeline-deploy --branch $AWS_BRANCH --app-id $AWS_APP_ID
+
+// Trigger frontend build using incoming webhooks
+if [ $AWS_BRANCH = "main" ]; then
+  curl -X POST -d {} "`webhookUrl`&operation=startbuild" -H "Content-Type:application/json"
+fi
+```
+Once you've created the workflow, you can validate it to ensure that the workflow definition yaml file is valid, and then commit the changes to save the workflow. The workflow will automatically start a new run when you commit the changes.
+
+Overall, this guide provides a step-by-step overview of how to set up a custom cross-account pipeline to deploy your frontend and backend for apps built using Amplify Gen 2. By following these steps, you can create a pipeline that deploys your backend initially with your staging environment, and then deploys your production environment in a different AWS account.
+
+While building with Amplify CI/CD provides benefits such as zero-config setup, full-stack previews, and centralized secrets management, Amplify Gen 2 allows you to integrate full-stack CI/CD into your custom pipelines, including AWS CodePipeline, Amazon CodeCatalyst, GitHub Actions, and more.
+
+To set up backend deployments, follow these steps:
+
+1. Create an Amplify app by connecting a full-stack Gen 2 branch from your Git repository. This is a one-time setup, as subsequent deployments will use a custom pipeline.
+
+2. Disable Auto-build for your branch to prevent code commits from triggering a build.
+
+3. Update the Amplify build specification file to include `npx ampx generate outputs --branch $AWS_BRANCH --app-id $AWS_APP_ID` and comment out the `pipeline-deploy` script. The `ampx pipeline-deploy` command deploys backend updates, while `ampx generate outputs` fetches the latest `amplify_outputs.json` for the specified environment.
+
+4. Update your pipeline provider's build settings to include the following:
+    * Run `npm ci`.
+    * Run `export CI=1` to indicate a CI environment.
+    * Run `npx ampx pipeline-deploy --branch BRANCH_NAME --app-id AMPLIFY_APP_ID`. Replace `BRANCH_NAME` with the branch being deployed and `AMPLIFY_APP_ID` with the Amplify App ID.
+
+For example, when using Amazon CodeCatalyst, your build specification might look like this:
+```yaml
+Actions:
+  Build_82:
+    Identifier: aws/build@v1.0.0
+    Inputs:
+      Sources:
+        - WorkflowSource
+      Variables:
+        - Name: BRANCH_NAME
+          Value: main
+        - Name: AMPLIFY_APP_ID
+          Value: #####
+    Configuration:
+      Steps:
+        - Run: export CI=1
+        - Run: npm ci
+        - Run: npx ampx pipeline-deploy --branch $BRANCH_NAME --app-id $AMPLIFY_APP_ID
+```
+
+5. Trigger a `git push` to your branch. Your build logs should show an AWS CloudFormation deployment underway.
+
+To set up frontend deployments and complete the full-stack CI/CD setup, follow these additional steps:
+
+1. Create an incoming webhook in the Amplify Console.
+
+2. Navigate to the frontend app, select **Create webhook** under **Hosting > Build settings**, and provide a name for the webhook and the target branch to build on incoming webhook requests.
+
+3. Copy the `curl` command that will be used to trigger a build for the frontend app.
+
+4. Update your custom pipeline build settings to include the `curl` command to trigger a frontend build after the `pipeline-deploy` succeeds. For example, using Amazon CodeCatalyst:
+```yaml
+Configuration:
+  Steps:
+    - Run: export CI=1
+    - Run: npm ci
+    - Run: npx ampx pipeline-deploy --branch $BRANCH_NAME --app-id $AMPLIFY_APP_ID
+    - Run: if [ $BRANCH_NAME = "main" ]; then curl -X POST -d {}
+        "https://webhooks.amplify.us-west-2.amazonaws.com/prod/webhooks?id=WEBHOOK-ID&token=TOKEN&operation=startbuild"
+        -H "Content-Type:application/json"; fi
+```
+
+This will trigger a build in your Amplify app, and Amplify CI will build and deploy the frontend.
+
+You might have different frontend and backend teams that maintain their own repositories. With AWS Amplify Gen 2, you can deploy repositories that have backend-only code, so frontend and backend teams can operate independently of each other.
+
+To deploy the backend app, you can follow these steps:
+1. Set up a backend-only Amplify project by running `mkdir backend-app && cd backend-app && npm create amplify@latest` and committing the code to a Git provider of your choice.
+2. Connect the `backend-app` in the new console by navigating to the Amplify console and selecting **Create new app**.
+3. When you connect the repository, notice that the only auto-detected framework is Amplify.
+4. Once you choose **Save and deploy**, your backend project will build.
+
+To deploy the frontend app, you can follow these steps:
+1. Set up the frontend app by running `npm create next-app@14 -- multi-repo-example --typescript --eslint --no-app --no-src-dir --no-tailwind --import-alias '@/*'`.
+2. Install Amplify dependencies by running `npm add @aws-amplify/backend-cli aws-amplify @aws-amplify/ui-react`.
+3. To connect to the deployed backend, run `npx ampx generate outputs --branch main --app-id <your-backend-app-id>`, which will generate the `amplify_outputs.json` file containing information about your backend.
+4. Validate that your frontend can connect to the backend by adding the `Authenticator` login form to your app.
+
+To connect the frontend to the backend, you can use the following code:
+```javascript
+import { withAuthenticator } from '@aws-amplify/ui-react';
+import { Amplify } from 'aws-amplify';
+import outputs from '@/amplify_outputs.json';
+
+Amplify.configure(outputs);
+
+function App({ Component, pageProps }) {
+  return <Component {...pageProps} />;
+}
+
+export default withAuthenticator(App);
+```
+
+You can also add an `amplify.yml` build-spec to your repository:
+```yml
+version: 1
+backend:
+  phases:
+    build:
+      commands:
+        - npm ci --cache.npm --prefer-offline
+        - npx ampx generate outputs --branch main --app-id BACKEND-APPID
+frontend:
+  phases:
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    baseDirectory:.next
+    files:
+      - '**/*'
+  cache:
+    paths:
+      -.next/cache/**/*
+      -.npm/**/*
+      - node_modules/**/*
+```
+
+To trigger a frontend build on backend updates, you can create an incoming webhook in the Amplify Console:
+1. Navigate to the **multi-repo-example** app, under **Hosting > Build settings** select **Create webhook**.
+2. Provide a **name** for the webhook and select the **target branch** to build on incoming webhook requests.
+3. Copy the `curl` command to trigger a build for the **multi-repo-example** app.
+
+You can then update the build settings for the `backend-app` to include the `curl` command:
+```yml
+version: 1
+backend:
+  phases:
+    build:
+      commands:
+        - npm ci --cache.npm --prefer-offline
+        - npx ampx pipeline-deploy --branch $AWS_BRANCH --app-id $AWS_APP_ID
+        - curl -X POST -d {} "https://webhooks.amplify.ca-central-1.amazonaws.com/prod/webhooks?id=WEBHOOK-ID&token=TOKEN&operation=startbuild" -H "Content-Type:application/json"
+```
+
+To share schema type definitions between the frontend and backend, you can add a `paths` entry in the `tsconfig.json` of your frontend app that points to the `amplify/data/resource.ts` file in your backend app:
+```json
+{
+  "compilerOptions": {
+    "paths": {
+      "@/data-schema": ["../backend-app/amplify/data/resource"]
+    }
+  }
+}
+```
+You can then import the `Schema` type from this path in your frontend code to get code completion and strong typing for your API calls:
+```javascript
+import { generateClient } from "aws-amplify/data";
+import type { Schema } from "@/data-schema";
+
+const client = generateClient<Schema>();
+
+const createTodo = async () => {
+  await client.models.Todo.create({
+    content: window.prompt("Todo content?"),
+    isDone: false,
+  });
+}
+```
+
+Some teams choose a monorepo approach, or single repositories that contain multiple packages or components to simplify the deployment process for shared libraries and components. Without a monorepo, you have to deploy each package individually, keep track of package versions and dependencies across packages, and ensure version compatibility. This can become exponentially more complex as the number of packages grows. With a monorepo, all packages and dependencies are contained within a single repository.
+
+Amplify Gen 2 supports monorepo workflows for fullstack builds with monorepo tools such as Nx and yarn workspaces. When building with Gen 2, we recommend creating the amplify/ folder in a shared workspace. We will use the following example for this guide:
+
+Consider a project with the following structure:
+- apps/ 
+  - admin-dashboard/ 
+    - next.config.mjs
+    - package.json
+  - marketing-site/ 
+    - astro.config.mjs
+    - package.json
+- packages/ 
+  - my-shared-backend/ 
+    - amplify/ 
+      - auth/ 
+        - resource.ts
+      - data/ 
+        - resource.ts
+      - backend.ts
+    - package.json
+    - tsconfig.json
+- package.json
+
+Monorepos require a slightly different setup. To deploy, you need to deploy 3 Amplify apps: 
+1. my-shared-backend 
+2. admin-dashboard 
+3. marketing-site
+
+The first app, my-shared-backend, will be the only app that updates changes to the backend. The other apps will only run frontend builds that point to the shared backend. 
+
+To deploy the shared backend Amplify app, navigate to the Amplify console and select Create new app. Once you connect your repository, select your monorepo project. Check the box that says My app is a monorepo and enter the path to your amplify backend. Your build settings should be automatically detected. Save and deploy.
+
+For the frontend apps, connect the frontend projects in the Amplify console separately, and update the build commands to include:
+npx ampx generate outputs --branch main --app-id BACKEND-APP-ID
+
+Replace BACKEND-APP-ID with the App ID for your backend application, which can be found in the Amplify console under the project name.
+
+If you're using Amplify Data, we recommend adding a paths entry in your tsconfig.json file that points to the amplify/data/resource.ts file to easily access your schema type definitions from your frontend apps. 
+
+You can then import the Schema type from this path in your frontend code to get code completion and strong typing for your API calls:
+```javascript
+import { generateClient } from "aws-amplify/data";
+import type { Schema } from "@/data-schema";
+
+const client = generateClient<Schema>();
+
+const createTodo = async () => {
+  await client.models.Todo.create({
+    content: window.prompt("Todo content?"),
+    isDone: false,
+  });
+}
+```
+
+This is how you can set up monorepo workflows for fullstack builds with Amplify Gen 2.
+
+Fullstack previews allow you to set up ephemeral fullstack environments on every pull request. This enables you to test features in isolation from production. 
+
+The workflow for using fullstack previews would be as follows:
+1. Your main production branch and feature branch are deployed on Amplify.
+2. You and your team work on the feature branch until it's ready.
+3. The feature branch is updated to the main branch head and then a pull request to the main branch is opened.
+4. The pull request preview is deployed on Amplify and available at a unique URL.
+5. Once the pull request is merged into the main branch, the request is closed and the fullstack environment is also automatically torn down.
+
+To use fullstack previews, you need to have the following prerequisites:
+- A fullstack Amplify app deployed
+- A private git repository, as fullstack previews are disabled for public repositories with Amplify backend templates.
+
+To enable fullstack web previews for your Amplify app, follow these steps:
+1. Log in to the Amplify console and select your app.
+2. Navigate to Hosting > Previews, select the main branch, and click on Edit settings.
+3. Click on the Pull request previews toggle button and choose Confirm to enable previews.
+4. Once enabled, ship updates to the dev branch. When you create a pull request for the main branch, Amplify will build and deploy your fullstack PR and provide you with a preview URL.
+
+For GitHub repositories, you can access your preview URL directly on the pull request from the Amplify Hosting's bot comment. After the pull request is merged or closed, the preview URL is deleted and any ephemeral fullstack environment is also deleted.
+
+If you want to share backend resources across preview branches, you can update your app build settings to reuse backend resources across your preview branches. This can be done by updating the build settings for the backend phase to generate the amplify_outputs.json file for all preview branches using the dev branch. 
+
+For example, you can update the amplify.yml file as follows:
+```yml
+version: 1
+backend:
+    phases:
+        build:
+            commands:
+                - 'npm ci --cache.npm --prefer-offline'
+                - 'echo $AWS_BRANCH'
+                - |
+                  case "${AWS_BRANCH}" in
+                      main)
+                          echo "Deploying main branch..."
+                          npx ampx pipeline-deploy --branch $AWS_BRANCH --app-id $AWS_APP_ID
+                          ;;
+                      dev)
+                          echo "Deploying dev branch..."
+                          npx ampx pipeline-deploy --branch $AWS_BRANCH --app-id $AWS_APP_ID
+                          ;;
+                      pr-*)
+                          echo "Deploying pull request branch..."
+                          npx ampx generate outputs --branch dev --app-id $AWS_APP_ID 
+                          ;;
+                      *)
+                          echo "Deploying to staging branch..."
+                          npx ampx generate outputs --branch staging --app-id $AWS_APP_ID 
+                          ;;
+                  esac
+frontend:
+    phases:
+        build:
+            commands:
+                - 'npm run build'
+    artifacts:
+        baseDirectory:.amplify-hosting
+        files:
+            - '**/*'
+    cache:
+        paths:
+            -.next/cache/**/*
+            -.npm/**/*
+            - node_modules/**/*
+```
+After this update, any new deployed preview branches will not deploy backend resources as part of the build and instead will use the deployed backend resources from the dev branch.
+
+Amplify Gen 2 offers centralized management of secrets and environment variables for all fullstack branches. Secrets allow you to securely configure environment-specific values like social sign-in keys, function environment variables, function secrets, and other sensitive data needed by your application across environments.
+
+This is different from Amplify Gen 1, where you need to define environment variables and secrets using the CLI and store keys in both AWS Parameter Store and a local team-provider.json file. In Amplify Gen 2, the management of secrets and environment variables is centralized in the Amplify console.
+
+To set secrets, you can add them for branch deployments in the Amplify console. From the App home page, navigate to Hosting > Secrets, and then choose the Manage secrets button. You can add a secret key or value that applies to all deployed branches or just specific branches. Secrets are stored in AWS Systems Manager Parameter Store.
+
+For local environments, you can add secrets while running the cloud sandbox with the command npx ampx sandbox secret set foo. Secrets set in a sandbox do not show up in the Amplify console, but you can view them in the AWS Parameter Store console.
+
+To access secrets, you can call the secret() function in your code. For example, you can set up social sign-in with authentication in your app using the secret() function. Depending on your environment, Amplify will automatically load the correct secret value with no extra configuration.
+
+To remove secrets, you need to manually delete them. For branch environments, secrets can be managed directly in the Amplify console. For local environments, you can remove a secret with the command npx ampx sandbox secret remove foo.
+
+Environment variables work like key-value pairs to help manage configurable settings across different deployment environments. Unlike secrets, environment variables are typically nonconfidential and are used for controlling application behavior in different environments. Environment variables are stored and managed by the Amplify managed service.
+
+To set environment variables, you can set them in the Amplify console. To access environment variables, you can enable access to them for your fullstack branch deployments or your local dev server. For branch environments, you can manage environment variables through the Amplify console. For local environments, you must manually load the sandbox's environment variables.
+
+For example, you can create an environment variable in the Amplify console and update the build settings to pipe the environment variable into a file, such as an.env file. You can then access the environment variable in your client code using process.env.
+
+Here is an example of how you can write the environment variable to an.env file in your amplify.yml file:
+```
+build:
+  commands:
+    - echo "REACT_APP_TEST_VARIABLE=$REACT_APP_TEST_VARIABLE" >>.env
+    - npm run build
+```
+You can then access the environment variable in your client code using process.env:
+```typescript
+console.log('REACT_APP_TEST_VARIABLE', process.env.REACT_APP_TEST_VARIABLE);
+```
+
+You can share resources across branches in your app by updating the build settings. This is useful when you want to reuse seed data, users, and groups across different branches. For example, you can set up your feature branches to use the backend resources deployed by the dev branch.
+
+To do this, go to the App overview page in the Amplify console and select Build settings under Hosting. This will show you your app's build specification YAML file. Update the build settings for the backend phase to generate the amplify_outputs.json file for all branches other than main or dev. 
+
+You can achieve this by running the command `npx ampx generate outputs --branch dev app-id $AWS_APP_ID` for all branches other than main or dev. This will ensure that any new deployed branches will not deploy backend resources as part of the build and instead will use the deployed backend resources from the dev branch.
+
+Here is an example of how you can update your amplify.yml file to achieve this:
+
+you can use a case statement in your amplify.yml file to run different commands based on the current branch. 
+For the main and dev branches, you can deploy the backend resources as usual. 
+For other branches, you can generate the amplify_outputs.json file using the dev branch. 
+
+This approach allows you to share resources across branches and reuse seed data, users, and groups. 
+
+In react code, you don't need to do anything to share resources across branches, this is all handled in the amplify.yml file and in the amplify console.
+
+AWS Amplify Hosting is a fully managed service that handles continuous integration and deployment, as well as hosting, for static and server-side rendered applications. It supports a range of modern web frameworks, including React, Angular, and Vue. 
+
+This service provides fast, secure, and reliable scaling for applications, and because it is fully managed, its documentation is located on the AWS Documentation site. There, you can learn more about features such as custom domains and redirects. 
+
+For more information on getting started with AWS Amplify Hosting, you can visit the official documentation.
+
+Sandbox environments include additional features for managing secrets, deploying multiple sandboxes, config generation, and client codegen for your Amplify app.
+
+Secure secrets in your sandbox are stored in AWS Parameter Store under the `/amplify` prefix. Secrets are similar to environment variables, but they are encrypted AWS Systems Manager Parameter Store key value pairs. Secrets set in a sandbox do not show up in the Amplify Console, you can view them in the AWS Systems Manager Parameter Store console.
+
+You can add secrets to your sandbox environment using the command `npx ampx sandbox secret set`. For example, to add a secret named `foo`, you would run `npx ampx sandbox secret set foo` and enter the secret value when prompted. 
+
+You can list all of the secret names available in your sandbox environment with the command `npx ampx sandbox secret list`. This will display a list of all the secrets in your sandbox.
+
+To retrieve a secret, you can use the command `npx ampx sandbox secret get`. For example, to retrieve the value of a secret named `foo`, you would run `npx ampx sandbox secret get foo`. This will display the secret value in plain text, so be careful not to use this command in a environment where terminal logs may be stored.
+
+To remove a secret from your sandbox, you can use the command `npx ampx sandbox secret remove`. For example, to remove a secret named `foo`, you would run `npx ampx sandbox secret remove foo`.
+
+Once you have set a secret, you can reference the secret in your backend definition using the `secret()` function. The `secret()` function places a reference to the secret value in the backend definition, the secret value is only resolved during deployment of your backend. 
+
+For example, to set up social sign-in with authentication in your app, you would use the `secret()` function to reference the secret values for the client ID and client secret. 
+```javascript
+import { defineAuth, secret } from '@aws-amplify/backend';
+
+export const auth = defineAuth({
+  loginWith: {
+    email: true,
+    externalProviders: {
+      facebook: {
+        clientId: secret('foo'),
+        clientSecret: secret('bar')
+      }
+    }
+  }
+});
+```
+
+You can also work with multiple AWS profiles by using the `--profile` flag with the `ampx sandbox secret` commands. For example, to add a secret to the sandbox in a profile named `work`, you would run `npx ampx sandbox secret set foo --profile work`.
+
+You can also work with multiple named sandboxes by using the `--identifier` option. For example, to start a sandbox named `feature1sandbox`, you would run `npx ampx sandbox --identifier feature1sandbox`. 
+
+To manage secrets for named sandboxes, you can use the `--identifier` argument with the `sandbox secret` commands. For example, to add a secret to a sandbox named `feature1sandbox`, you would run `npx ampx sandbox --identifier feature1sandbox secret set baz`.
+
+You can also stream function logs directly to your terminal or a file.
+
+To generate client config, you can use the `npx ampx sandbox` command with the `--outputs-out-dir` and `--outputs-format` options. For example, to generate the client config in a directory named `config` with the format `json`, you would run 
+```bash
+npx ampx sandbox --outputs-out-dir./config --outputs-format json
+```
+
+To generate client codegen, you can use the `npx ampx generate graphql-client-code` command. For example, to generate client code with the format `modelgen`, you would run 
+```bash
+npx ampx generate graphql-client-code --format modelgen
+```
+
+To delete a sandbox, you can use the `npx ampx sandbox delete` command. You can also delete a sandbox by visiting the Amplify console and deleting the sandbox environment.
+
+You can use a personal cloud sandbox environment that provides an isolated development space to rapidly build, test, and iterate on a full-stack app. Each developer on your team can use their own disposable sandbox environment connected to cloud resources. Cloud sandbox environments are not intended for production workloads.
+
+To create a new sandbox environment, you need to have an Amplify app set up. If you haven't created an Amplify Gen 2 app, you can start by visiting the Quickstart guide. 
+
+Once you have an Amplify app set up, you can create a new sandbox environment by running the command `npx ampx sandbox` in your terminal. This will deploy a cloud sandbox and create an AWS CloudFormation stack with the resources configured in your `amplify/` folder. The stack will be named according to the convention `amplify-<app-name>-<username>-sandbox`.
+
+After a successful deployment, the `sandbox` command will watch for file changes in your `amplify/` folder and perform real-time updates to the associated CloudFormation stack. This allows you to see the changes you make to your code reflected in your sandbox environment immediately.
+
+If you want to stop your sandbox environment, you can do so by pressing `Ctrl+C` in your terminal. If you want to delete all the resources in your sandbox environment, you can run the command `npx ampx sandbox delete`.
+
+You can also view and manage all the sandbox environments for your team in the Amplify console. This allows you to see the number, status, and last updates for sandbox environments across your team, and delete sandbox environments when they are no longer needed.
+
+When working with cloud sandbox environments, keep in mind the following best practices: 
+- Sandboxes are identical in fidelity to your production environments.
+- Code changes are continuously deployed to your sandbox on every save for fast iterations.
+- Use sandboxes for experimentation and testing, not for production workloads.
+- Deploy one sandbox per Amplify app per developer to prevent conflicts.
+- Reset sandboxes occasionally to clear out unused resources and save costs. 
+
+Here is an example of how you might create and delete a sandbox environment using React and Node:
+```javascript
+// Create a new sandbox environment
+const { exec } = require('child_process');
+exec('npx ampx sandbox', (error, stdout, stderr) => {
+  if (error) {
+    console.error(`exec error: ${error}`);
+    return;
+  }
+  if (stderr) {
+    console.error(`stderr: ${stderr}`);
+    return;
+  }
+  console.log(`stdout: ${stdout}`);
+});
+
+// Delete a sandbox environment
+const { exec } = require('child_process');
+exec('npx ampx sandbox delete', (error, stdout, stderr) => {
+  if (error) {
+    console.error(`exec error: ${error}`);
+    return;
+  }
+  if (stderr) {
+    console.error(`stderr: ${stderr}`);
+    return;
+  }
+  console.log(`stdout: ${stdout}`);
+});
+```
