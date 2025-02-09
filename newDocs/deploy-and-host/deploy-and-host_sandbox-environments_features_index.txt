@@ -1,0 +1,50 @@
+Sandbox environments include additional features for managing secrets, deploying multiple sandboxes, config generation, and client codegen for your Amplify app.
+
+Secure secrets in your sandbox are stored in AWS Parameter Store under the `/amplify` prefix. Secrets are similar to environment variables, but they are encrypted AWS Systems Manager Parameter Store key value pairs. Secrets set in a sandbox do not show up in the Amplify Console, you can view them in the AWS Systems Manager Parameter Store console.
+
+You can add secrets to your sandbox environment using the command `npx ampx sandbox secret set`. For example, to add a secret named `foo`, you would run `npx ampx sandbox secret set foo` and enter the secret value when prompted. 
+
+You can list all of the secret names available in your sandbox environment with the command `npx ampx sandbox secret list`. This will display a list of all the secrets in your sandbox.
+
+To retrieve a secret, you can use the command `npx ampx sandbox secret get`. For example, to retrieve the value of a secret named `foo`, you would run `npx ampx sandbox secret get foo`. This will display the secret value in plain text, so be careful not to use this command in a environment where terminal logs may be stored.
+
+To remove a secret from your sandbox, you can use the command `npx ampx sandbox secret remove`. For example, to remove a secret named `foo`, you would run `npx ampx sandbox secret remove foo`.
+
+Once you have set a secret, you can reference the secret in your backend definition using the `secret()` function. The `secret()` function places a reference to the secret value in the backend definition, the secret value is only resolved during deployment of your backend. 
+
+For example, to set up social sign-in with authentication in your app, you would use the `secret()` function to reference the secret values for the client ID and client secret. 
+```javascript
+import { defineAuth, secret } from '@aws-amplify/backend';
+
+export const auth = defineAuth({
+  loginWith: {
+    email: true,
+    externalProviders: {
+      facebook: {
+        clientId: secret('foo'),
+        clientSecret: secret('bar')
+      }
+    }
+  }
+});
+```
+
+You can also work with multiple AWS profiles by using the `--profile` flag with the `ampx sandbox secret` commands. For example, to add a secret to the sandbox in a profile named `work`, you would run `npx ampx sandbox secret set foo --profile work`.
+
+You can also work with multiple named sandboxes by using the `--identifier` option. For example, to start a sandbox named `feature1sandbox`, you would run `npx ampx sandbox --identifier feature1sandbox`. 
+
+To manage secrets for named sandboxes, you can use the `--identifier` argument with the `sandbox secret` commands. For example, to add a secret to a sandbox named `feature1sandbox`, you would run `npx ampx sandbox --identifier feature1sandbox secret set baz`.
+
+You can also stream function logs directly to your terminal or a file.
+
+To generate client config, you can use the `npx ampx sandbox` command with the `--outputs-out-dir` and `--outputs-format` options. For example, to generate the client config in a directory named `config` with the format `json`, you would run 
+```bash
+npx ampx sandbox --outputs-out-dir./config --outputs-format json
+```
+
+To generate client codegen, you can use the `npx ampx generate graphql-client-code` command. For example, to generate client code with the format `modelgen`, you would run 
+```bash
+npx ampx generate graphql-client-code --format modelgen
+```
+
+To delete a sandbox, you can use the `npx ampx sandbox delete` command. You can also delete a sandbox by visiting the Amplify console and deleting the sandbox environment.

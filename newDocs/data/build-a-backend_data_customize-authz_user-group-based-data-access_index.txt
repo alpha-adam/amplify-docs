@@ -1,0 +1,81 @@
+You can use the group authorization strategy to restrict access based on user groups. The user group authorization strategy allows restricting data access to specific user groups or groups defined dynamically on each data record.
+
+To restrict access to a specific set of user groups, provide the group names in the groups parameter. For example, to only allow users that are part of the Admin user group to access the Salary model, you can use the following code:
+```javascript
+const schema = {
+  Salary: {
+    wag: 'float',
+    currency: 'string',
+  },
+  auth: {
+    rules: [
+      {
+        allow: {
+          groups: ['Admin'],
+        },
+      },
+    ],
+  },
+};
+```
+You can also allow access to multiple defined groups by passing an array of group names to the groups parameter. For example:
+```javascript
+const schema = {
+  Salary: {
+    wag: 'float',
+    currency: 'string',
+  },
+  auth: {
+    rules: [
+      {
+        allow: {
+          groups: ['Admin', 'Leadership'],
+        },
+      },
+    ],
+  },
+};
+```
+In your React application, you can perform CRUD operations against the model using the Amplify API. For example:
+```javascript
+import { API } from 'aws-amplify';
+
+const salary = {
+  wage: 50.25,
+  currency: 'USD',
+};
+
+const response = await API.graphql({
+  query: 'createSalary',
+  variables: { input: salary },
+  authMode: 'AMAZON_COGNITO_USER_POOLS',
+});
+```
+To add authorization rules for dynamically set user groups, you can use the groupsDefinedIn or groupDefinedIn methods. For example:
+```javascript
+const schema = {
+  Post: {
+    title: 'string',
+    groups: ['string'],
+  },
+  auth: {
+    rules: [
+      {
+        allow: {
+          groupsDefinedIn: 'groups',
+        },
+      },
+    ],
+  },
+};
+```
+You can also access a user's groups from their session using the Auth category:
+```javascript
+import { Auth } from 'aws-amplify';
+
+const session = await Auth.currentSession();
+const groups = session.accessToken.payload['cognito:groups'] || [];
+
+console.log('User groups:', groups);
+```
+Note that there are known limitations for real-time subscriptions when using dynamic group authorization. If you authorize based on a single group per record, then subscriptions are only supported if the user is part of 5 or fewer user groups. If you authorize via an array of groups, subscriptions are only supported if the user is part of 20 or fewer groups, and you can only authorize 20 or fewer user groups per record.

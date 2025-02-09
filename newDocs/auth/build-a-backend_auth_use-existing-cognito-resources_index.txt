@@ -1,0 +1,56 @@
+You can configure Amplify Auth to use an existing Amazon Cognito user pool and identity pool. If you are in a team setting or part of a company that has previously created auth resources, you can configure the client library directly or maintain references with AWS Cloud Development Kit (AWS CDK) in your Amplify backend. 
+
+When using existing auth resources, you may need to add additional policies or permissions for your authenticated and unauthenticated IAM roles, and these changes must be performed manually.
+
+To use existing resources without an Amplify backend, you can configure the client library directly. For example, in a React application, you can configure Amplify like this:
+```javascript
+import Amplify from 'aws-amplify';
+
+Amplify.configure({
+  Auth: {
+    Cognito: {
+      userPoolId: "<your-cognito-user-pool-id>",
+      userPoolClientId: "<your-cognito-user-pool-client-id>",
+      identityPoolId: "<your-cognito-identity-pool-id>",
+      loginWith: {
+        email: true,
+      },
+      signUpVerificationMethod: "code",
+      userAttributes: {
+        email: {
+          required: true,
+        },
+      },
+      allowGuestAccess: true,
+      passwordFormat: {
+        minLength: 8,
+        requireLowercase: true,
+        requireUppercase: true,
+        requireNumbers: true,
+        requireSpecialCharacters: true,
+      },
+    },
+  },
+})
+```
+
+If you have created Amazon Cognito resources outside of the context of your Amplify app, you can use `referenceAuth` to reference the existing resources. It requires a user pool, a user pool client, identity pool, and an authenticated and unauthenticated IAM role configured on your identity pool.
+
+To reference existing resources in a React application, you would typically do this in your Amplify backend configuration. For example:
+```javascript
+import { referenceAuth } from '@aws-amplify/backend';
+
+export const auth = referenceAuth({
+  userPoolId: 'us-east-1_xxxx',
+  identityPoolId: 'us-east-1:b57b7c3b-9c95-43e4-9266-xxxx',
+  authRoleArn: 'arn:aws:iam::xxxx:role/amplify-xxxx-mai-amplifyAuthauthenticatedU-xxxx',
+  unauthRoleArn: 'arn:aws:iam::xxxx:role/amplify-xxxx-mai-amplifyAuthunauthenticate-xxxx',
+  userPoolClientId: 'xxxx',
+});
+```
+
+The configuration of your referenced resources cannot be modified. However, you can grant permissions to your auth resource from other Amplify backend resources using the `access` property.
+
+You can also reference different sets of auth resources depending on the deployment context by using environment variables. 
+
+Finally, to connect your frontend to the auth resources, you would need to follow the instructions for connecting your frontend, which can be found in the next steps section.

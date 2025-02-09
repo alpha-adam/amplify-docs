@@ -1,0 +1,80 @@
+You can configure the logging level in your application when using the Amplify logger. This helps you determine the logging level that works best for your use cases and which levels of errors or warnings you want to capture in Amazon Cloudwatch.
+
+To change the default log level, you can update the `defaultLogLevel` field under `loggingConstraints`. Supported log levels include:
+* `ERROR`
+* `WARN`
+* `INFO`
+* `DEBUG`
+* `VERBOSE`
+* `NONE`
+
+Setting the log level to `NONE` effectively disables logging. 
+
+You can set the default log level in a configuration file or through code. In React, you would typically set the log level through code. 
+
+For example, to set the default log level to `WARN`:
+```javascript
+const loggingConstraints = {
+  defaultLogLevel: 'WARN'
+};
+const loggingConfiguration = {
+  logGroupName: '<log-group-name>',
+  region: '<region>',
+  loggingConstraints: loggingConstraints
+};
+Amplify.addPlugin(new AWSCloudWatchLoggingPlugin(loggingConfiguration));
+```
+
+You can also configure the log level by category. Each Amplify category can be configured to have its own logging level. 
+
+To set different logging levels for categories, you can add a `categoryLogLevel` section and specify each category and its log level in the configuration file:
+```json
+{
+  "awsCloudWatchLoggingPlugin": {
+    "enable": true,
+    "logGroupName": "<log-group-name>",
+    "region": "<region>",
+    "localStoreMaxSizeInMB": 1,
+    "flushIntervalInSeconds": 60,
+    "loggingConstraints": {
+      "defaultLogLevel": "ERROR",
+      "categoryLogLevel": {
+        "Authentication": "VERBOSE",
+        "Storage": "DEBUG"
+      }
+    }
+  }
+}
+```
+
+Or, you can provide a dictionary of category and corresponding log levels at initialization and configuration of the `AWSCloudWatchLoggingPlugin`:
+```javascript
+const categoryLogLevels = {
+  'Authentication': 'VERBOSE',
+  'Storage': 'DEBUG'
+};
+const loggingConstraints = {
+  defaultLogLevel: 'ERROR',
+  categoryLogLevel: categoryLogLevels
+};
+const loggingConfiguration = {
+  logGroupName: '<log-group-name>',
+  region: '<region>',
+  loggingConstraints: loggingConstraints
+};
+Amplify.addPlugin(new AWSCloudWatchLoggingPlugin(loggingConfiguration));
+```
+
+To disable logging for a specific category, set the log level to `NONE`. 
+
+Existing Amplify category names that are used by default by Amplify when automatically logging errors from the library include:
+* `Analytics`
+* `API`
+* `Authentication`
+* `DataStore`
+* `Geo`
+* `Hub`
+* `Logging`
+* `Predictions`
+* `PushNotifications`
+* `Storage`

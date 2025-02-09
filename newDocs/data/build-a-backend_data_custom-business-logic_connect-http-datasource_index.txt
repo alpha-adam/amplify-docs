@@ -1,0 +1,128 @@
+The HTTP Datasource allows you to quickly configure HTTP resolvers within your Data API. 
+
+This guide will demonstrate how to establish a connection to an external REST API using an HTTP data source and use Amplify Data's custom mutations and queries to interact with the REST API.
+
+To start, you need to set up your custom type. For this example, we will define a Post type and use an existing external REST API that will store records for it. In Amplify Gen 2, a customType adds a type to the schema that is not backed by an Amplify-generated DynamoDB table. 
+
+With the Post type defined, it can then be referenced as the return type when defining your custom queries and mutations. To add the Post custom type to your schema, use the following code 
+```javascript
+const schema = {
+  Post: {
+    title: 'string',
+    content: 'string',
+    author: 'string',
+  },
+};
+```
+
+Next, you need to add your REST API or HTTP API as a Datasource. To integrate the external REST API or HTTP API, you'll need to set it up as the HTTP Datasource. 
+
+Now that your REST API has been added as a data source, you can reference it in custom queries and mutations. Use the following code examples to add addPost, getPost, updatePost, and deletePost as custom queries and mutations to your schema 
+```javascript
+const addPost = {
+  type: 'mutation',
+  args: {
+    title: 'string',
+    content: 'string',
+    author: 'string',
+  },
+  resolve: async (parent, args) => {
+    const response = await fetch('https://www.example.com/post', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title: args.title,
+        content: args.content,
+        author: args.author,
+      }),
+    });
+    return response.json();
+  },
+};
+
+const getPost = {
+  type: 'query',
+  args: {
+    id: 'string',
+  },
+  resolve: async (parent, args) => {
+    const response = await fetch(`https://www.example.com/posts/${args.id}`);
+    return response.json();
+  },
+};
+
+const updatePost = {
+  type: 'mutation',
+  args: {
+    id: 'string',
+    title: 'string',
+    content: 'string',
+    author: 'string',
+  },
+  resolve: async (parent, args) => {
+    const response = await fetch(`https://www.example.com/posts/${args.id}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title: args.title,
+        content: args.content,
+        author: args.author,
+      }),
+    });
+    return response.json();
+  },
+};
+
+const deletePost = {
+  type: 'mutation',
+  args: {
+    id: 'string',
+  },
+  resolve: async (parent, args) => {
+    const response = await fetch(`https://www.example.com/posts/${args.id}`, {
+      method: 'DELETE',
+    });
+    return response.json();
+  },
+};
+```
+
+Next, you need to configure custom business logic handler code. Create the following files and use the code examples to define custom resolvers for the custom queries and mutations added to your schema from the previous step. 
+
+To invoke custom queries or mutations, you can use the following code examples 
+```javascript
+const addPostData = await fetch('https://www.example.com/post', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    title: 'My Post',
+    content: 'My Content',
+    author: 'Chris',
+  }),
+});
+
+const getPostData = await fetch('https://www.example.com/posts/<post-id>');
+const updatePostData = await fetch('https://www.example.com/posts/<post-id>', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    title: 'An Updated Post',
+  }),
+});
+
+const deletePostData = await fetch('https://www.example.com/posts/<post-id>', {
+  method: 'DELETE',
+});
+```
+
+In this guide, you’ve added an external REST API as a HTTP data source to an Amplify Data API and defined custom queries and mutations, handled by AppSync JS resolvers, to manipulate Post items in an external REST API using the Amplify Gen 2 Data client. 
+
+To clean up, you can delete your sandbox by accepting the prompt when terminating the sandbox process in your terminal. Alternatively, you can also use the AWS Amplify console to manage and delete sandbox environments.

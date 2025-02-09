@@ -1,0 +1,65 @@
+Amplify Auth supports multi-factor authentication (MFA) for user sign-in flows. MFA is an extra layer of security used to make sure that users trying to gain access to an account are who they say they are. It requires users to provide additional information to verify their identity. Amplify Auth supports MFA with time-based one-time passwords (TOTP), text messages (SMS), and email.
+
+To set up MFA, use the `defineAuth` function to enable MFA for your app. You can set up MFA with TOTP, SMS, or email. If you plan to use SMS for MFA, the `phoneNumber` attribute must be marked as required in your `userAttributes`. If you plan to use email for MFA, the `email` attribute must also be marked as required in your `userAttributes`.
+
+When MFA is `REQUIRED` with SMS in your backend auth resource, you will need to pass the phone number during sign-up API call. If you are using the `email` or `username` as the primary sign-in mechanism, you will need to pass the `phoneNumber` attribute as a user attribute. Similarly, when MFA is `REQUIRED` with email as your delivery mechanism, you will need to pass an email address during the sign-up API call.
+
+To set up TOTP for a user, you need to call the `setUpTOTP` API to generate a `TOTPSetupDetails` object, which should be used to configure an Authenticator app like Microsoft Authenticator or Google Authenticator. Once the Authenticator app is set up, the user can generate a TOTP code and provide it to the library to complete the sign-in process.
+
+To enable EMAIL MFA during sign-up, you need to pass `email` as a user attribute to enable email MFA for your users during sign-up. By default, you have to verify a user account after they sign up using the `confirmSignUp` API, which will send a one-time password to the user's phone number or email, depending on your Amazon Cognito configuration.
+
+After a user signs in, if they have MFA enabled for their account, a challenge will be issued that requires calling the `confirmSignIn` API with the user-provided confirmation code sent to their email address. If MFA is `ON` or enabled for the user, you must call `confirmSignIn` with the OTP sent to their email address.
+
+To set up a user's preferred MFA method, you can use the `fetchMFAPreference` API to get the current MFA preference and enabled MFA types, if any, for the current user. You can then use the `updateMFAPreference` API to update the MFA preference for the current user.
+
+Remembering a device is useful in conjunction with MFA because it allows the second factor requirement to be automatically met when your user signs in on that device and reduces friction in their sign-in experience. By default, this feature is turned off. You can configure device tracking with the `deviceTracking` construct.
+
+There are differences to keep in mind when working with remembered, forgotten, and tracked devices. Tracked devices are those that have been assigned a device key and secret pair. Remembered devices are also tracked, but the user has chosen to remember the device. Not-remembered devices are tracked devices where the user has chosen not to remember the device. Forgotten devices are those that have been removed from being remembered and tracked.
+
+You can use the `forgetDevice` API to remove devices from being both remembered and tracked. You can also use the `ConfirmDevice` API to confirm a device and make it remembered. 
+
+Here is how you would set up MFA in a React application, let's say with SMS:
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+export default async functionotpSetup(req, res) {
+  const { Auth } = withSSRContext({ req });
+
+  try {
+    const username = 'your-username';
+    const password = 'your-password';
+    const result = await Auth.signIn(username, password);
+
+    if (result.nextStep === 'CONFIRM_SIGN_IN_WITH_SMS_CODE') {
+      const confirmationCode = 'your-confirmation-code';
+      const result = await Auth.confirmSignIn({
+        challengeResponse: confirmationCode,
+      });
+    }
+  } catch (error) {
+    // handle error
+  }
+}
+```
+To update the user's device preference, use `updateMFAPreference` like so:
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+export default async function updateDevicePreference(req, res) {
+  const { Auth } = withSSRContext({ req });
+
+  try {
+    const preference = {
+      sms: 'PREFERRED',
+    };
+    const result = await Auth.updateMFAPreference(preference);
+  } catch (error) {
+    // handle error
+  }
+}
+```
+Note that the actual implementation may vary based on your specific requirements and application architecture.

@@ -1,0 +1,23 @@
+Tags are a key-value pair that are applied to AWS resources to hold metadata. Tags are often used to decorate resources with metadata that helps categorize resources for billing or viewing purposes. Learn more about tags by visiting the AWS documentation for best practices for tagging resources.
+
+Amplify applies the following tags by default:
+
+* For sandbox deployments, tags include `created-by` with the value `amplify` and `amplify:deployment-type` with the value `sandbox`.
+* For branch deployments, tags include `created-by` with the value `amplify`, `amplify:deployment-type` with the value `branch`, `amplify:app-id` with the value of your Amplify app ID, and `amplify:branch-name` with the value of your Git branch name.
+
+To apply custom tags in your Amplify backend, you can use the AWS Cloud Development Kit (CDK) to add tags at the root level, which then cascades to child resources. Here's an example of how to do this in a React project:
+
+```javascript
+import { Tags } from 'aws-cdk-lib';
+import { defineBackend } from '@aws-amplify/backend';
+
+const backend = defineBackend({
+  // add your resources here, such as auth and data
+});
+
+const tags = Tags.of(backend.stack);
+// add a new tag
+tags.add('my-key', 'my-value');
+// remove tags
+tags.remove('my-key');
+```

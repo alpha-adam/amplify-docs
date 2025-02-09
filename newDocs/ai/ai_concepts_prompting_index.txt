@@ -1,0 +1,19 @@
+LLM prompting is the process of giving a language model specific input to generate a desired output. The input, or "prompt," can be a sentence, paragraph, or sequence of instructions that guides the model to produce content that aligns with the user's intent. The way the prompt is structured and worded can significantly influence the model's response.
+
+To get the best results from an LLM, you need to understand its strengths and limitations and experiment with different prompt formats, styles, and techniques. This can include using specific keywords, providing context, breaking down tasks into steps, and incorporating formatting elements like bullet points or code blocks.
+
+The Amplify AI kit uses the Converse API, which has a structured input and output rather than just text in and text out. The prompt structure consists of three parts: system prompt, messages, and tool configuration. The system prompt provides high-level instructions to the LLM, messages are the conversation history, and tool configuration is information about the tools the model can invoke.
+
+To customize the system prompt in the Amplify AI kit, you need to provide a system prompt for all AI routes. This will be used in all requests to the LLM. For example, you can define a system prompt like this:
+```javascript
+const reviewSummarizer = a.generation({
+  aiModel: a.ai.model("Claude 3.5 Haiku"),
+  systemPrompt: `
+  You are a helpful assistant that summarizes reviews
+  for an ecommerce site. 
+  `
+})
+```
+Here are some tips for effective prompting: be as detailed as possible, give the LLM a role and scope, say what it should and shouldn't do, use multiple routes, and don't put everything into the system prompt. Additionally, prompting strategies differ based on the model, so it's essential to read up on the model itself and what works well with it.
+
+For more information on prompting, you can refer to the following resources: What is a prompt, What is prompt engineering, Design a prompt, and the Anthropic prompt library.

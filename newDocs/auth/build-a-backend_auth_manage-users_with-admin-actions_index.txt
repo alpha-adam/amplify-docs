@@ -1,0 +1,46 @@
+To manage users with Admin Actions in Amplify Auth, you can use the AWS SDK's `@aws-sdk/client-cognito-identity-provider` package. This package is intended for server-side use and can be used within a Function. One example of using this package is with the `addUserToGroup` action, which can be defined as a custom mutation.
+
+First, create an "ADMINS" group that will be used to authorize the mutation. This is done by defining authentication settings that include the creation of the "ADMINS" group.
+
+Next, create a Function resource named "add-user-to-group". This function will be used to handle the `addUserToGroup` mutation.
+
+Then, in your authentication resources, grant access for the "add-user-to-group" function to perform the `addUserToGroup` action. This involves specifying the function and the action it is allowed to perform.
+
+After that, define the custom mutation for `addUserToGroup`. This mutation will use the "add-user-to-group" function resource and can only be called by a user in the "ADMINS" group. The mutation takes two arguments: the user ID and the group name.
+
+Finally, create the handler for the "add-user-to-group" function using the AWS SDK's `@aws-sdk/client-cognito-identity-provider` package. The handler function will add a user to a group using the `AdminAddUserToGroupCommand`.
+
+To use the `addUserToGroup` mutation in your React frontend, you can generate a client using the Amplify data API and then call the mutation with the group name and user ID. Here's an example of how to call the mutation:
+
+```javascript
+import Amplify from 'aws-amplify';
+import { API } from 'aws-amplify';
+
+// Initialize Amplify
+Amplify.configure({
+  // your configuration
+});
+
+// Generate the client
+const apiName = 'your-api-name';
+const api = API.graphql({ apiName });
+
+// Call the mutation
+const variables = {
+  groupName: 'ADMINS',
+  userId: '5468d468-4061-70ed-8870-45c766d26225',
+};
+
+const mutation = `
+  mutation AddUserToGroup($groupName: String!, $userId: String!) {
+    addUserToGroup(groupName: $groupName, userId: $userId)
+  }
+`;
+
+api.graphql({
+  query: mutation,
+  variables,
+});
+```
+
+This will add the specified user to the "ADMINS" group using the `addUserToGroup` mutation.

@@ -1,0 +1,26 @@
+AWS Amplify allows you to stream logs from your function directly to your terminal while running the `ampx sandbox` command. To do this, you need to specify the `--stream-function-logs` option when starting the sandbox. 
+
+This feature is only available for Sandbox environments. It enables faster debug iterations and provides greater insight into your functions' executions.
+
+You can filter the logs by specifying a filter by function name or a regular expression for function names using the `--logs-filter` option. For example, if you have a collection of Auth triggers where the function names include "auth", you can filter the logs by running the command with the `--logs-filter auth` option.
+
+After deploying your personal cloud sandbox, starting your frontend application, and signing up for the first time, you will see logs from your triggers' executions printed to the terminal where the sandbox is running.
+
+You can also write the logs to a file instead of printing them to the terminal by specifying the `--logs-out-file` option. This can be combined with the `--logs-filter` option to create a log file of just your Auth-related functions. However, you cannot write logs to multiple files at the same time.
+
+To stream logs, run the following command in your terminal:
+```
+npx ampx sandbox --stream-function-logs
+```
+To filter logs by function name, run:
+```
+npx ampx sandbox --stream-function-logs --logs-filter auth
+```
+To write logs to a file, run:
+```
+npx ampx sandbox --stream-function-logs --logs-out-file sandbox.log
+```
+To filter logs by function name and write to a file, run:
+```
+npx ampx sandbox --stream-function-logs --logs-filter auth --logs-out-file sandbox-auth.log
+```

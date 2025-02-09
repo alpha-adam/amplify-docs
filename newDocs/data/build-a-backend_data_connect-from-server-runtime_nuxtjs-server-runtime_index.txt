@@ -1,0 +1,116 @@
+To connect to Amplify Data from a React application, you will need to set up the Amplify APIs plugin and use the `runWithAmplifyServerContext` adapter. Here's how you can do it:
+
+First, you need to have a React application created and Amplify Data resources deployed. 
+
+To set up the AmplifyAPIs plugin, you will need to create a plugin that registers both client-specific and server-specific Amplify APIs. You can then access these APIs via a context.
+
+Here is an example of how to set up the Amplify APIs plugin in a React application using Next.js:
+
+```javascript
+// amplify-apis.js
+import Amplify from 'aws-amplify';
+import { createClient } from '@aws-amplify/datastore';
+import { withSSRContext } from 'aws-amplify';
+
+export const AmplifyAPI = {
+  async getAuthSession() {
+    const { Auth } = withSSRContext();
+    return Auth.currentSession();
+  },
+};
+
+export default AmplifyAPI;
+```
+
+Next, you need to use the `useContext` hook to access the Amplify APIs in your React components.
+
+```javascript
+// App.js
+import React, { useState, useEffect } from 'react';
+import AmplifyAPI from './amplify-apis';
+
+function App() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    AmplifyAPI.getAuthSession().then((session) => {
+      setUser(session);
+    });
+  }, []);
+
+  return (
+    <div>
+      {user? <p>Welcome, {user.username}!</p> : <p>Please login</p>}
+    </div>
+  );
+}
+
+export default App;
+```
+
+For server-side rendering, you can use the `getServerSideProps` function in Next.js to pre-render pages on the server.
+
+```javascript
+// pages/index.js
+import AmplifyAPI from '../amplify-apis';
+
+export const getServerSideProps = async ({ req }) => {
+  const session = await AmplifyAPI.getAuthSession(req);
+  return {
+    props: {
+      user: session,
+    },
+  };
+};
+
+function HomePage({ user }) {
+  return (
+    <div>
+      {user? <p>Welcome, {user.username}!</p> : <p>Please login</p>}
+    </div>
+  );
+}
+
+export default HomePage;
+```
+
+To call Amplify APIs in an isolated server context, you can create a helper function that uses the `runWithAmplifyServerContext` function from the `aws-amplify/adapter-core` package.
+
+```javascript
+// amplify-utils.js
+import { runWithAmplifyServerContext } from 'aws-amplify/adapter-core';
+import Amplify from 'aws-amplify';
+
+const amplifyConfig = Amplify.configure();
+
+export const runAmplifyApi = async (operation) => {
+  return runWithAmplifyServerContext(amplifyConfig, operation);
+};
+```
+
+You can then use this helper function to call Amplify APIs in your React components.
+
+```javascript
+// App.js
+import React, { useState, useEffect } from 'react';
+import { runAmplifyApi } from './amplify-utils';
+
+function App() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    runAmplifyApi(async (contextSpec) => {
+      const session = await contextSpec.Auth.currentSession();
+      setUser(session);
+    });
+  }, []);
+
+  return (
+    <div>
+      {user? <p>Welcome, {user.username}!</p> : <p>Please login</p>}
+    </div>
+  );
+}
+
+export default App;
+```

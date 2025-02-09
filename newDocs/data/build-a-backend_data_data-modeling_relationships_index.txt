@@ -1,0 +1,42 @@
+When modeling application data, you often need to establish relationships between different data models. In Amplify Data, you can create one-to-many, one-to-one, and many-to-many relationships in your Data schema. On the client-side, Amplify Data allows you to lazy or eager load related data.
+
+There are three types of relationships: 
+- One-to-many: Creates a one-to-many relationship between two models. For example, a Team has many Members, and a Member belongs to a Team.
+- One-to-one: Creates a one-to-one relationship between two models. For example, a Customer has one Cart, and a Cart belongs to one Customer.
+- Many-to-many: Creates two one-to-many relationships between the related models in a join table. For example, a Post has many Tags, and a Tag has many Posts.
+
+To model a one-to-many relationship, you need to create a reference field on the child model that matches the type of the parent model's identifier, and then create a relationship field that references the reference field. For example, to create a one-to-many relationship between a Team and a Member, you would create a reference field called teamId on the Member model, and then create a relationship field called team that references the teamId field.
+
+To create a "Has Many" relationship between records, you need to create the parent record and then create the child record and assign the parent. For example, to create a "Has Many" relationship between a Team and a Member, you would create a Team record and then create a Member record and assign the Team to the Member.
+
+You can update a "Has Many" relationship by updating the child record and assigning a new parent. For example, to update a "Has Many" relationship between a Team and a Member, you would update the Member record and assign a new Team to the Member.
+
+You can delete a "Has Many" relationship by setting the relationship value to null. For example, to delete a "Has Many" relationship between a Team and a Member, you would update the Member record and set the teamId field to null.
+
+To load related data in a "Has Many" relationship, you can use the relationship field to fetch the related data. For example, to load the Members of a Team, you would use the members relationship field on the Team model to fetch the related Members.
+
+To lazy load a "Has Many" relationship, you can use the relationship field to fetch the related data on demand. For example, to lazy load the Members of a Team, you would use the members relationship field on the Team model to fetch the related Members when needed.
+
+To eagerly load a "Has Many" relationship, you can use the selectionSet parameter to fetch the related data when fetching the parent record. For example, to eagerly load the Members of a Team, you would use the selectionSet parameter to fetch the members relationship field when fetching the Team record.
+
+To handle orphaned foreign keys on parent record deletion in a "Has One" relationship, you need to delete the child record when the parent record is deleted. For example, to handle orphaned foreign keys on parent record deletion in a "Has One" relationship between a Customer and a Cart, you would delete the Cart record when the Customer record is deleted.
+
+To model a one-to-one relationship, you need to create a reference field on one of the models that matches the type of the other model's identifier, and then create a relationship field that references the reference field. For example, to create a one-to-one relationship between a Customer and a Cart, you would create a reference field called customerId on the Cart model, and then create a relationship field called customer that references the customerId field.
+
+To create a "Has One" relationship between records, you need to create the parent record and then create the child record and assign the parent. For example, to create a "Has One" relationship between a Customer and a Cart, you would create a Customer record and then create a Cart record and assign the Customer to the Cart.
+
+You can update a "Has One" relationship by updating the child record and assigning a new parent. For example, to update a "Has One" relationship between a Customer and a Cart, you would update the Cart record and assign a new Customer to the Cart.
+
+You can delete a "Has One" relationship by setting the relationship value to null. For example, to delete a "Has One" relationship between a Customer and a Cart, you would update the Cart record and set the customerId field to null.
+
+To load related data in a "Has One" relationship, you can use the relationship field to fetch the related data. For example, to load the Cart of a Customer, you would use the activeCart relationship field on the Customer model to fetch the related Cart.
+
+To lazy load a "Has One" relationship, you can use the relationship field to fetch the related data on demand. For example, to lazy load the Cart of a Customer, you would use the activeCart relationship field on the Customer model to fetch the related Cart when needed.
+
+To eagerly load a "Has One" relationship, you can use the selectionSet parameter to fetch the related data when fetching the parent record. For example, to eagerly load the Cart of a Customer, you would use the selectionSet parameter to fetch the activeCart relationship field when fetching the Customer record.
+
+To model a many-to-many relationship, you need to create a join model that contains two one-to-many relationships between the related entities. For example, to model a many-to-many relationship between a Post and a Tag, you would create a PostTag join model that contains two one-to-many relationships between the Post and Tag entities.
+
+To model multiple relationships between two models, you need to create separate reference fields and relationship fields for each relationship. For example, to model multiple relationships between a Post and a Person, you would create separate reference fields and relationship fields for the author and editor relationships.
+
+To make relationships required or optional, you can use the required parameter on the reference field to determine if the relationship is required or not. For example, to make a relationship required, you would set the required parameter to true on the reference field.

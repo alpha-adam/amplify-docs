@@ -1,0 +1,25 @@
+In-app messages are displayed when an In-App Messaging or analytics event is sent and matches the criteria defined by your active In-App Messaging campaigns.
+
+An analytics event triggers the display of an in-app message if it matches the attributes and criteria defined in the message. Any events recorded using the Analytics record API are automatically picked up and processed by In-App Messaging. For example, you can record an event like this:
+```
+import { Analytics } from 'aws-amplify';
+
+Analytics.record({
+  name: 'first_event',
+  attributes: { color: 'red' },
+  metrics: { quantity: 10 }
+});
+```
+If the event name, attributes, and metrics match those set forth by one of your In-App Messaging campaigns, you should see the in-app message displayed in your app.
+
+In addition to or instead of Amplify Analytics events, you can also dispatch In-App Messaging events to trigger an in-app message display programmatically. For example:
+```
+import { InAppMessaging } from 'aws-amplify';
+
+InAppMessaging.dispatchEvent({
+  name: 'first_event',
+  attributes: { color: 'red' },
+  metrics: { quantity: 10 }
+});
+```
+If the event name, attributes, and metrics match those set forth by one of your In-App Messaging campaigns, you should see the in-app message displayed in your app.

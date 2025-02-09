@@ -1,0 +1,29 @@
+Constructs are the basic building blocks of AWS Cloud Development Kit (AWS CDK) apps. They simplify the process of configuring cloud resources, allowing you to focus on your application code. The available Amplify backend constructs are summarized below.
+
+Amplify Data is a construct that provides a simplified way to work with the Amplify GraphQL API. It enables quick development and iteration of AppSync APIs that support the Amplify GraphQL directives. You can find more information about the AmplifyData construct on Construct Hub. For data modeling information, you can visit the data modeling documentation.
+
+Amplify Auth is another construct that simplifies authentication in your AWS CDK apps. You can find the official AmplifyAuth construct on the npm registry. 
+
+In a React application using AWS Amplify, you would use these constructs to configure your backend resources, such as setting up authentication and data storage. For example, you might use the `AmplifyData` construct to create a GraphQL API, and the `AmplifyAuth` construct to configure authentication for your app. 
+
+Here is an example of how you might use these constructs in a React application:
+```javascript
+import { Amplify } from 'aws-amplify';
+import { AmplifyData } from '@aws-amplify/data-construct';
+import { AmplifyAuth } from '@aws-amplify/auth-construct';
+
+// configure Amplify
+Amplify.configure({
+  // your AWS configuration
+});
+
+// create a GraphQL API using AmplifyData
+const api = new AmplifyData({
+  // your API configuration
+});
+
+// configure authentication using AmplifyAuth
+const auth = new AmplifyAuth({
+  // your authentication configuration
+});
+```

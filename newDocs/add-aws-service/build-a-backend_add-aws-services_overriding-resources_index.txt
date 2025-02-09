@@ -1,0 +1,35 @@
+When using AWS Amplify, you can override resources to customize the backend configuration. However, be aware that using overrides can create a backend that Amplify libraries or client config may not be able to interpret properly. Always test changes in a staging environment.
+
+To override resources, you can access underlying AWS Cloud Development Kit (CDK) construct properties in the `amplify/backend.ts` file after the `defineBackend` call has been made. The `backend` object exposes a `resources` property with objects for each component passed into the `defineBackend` function. Each resource object exposes underlying L1 and L2 AWS CDK constructs that you can modify.
+
+For example, to access the Cognito user pool created by `defineAuth` and set a custom removal policy on the resource, you can use the following code:
+```typescript
+const userPool = backend.auth.resources.userPool;
+userPool.applyRemovalPolicy(RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE);
+```
+Most L1 and L2 AWS CDK constructs used by the `define*` functions are accessible in this way.
+
+You can also grant access permissions between resources. For instance, to grant a function created by `defineFunction` access to call the Cognito user pool created by `defineAuth`, you can use the following code:
+```typescript
+const userPool = backend.auth.resources.userPool;
+const lambdaFunction = backend.authAuditorFunction.resources.lambda;
+userPool.grant(lambdaFunction, 'cognito:AdminListUserAuthEvents');
+backend.authAuditorFunction.addEnvironment('USER_POOL_ID', userPool.userPoolId);
+```
+Additionally, you can modify L1 CDK constructs by using `addPropertyOverride` on an AWS CDK construct. To edit the password policies of the Cognito user pool in `defineAuth`, you can use the following code:
+```typescript
+const { cfnUserPool } = backend.auth.resources.cfnResources;
+cfnUserPool.policies = {
+  passwordPolicy: {
+    minimumLength: 10,
+    requireLowercase: true,
+    requireNumbers: true,
+    requireSymbols: true,
+    requireUppercase: true,
+    temporaryPasswordValidityDays: 20,
+  },
+};
+```
+Note that `auth.resources.cfnResources` exposes L1 CDK constructs that map one-to-one with the underlying CloudFormation properties, whereas `auth.resources.userPool` is an L2 CDK construct that provides a convenient interface around several related L1 constructs.
+
+For further customization, you can refer to the documentation on custom resources.

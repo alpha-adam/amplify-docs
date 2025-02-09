@@ -1,0 +1,69 @@
+Amplify offers the ability to schedule functions to run at specific intervals using natural language or cron expressions. To get started, you need to specify the schedule property in defineFunction.
+
+Note that configuring the schedule in defineFunction is not supported for Custom Functions.
+
+Function schedules are powered by Amazon EventBridge rules and can be used to address various use cases such as generating reports or sending notifications.
+
+You can define a schedule using natural language, such as "every week", or using cron expressions like "0 9? * 3 *". The schedule can be a single interval or multiple intervals.
+
+Here's how you can define a function with a schedule in React:
+```javascript
+import { defineFunction } from "@aws-amplify/backend";
+
+export const weeklyDigest = defineFunction({
+  name: "weekly-digest",
+  schedule: "every week",
+});
+```
+You can also use cron expressions to define a schedule:
+```javascript
+import { defineFunction } from "@aws-amplify/backend";
+
+export const remindMe = defineFunction({
+  name: "remind-me-to-take-the-trash-out",
+  schedule: [
+    // every tuesday at 9am
+    "0 9? * 3 *",
+    // every friday at 9am
+    "0 9? * 6 *",
+  ]
+})
+```
+Additionally, you can use shorthand syntax to define schedules using minutes or hours:
+```javascript
+import { defineFunction } from "@aws-amplify/backend";
+
+export const drinkSomeWater = defineFunction({
+  name: "drink-some-water",
+  schedule: "every 1h"
+})
+```
+The schedule can also be combined to create complex schedules:
+```javascript
+import { defineFunction } from "@aws-amplify/backend";
+
+export const remindMe = defineFunction({
+  name: "remind-me",
+  schedule: [
+    // every sunday at midnight
+    "every week",
+    // every tuesday at 5pm
+    "0 17? * 3 *",
+    // every wednesday at 5pm
+    "0 17? * 4 *",
+    // every thursday at 5pm
+    "0 17? * 5 *",
+    // every friday at 5pm
+    "0 17? * 6 *",
+  ]
+})
+```
+You can use natural language expressions to define schedules using terms like "day", "week", "month", "year", "m" for minutes, and "h" for hours. Natural language expressions are prefixed with "every". For example:
+```javascript
+import { defineFunction } from "@aws-amplify/backend";
+
+export const drinkSomeWater = defineFunction({
+  name: "drink-some-water",
+  schedule: "every 1h"
+})
+```

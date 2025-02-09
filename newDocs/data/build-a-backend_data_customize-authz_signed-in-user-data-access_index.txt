@@ -1,0 +1,51 @@
+The authenticated authorization strategy restricts record access to only signed-in users authenticated through IAM, Cognito, or OpenID Connect, applying the authorization rule to all users. It provides a simple way to make data private to all authenticated users.
+
+To add signed-in user authorization rule, you can use the authenticated authorization strategy to restrict a record's access to every signed-in user. This is done by adding the allow.authenticated() method to the model's authorization rules.
+
+For example, if you have a Todo model, you can add the authenticated authorization rule like this:
+```javascript
+const schema = new Schema({
+  Todo: new Model({
+    content: {
+      type: 'string',
+    },
+  })
+ .authorization(allow => [allow.authenticated()]),
+});
+```
+This will allow anyone with a valid JWT token from the Cognito user pool to access all Todos.
+
+To perform CRUD operations against the model, you can use the client.models.modelName method with the userPool auth mode. For example:
+```javascript
+import { DataStore } from 'aws-amplify';
+
+const todo = new Todo({ content: 'My new todo' });
+DataStore.save(todo, {
+  authMode: 'userPool',
+})
+```
+You can also override the authorization provider by specifying identityPool as the provider, which allows you to use an Unauthenticated Role from the Cognito identity pool for public access instead of an API key.
+
+For example:
+```javascript
+const schema = new Schema({
+  Todo: new Model({
+    content: {
+      type: 'string',
+    },
+  })
+ .authorization(allow => [allow.authenticated('identityPool')]),
+});
+```
+To perform CRUD operations against the model, you can use the client.models.modelName method with the iam auth mode. For example:
+```javascript
+import { DataStore } from 'aws-amplify';
+
+const todo = new Todo({ content: 'My new todo' });
+DataStore.save(todo, {
+  authMode: 'identityPool',
+})
+```
+Note that the user must be logged in for the Amplify Library to use the authenticated role from your Cognito identity pool. 
+
+Additionally, you can also use OpenID Connect with authenticated authorization.

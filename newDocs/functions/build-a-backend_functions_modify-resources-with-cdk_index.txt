@@ -1,0 +1,18 @@
+To modify the underlying resources of an Amplify-generated Lambda function, you can use the AWS Cloud Development Kit (CDK). Amplify Functions use the NodejsFunction construct from CDK, which allows you to modify, override, or extend the resources after setting them on your backend.
+
+In your backend configuration, you can access the CDK constructs for a function and modify its resources. For example, if you have a function named `myFunction`, you can access its resources like this:
+```
+const backend = defineBackend({
+  myFunction
+})
+
+// Access the Lambda function resources
+const lambdaFunction = backend.myFunction.resources.lambda
+```
+The `lambda` property is an instance of `IFunction`, which represents a Lambda function.
+
+You can also add IAM policies to a function's execution role using CDK. To learn how to do this, you can visit the documentation for granting access to other resources. 
+
+Note: This page is referring to react as one of the platforms that can utilize this feature, but since the content is primarily focused on backend configuration with AWS CDK, the information can be applied to a react application by following the provided guidance on using CDK to modify the underlying resources of an Amplify-generated Lambda function. 
+
+Lambda Layers are mentioned but not explained in this context. If information about Lambda Layers is needed, it would be in a different section of the documentation.

@@ -1,0 +1,21 @@
+Large language models are stateless text generators that have no knowledge of the real world and cannot access data on their own. For instance, if you asked a large language model "what is the weather in San Jose?" it would not be able to tell you because it does not know what the weather is today. Tools, also known as function calling, are functions or APIs that large language models can invoke to get information about the world. This allows the large language model to answer questions with information not included in their training data, such as the weather, application-specific data, and even user-specific data.
+
+When a large language model is prompted with tools, it can choose to respond by saying that it wants to call a tool to get some data or take an action on the user's behalf. The data returned by the tool is then added to the conversation history, allowing the large language model to see what data was returned.
+
+Here is an example of how this works:
+1. A user asks "what is the weather in San Jose?"
+2. The large language model is called with this message and is told it has access to a tool called `getWeather` that takes an input like `{ city: string }`.
+3. The large language model responds with a message saying it wants to call the `getWeather` tool with the input `{ city: 'San Jose' }`.
+4. The `getWeather` function is called with the input `{ city: 'San Jose' }` and the results are appended to the conversation history.
+5. The large language model is called again with the updated conversation history and responds with a message like "In San Jose, it is 72 degrees and sunny".
+
+It's worth noting that the large language model itself is not actually executing any function or code. Instead, it responds with a special message saying that it wants to call a specific tool with certain input. The tool then needs to be called and the results returned to the large language model in a message history. 
+
+In a React application, you might implement a tool like `getWeather` as a function that makes an API call to retrieve the current weather for a given city. For example:
+```javascript
+function getWeather(city) {
+  // Make an API call to retrieve the current weather for the given city
+  // Return the weather data
+}
+```
+The large language model would then be called with a message like "what is the weather in San Jose?" and would respond with a message saying it wants to call the `getWeather` tool with the input `{ city: 'San Jose' }`. The `getWeather` function would then be called with this input and the results would be appended to the conversation history. The large language model would then be called again with the updated conversation history and would respond with a message like "In San Jose, it is 72 degrees and sunny".

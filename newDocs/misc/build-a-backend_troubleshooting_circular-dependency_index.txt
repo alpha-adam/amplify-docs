@@ -1,0 +1,25 @@
+When deploying an Amplify Gen 2 app, you may encounter the error message "The CloudFormation deployment failed due to circular dependency" in your backend build on Amplify Console or while running a sandbox. This error occurs due to circular dependencies between CloudFormation nested stacks or between resources in a single CloudFormation stack.
+
+If you see an error message indicating a circular dependency between nested stacks, it means that two or more nested stacks are dependent on each other. For example, if you're using a function as a query handler, but the function also needs access to the data API, you might run into this issue. To resolve this, group the function with other resources in the same stack. 
+
+For instance, in React, if you have a query function, you can group it with other resources in the data stack by defining the function like this:
+```javascript
+export const queryFunction = {
+  name: 'query-function',
+  resourceGroupName: 'data',
+};
+```
+Similarly, if you're using your function as an auth trigger, you can group your function with other resources in the auth stack to break the circular dependency.
+```javascript
+export const preSignUpTrigger = {
+  name: 'pre-sign-up',
+  resourceGroupName: 'auth',
+};
+```
+If you're unable to resolve the error using the function's resourceGroupName property, you should create an issue on the GitHub repository for Amplify backend.
+
+If you're creating resources using the AWS Cloud Development Kit (AWS CDK) and assigning them to a custom stack, you might also encounter a circular dependency error. To resolve this, try creating your resources in the same stack as the resources you're trying to interact with. For example, if a custom resource such as sqs needs to interact with the underlying Amazon S3 resource created by defineStorage, you can create that sqs resource in the stack created by Amplify.
+```javascript
+const queue = new sqs.Queue(backend.storage.stack, 'MyCustomQueue');
+```
+If you see an error message indicating a circular dependency between resources in the same stack, review the AWS Blog post for handling circular dependency errors for guidance on resolving the issue.

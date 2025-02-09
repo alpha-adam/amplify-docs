@@ -1,0 +1,55 @@
+The Amazon Kinesis analytics provider allows you to send analytics data to an Amazon Kinesis stream for real-time processing.
+
+To set up a Kinesis stream, you can use the AWS Cloud Development Kit (AWS CDK) to create the Analytics resource powered by Amazon Kinesis. Here's an example of how to create a new Kinesis stream with one shard:
+ 
+You would create a new stack for the Kinesis stream, then create a new Kinesis stream. After that, you would create a new policy to allow PutRecords to the Kinesis stream and apply the policy to the authenticated and unauthenticated roles.
+
+If you did not use the CLI, ensure you have setup IAM permissions for kinesis:PutRecords. You can add the following policy to your IAM role:
+ 
+```javascript
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": "kinesis:PutRecords",
+    "Resource": "arn:aws:kinesis:<your-aws-region>:<your-aws-account-id>:stream/<your-stream-name>"
+  }]
+}
+```
+ 
+Replace the template fields with your actual AWS region, account ID, and stream name.
+
+To configure Kinesis in your React application, you can use the following code:
+```javascript
+import { Amplify } from 'aws-amplify';
+
+Amplify.configure({
+  Analytics: {
+    Kinesis: {
+      region: 'us-east-1',
+      bufferSize: 1000,
+      flushSize: 100,
+      flushInterval: 5000,
+      resendLimit: 5
+    }
+  }
+});
+```
+You can send data to a Kinesis stream using the record method:
+```javascript
+import { record } from 'aws-amplify/analytics/kinesis';
+
+record({
+  data: {
+    // The data blob to put into the record
+  },
+  partitionKey: 'myPartitionKey',
+  streamName: 'myKinesisStream'
+});
+```
+The recorded events are saved in a buffer and sent to the remote server periodically. You can manually clear all the events from the buffer by using the flushEvents API:
+```javascript
+import { flushEvents } from 'aws-amplify/analytics/kinesis';
+
+flushEvents();
+```

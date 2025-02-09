@@ -1,0 +1,31 @@
+Microsoft Entra ID can be used as a SAML provider with Amazon Cognito. To integrate Entra ID, you can sign in with your existing enterprise users and maintain profiles unique to the Amplify Auth resource. 
+
+To configure Entra ID, start by defining your auth resource with the appropriate redirect URIs. You can do this by using the Amplify CLI to create an auth resource with the necessary configuration.
+
+Next, deploy your changes to your personal cloud sandbox using the Amplify CLI. This will generate a domain that you can use to configure your new Entra ID App.
+
+To set up Microsoft Entra ID, navigate to the Azure portal and select Entra ID. Create a new enterprise application and choose to integrate any other application that is not in the gallery. Specify a name for the application and choose to integrate a non-gallery application.
+
+Configure Single Sign-on with SAML by selecting the Single sign-on option and then selecting SAML. You will need to populate the Basic SAML Configuration step with the appropriate values, including the Identifier (Entity ID) and Reply URL (Assertion Consumer Service URL).
+
+The Identifier (Entity ID) should be in the format `urn:amazon:cognito:sp:<your-cognito-user-pool-id>`, and the Reply URL should be in the format `https://<your-cognito-domain>/saml2/idpresponse`.
+
+You can find the necessary values in the `amplify_outputs.json` file, which is generated when you deploy your changes to your personal cloud sandbox.
+
+Once you have configured the Basic SAML Configuration step, you can save the configuration and proceed to the SAML Certificates section. Copy the App Federation Metadata Url, which you will need to configure your auth resource with the new SAML provider.
+
+To configure your backend with Entra ID, you will need to update your auth resource configuration to include the SAML provider. You can do this by adding a new external provider to your auth resource configuration, with the name `MicrosoftEntraIDSAML` and the metadata content set to the App Federation Metadata Url that you copied earlier.
+
+You can also optionally upload the Cognito Signing Certificate to Azure, which can be done by navigating to your Cognito User Pool and selecting the identity provider that you created earlier.
+
+Finally, to connect your frontend to Entra ID, you can use the `signInWithRedirect` function from the Amplify Auth library, and specify the provider name as `MicrosoftEntraIDSAML`. 
+
+For example, in React:
+```javascript
+import { signInWithRedirect } from "aws-amplify/auth"
+
+signInWithRedirect({
+  provider: { custom: "MicrosoftEntraIDSAML" }
+})
+```
+This will redirect the user to the Entra ID login page, where they can sign in with their Entra ID credentials. Once they have signed in, they will be redirected back to your application, where they can access protected resources.

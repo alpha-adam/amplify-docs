@@ -1,0 +1,65 @@
+You can create a user profile record automatically when a user confirms their account by using an Auth Post Authentication trigger. This trigger is a Lambda function that runs after a user verifies their account, typically by confirming their email address. 
+
+To set this up, you'll need to define a data model for the user's profile and create a Lambda function to handle the post confirmation trigger. 
+
+First, you need to define a data model for the user's profile. This model should include the email address and the profile owner. The profile owner is typically the user's ID. 
+
+Here is an example of how you might define this model in a React application:
+```javascript
+const UserProfileModel = {
+  email: '',
+  profileOwner: '',
+}
+```
+Next, you need to create a Lambda function to handle the post confirmation trigger. This function will create a new user profile record when a user confirms their account. 
+
+In a React application, you might use the AWS Amplify library to interact with your backend APIs. Here is an example of how you might create a post confirmation handler:
+```javascript
+import { Amplify } from 'aws-amplify';
+import { API } from 'aws-amplify';
+
+const postConfirmationHandler = async (event) => {
+  const userProfile = {
+    email: event.request.userAttributes.email,
+    profileOwner: event.request.userAttributes.sub,
+  };
+
+  try {
+    const response = await API.post('user-profile', '/user-profile', {
+      body: userProfile,
+    });
+    return response;
+  } catch (error) {
+    console.error(error);
+  }
+};
+```
+Then you need to set up the Auth Post Authentication trigger to call this Lambda function when a user confirms their account. 
+
+In a React application, you might use the AWS Amplify library to configure your Auth settings. Here is an example of how you might set up the post confirmation trigger:
+```javascript
+import Amplify from 'aws-amplify';
+import Auth from '@aws-amplify/auth';
+
+Amplify.configure({
+  Auth: {
+    mandatorySignIn: true,
+    region: 'your-region',
+    userPoolId: 'your-user-pool-id',
+    userPoolWebClientId: 'your-user-pool-web-client-id',
+    oauth: {
+      domain: 'your-domain',
+      scope: ['email', 'profile'],
+      redirectSignIn: 'http://localhost:3000',
+      redirectSignOut: 'http://localhost:3000',
+      responseType: 'code',
+    },
+    triggers: {
+      postConfirmation: postConfirmationHandler,
+    },
+  },
+});
+```
+After deploying the changes, whenever a user signs up and verifies their account, a profile record is automatically created. 
+
+Note: A user is considered "confirmed" when they verify their account, typically by confirming their email address. The post confirmation handler will not be triggered for federated sign-ins, such as social sign-in.

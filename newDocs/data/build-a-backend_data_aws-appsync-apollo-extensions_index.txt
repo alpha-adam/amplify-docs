@@ -1,0 +1,168 @@
+AWS AppSync Apollo Extensions provide a seamless way to connect to your AWS AppSync backend using Apollo client, an open-source GraphQL client. 
+
+To learn more about Apollo, see https://www.apollographql.com/docs/. 
+
+## Features
+
+AWS AppSync Apollo Extensions provide AWS AppSync authorizers to be used with the Apollo client to make it simple to apply the correct authorization payloads to your GraphQL operations.
+
+Additionally, the included Amplify components allow Amplify to provide auth tokens and signing logic for the corresponding Authorizers.
+
+## Install the AWS AppSync Apollo Extensions library
+
+To install the library in a React application, you can use npm or yarn to add the `apollo-appsync-amplify` dependency. 
+
+```bash
+npm install apollo-appsync-amplify
+```
+
+or 
+
+```bash
+yarn add apollo-appsync-amplify
+```
+
+Alternatively, if you are not using Amplify, you can install the `apollo-appsync` dependency.
+
+```bash
+npm install apollo-appsync
+```
+
+or 
+
+```bash
+yarn add apollo-appsync
+```
+
+## Connecting to AWS AppSync with Apollo client
+
+To connect to AWS AppSync with Apollo client in a React application, you need to create an Apollo client instance and pass it to the ApolloProvider component.
+
+Here is an example of how you can create an Apollo client instance:
+
+```javascript
+import { ApolloClient, InMemoryCache } from '@apollo/client';
+import { AppSyncAuthTransformer } from 'apollo-appsync-amplify';
+
+const client = new ApolloClient({
+  uri: 'https://your-appsync-endpoint.com/graphql',
+  cache: new InMemoryCache(),
+  transformResponse: AppSyncAuthTransformer,
+});
+```
+
+You can then pass the client to the ApolloProvider component:
+
+```javascript
+import { ApolloProvider } from '@apollo/client';
+
+function App() {
+  return (
+    <ApolloProvider client={client}>
+      // your application code here
+    </ApolloProvider>
+  );
+}
+```
+
+## Providing AppSync Authorizers
+
+To provide AppSync authorizers, you need to create an instance of the AppSyncAuth class and pass it to the Apollo client.
+
+Here is an example of how you can create an AppSyncAuth instance:
+
+```javascript
+import { AppSyncAuth } from 'apollo-appsync-amplify';
+
+const appSyncAuth = new AppSyncAuth({
+  apikey: 'your-api-key',
+});
+```
+
+You can then pass the appSyncAuth instance to the Apollo client:
+
+```javascript
+const client = new ApolloClient({
+  uri: 'https://your-appsync-endpoint.com/graphql',
+  cache: new InMemoryCache(),
+  transformResponse: AppSyncAuthTransformer,
+  auth: appSyncAuth,
+});
+```
+
+## Connecting Amplify Data to Apollo client
+
+To connect Amplify Data to Apollo client, you need to create an instance of the AmplifyAuth class and pass it to the Apollo client.
+
+Here is an example of how you can create an AmplifyAuth instance:
+
+```javascript
+import { AmplifyAuth } from 'aws-amplify';
+
+const amplifyAuth = new AmplifyAuth({
+  // your amplify configuration here
+});
+```
+
+You can then pass the amplifyAuth instance to the Apollo client:
+
+```javascript
+const client = new ApolloClient({
+  uri: 'https://your-appsync-endpoint.com/graphql',
+  cache: new InMemoryCache(),
+  transformResponse: AppSyncAuthTransformer,
+  auth: amplifyAuth,
+});
+```
+
+## Downloading the AWS AppSync schema
+
+To download the AWS AppSync schema, you can use the AWS AppSync console or the Amplify CLI.
+
+Here is an example of how you can download the schema using the Amplify CLI:
+
+```bash
+amplify pull --schema
+```
+
+This will download the schema and save it to a file named `schema.json`.
+
+## Generating Queries, Mutations, and Subscriptions for Apollo client
+
+To generate queries, mutations, and subscriptions for Apollo client, you can use the Amplify CLI.
+
+Here is an example of how you can generate queries, mutations, and subscriptions using the Amplify CLI:
+
+```bash
+amplify codegen --graphql
+```
+
+This will generate the queries, mutations, and subscriptions based on your schema and save them to a file named `graphql.ts`.
+
+## Connecting to AWS AppSync real-time endpoint
+
+To connect to the AWS AppSync real-time endpoint, you need to create an instance of the AppSyncRealTimeClient class and pass it to the Apollo client.
+
+Here is an example of how you can create an AppSyncRealTimeClient instance:
+
+```javascript
+import { AppSyncRealTimeClient } from 'apollo-appsync-amplify';
+
+const realTimeClient = new AppSyncRealTimeClient({
+  endpoint: 'https://your-appsync-endpoint.com/graphql',
+  auth: appSyncAuth,
+});
+```
+
+You can then pass the realTimeClient instance to the Apollo client:
+
+```javascript
+const client = new ApolloClient({
+  uri: 'https://your-appsync-endpoint.com/graphql',
+  cache: new InMemoryCache(),
+  transformResponse: AppSyncAuthTransformer,
+  realTime: realTimeClient,
+});
+```
+
+Note: The above examples are for React applications, and you may need to adjust them according to your specific use case. Additionally, you will need to replace the placeholders (e.g. `https://your-appsync-endpoint.com/graphql`) with your actual AWS AppSync endpoint and credentials.

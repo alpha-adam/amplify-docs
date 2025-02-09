@@ -1,0 +1,37 @@
+The quickest way to get started with Amplify Auth in your frontend application is with the Authenticator component, which provides a customizable UI and complete authentication flows.
+
+To sign a user out of your application, use the `signOut` API. Here's an example:
+```ts
+import { signOut } from 'aws-amplify/auth';
+
+await signOut();
+```
+
+You can also sign out users from all devices by performing a global sign-out. This will also invalidate all refresh tokens issued to a user. The user's current access and ID tokens will remain valid on other devices until the refresh token expires (access and ID tokens expire one hour after they are issued). Here's an example:
+```ts
+import { signOut } from 'aws-amplify/auth';
+
+await signOut({ global: true });
+```
+
+Here's a practical example of how to use the `signOut` API in a React application:
+```tsx
+import { Amplify } from "aws-amplify"
+import { signOut } from "aws-amplify/auth"
+import outputs from "../amplify_outputs.json"
+
+Amplify.configure(outputs)
+
+export default function App() {
+  async function handleSignOut() {
+    await signOut()
+  }
+
+  return (
+    <button type="button" onClick={handleSignOut}>
+      Sign out
+    </button>
+  )
+}
+```
+Note that you need to configure Amplify with your application's outputs before using the `signOut` API.

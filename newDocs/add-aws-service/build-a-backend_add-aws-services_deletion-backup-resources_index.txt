@@ -1,0 +1,89 @@
+Deleting an Amplify sandbox with a resource enabled with deletion protection will cause the deploy process to fail, and the resource will need to be manually deleted on the AWS console.
+
+You can configure Amplify generated resources to enable deletion protection and backups on supported resources using the AWS Cloud Development Kit (CDK). For example, you can use CDK to enable point-in-time recovery for DynamoDB tables or use AWS Backup for advanced backup options.
+
+You can modify resource configurations using underlying CDK construct properties, which allows you to customize backend resources beyond what is offered via the define functions.
+
+To enable deletion protection on an Auth resource, such as a Cognito user pool resource created by Amplify Auth, you can set the deletionProtection property to "ACTIVE". 
+
+To enable deletion protection on a Data resource, such as all DynamoDB tables created by a GraphQL API, you can set the deletionProtectionEnabled property to true for each table.
+
+You can also enable point-in-time recovery for DynamoDB tables by setting the pointInTimeRecoveryEnabled property to true. This will retain backups for 35 days by default.
+
+If you need backups that extend the default 35 days point-in-time recovery, you can use the AWS Backup service to centralize and automate backups for DynamoDB tables. You can configure a backup plan to run daily at midnight, for example.
+
+To retain resources on stack deletion, you can use the applyRemovalPolicy property on the resource to add a retention policy. However, note that `amplify sandbox delete` ignores any resource removal policy and always deletes all resources.
+
+Here is an example of how you can enable deletion protection and backups in a React application using Amplify:
+```javascript
+// amplify/backend.ts
+import { defineBackend } from '@aws-amplify/backend';
+import { auth } from './auth/resource';
+import { data } from './data/resource';
+
+const backend = defineBackend({
+  auth,
+  data
+});
+
+// Enable deletion protection on Auth resource
+const { cfnUserPool } = backend.auth.resources.cfnResources
+cfnUserPool.deletionProtection = "ACTIVE";
+
+// Enable deletion protection on Data resource
+const { amplifyDynamoDbTables } = backend.data.resources.cfnResources;
+for (const table of Object.values(amplifyDynamoDbTables)) {
+  table.deletionProtectionEnabled = true;
+}
+
+// Enable point-in-time recovery for DynamoDB tables
+for (const table of Object.values(amplifyDynamoDbTables)) {
+  table.pointInTimeRecoveryEnabled = true;
+}
+
+// Enable backups for DynamoDB tables
+import {
+  BackupPlan,
+  BackupPlanRule,
+  BackupResource,
+  BackupVault,
+} from "aws-cdk-lib/aws-backup";
+import { Schedule } from "aws-cdk-lib/aws-events";
+import { Duration } from "aws-cdk-lib/core";
+
+const backupStack = backend.createStack("backup-stack");
+const myTables = Object.values(backend.data.resources.tables);
+
+const vault = new BackupVault(backupStack, "BackupVault", {
+  backupVaultName: "backup-vault",
+});
+
+const plan = new BackupPlan(backupStack, "BackupPlan", {
+  backupPlanName: "backup-plan",
+  backupVault: vault,
+});
+
+plan.addRule(
+  new BackupPlanRule({
+    deleteAfter: Duration.days(60),
+    ruleName: "backup-plan-rule",
+    scheduleExpression: Schedule.cron({
+      minute: "0",
+      hour: "0",
+      day: "*",
+      month: "*",
+      year: "*",
+    }),
+  })
+);
+
+plan.addSelection("BackupPlanSelection", {
+  resources: myTables.map((table) => BackupResource.fromDynamoDbTable(table)),
+  allowRestores: true,
+});
+
+// Retain resources on stack deletion
+backend.storage.resources.bucket.applyRemovalPolicy(RemovalPolicy.RETAIN);
+backend.auth.resources.userPool.applyRemovalPolicy(RemovalPolicy.RETAIN);
+backend.data.resources.cfnResources.amplifyDynamoDbTables["Todo"].applyRemovalPolicy(RemovalPolicy.RETAIN);
+```

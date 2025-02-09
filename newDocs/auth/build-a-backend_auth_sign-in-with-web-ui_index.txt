@@ -1,0 +1,39 @@
+To enable sign-in with a web UI using Amazon Cognito Auth plugin, follow these steps:
+
+First, ensure you have an app set up according to the getting started walkthrough. 
+
+When configuring social sign-in, exercise caution when designating attributes as "required" because different social identity providers have varied scopes in terms of the information they respond back to Cognito with. User pool attributes that are initially set up as "required" cannot be changed later and may require you to migrate the users or create a new user pool.
+
+The Cognito plugin currently supports the Authorization Code Grant OAuth Flow. To configure Auth, update the auth configuration to include external providers with callback and logout URLs.
+
+For Android, update the AndroidManifest.xml file by adding an activity and intent filter with the redirect URI scheme.
+
+For iOS, update the Info.plist file by adding a URL scheme for the redirect URI. You may also need to enable Keychain Sharing capability in Xcode.
+
+To launch web UI sign-in, use the `signInWithWebUI` method from the Amplify Auth API, passing in the presentation anchor, such as the main window of the app. The `signInWithWebUI` method returns a result indicating whether the sign-in was successful.
+
+You can also specify a provider, such as Google or Facebook, when calling `signInWithWebUI`. Additionally, on iOS, you can set the `preferPrivateSession` flag to true to bypass the permissions dialog during sign-in and sign-out, but this will prevent reuse of existing sessions from the user's browser.
+
+For Flutter, the setup is similar, but you need to configure the platform-specific setup for Android, iOS, macOS, Windows, and Linux. You can then call the `signInWithWebUI` method to launch the web UI sign-in flow.
+
+Here's an example of how to call `signInWithWebUI` in React:
+```javascript
+import Amplify from 'aws-amplify';
+import Auth from '@aws-amplify/auth';
+
+// Configure Auth
+Auth.configure({
+  // Your Auth configuration
+});
+
+// Launch web UI sign-in
+const signIn = async () => {
+  try {
+    const result = await Auth.signInWithWebUI();
+    console.log('Sign in result:', result);
+  } catch (error) {
+    console.log('Error signing in:', error);
+  }
+};
+```
+Note that this example assumes you have already set up Amplify and Auth in your React application.

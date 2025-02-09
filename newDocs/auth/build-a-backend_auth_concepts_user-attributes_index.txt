@@ -1,0 +1,63 @@
+Amplify Auth stores user profile information in user attributes. When a user signs in, Amplify Auth will automatically configure an email or phone number attribute that is required for sign-in.
+
+To extend a user profile beyond the default email or phone number attribute, you can configure attributes with the userAttributes property. However, after creating an auth resource, you cannot switch an attribute between required and not required.
+
+For example, you can configure an attribute such as birthdate by defining your auth resource as follows 
+```javascript
+import { defineAuth } from "@aws-amplify/backend"
+
+export const auth = defineAuth({
+  loginWith: {
+    email: true,
+  },
+  userAttributes: {
+    birthdate: {
+      mutable: true,
+      required: false,
+    }
+  },
+})
+```
+
+User attributes are defined as Cognito Standard Attributes. Attributes can be configured to be required for user sign-up and whether the values are mutable. When configuring your resource to allow users to login with email, an email must be specified for user sign-up and cannot be changed later. However, additional attributes can be configured to be optional and mutable after sign-up.
+
+In addition to the provided standard attributes, you can configure Custom Attributes. These are attributes that are unique to your use case, such as a tenant ID or a user's display name. Custom attributes are identified by the custom: prefix. 
+
+For example 
+```javascript
+import { defineAuth } from "@aws-amplify/backend"
+
+export const auth = defineAuth({
+  loginWith: {
+    email: true,
+  },
+  userAttributes: {
+    "custom:display_name": {
+      dataType: "String",
+      mutable: true,
+      maxLen: 16,
+      minLen: 1,
+    },
+    "custom:favorite_number": {
+      dataType: "Number",
+      mutable: true,
+      min: 1,
+      max: 100,
+    },
+    "custom:is_beta_user": {
+      dataType: "Boolean",
+      mutable: true,
+    },
+    "custom:started_free_trial": {
+      dataType: "DateTime",
+      mutable: true,
+    },
+  },
+})
+```
+
+Unlike standard attributes, custom attributes cannot natively be required for sign-up, however, can be required by validating user attributes upon sign-up with a pre-sign-up trigger.
+
+Custom attributes can also be configured with specific data types, including String, Number, Boolean, and DateTime. String and Number can be assigned minimum and maximum constraints, which is useful for simple validations.
+
+Next steps include learning how attributes are surfaced to tokens and learning how to manage your user attributes.

@@ -1,0 +1,69 @@
+When submitting an app to the App Store, Apple requires developers to disclose the data usage policy of their app. The Amplify Library, used to interact with AWS resources, collects certain data types that need to be disclosed in the app's data usage policy.
+
+The Amplify Library gathers API usage metrics from the AWS services accessed, which involves adding a user agent to the request made to the AWS service. The user-agent header includes information about the Amplify Library version, operating system name, and version. This data is collected to generate metrics related to library usage and is not linked to the user's identity or used for tracking purposes.
+
+The Amplify Library collects various data types, including:
+
+Contact Info:
+- Name
+- Email Address
+- Phone Number
+
+These data types are used for app functionality, such as authentication, and are linked to the user's identity but not used for tracking purposes.
+
+User Content:
+- Photos or Videos
+- Audio Data
+
+These data types are used for app functionality, such as storage and predictions, and are not linked to the user's identity or used for tracking purposes.
+
+Identifiers:
+- User ID
+- Device ID
+
+These data types are used for app functionality, such as authentication and analytics, and are linked to the user's identity but not used for tracking purposes.
+
+Other Data:
+- OS Version
+- OS Name
+- Locale Info
+- App Version
+- Min OS target of the app
+- Timezone information
+- Network information
+- Has SIM card
+- Cellular Carrier Name
+- Device Model
+- Device Name
+- Device OS Version
+- Device Height and Width
+- Device Language
+- identifierForVendor
+
+These data types are used for analytics and app functionality and are not linked to the user's identity or used for tracking purposes.
+
+The Amplify Library does not collect data related to:
+- Health and Fitness
+- Financial Info
+- Location
+- Sensitive Info
+- Contacts
+- Browsing History
+- Search History
+- Diagnostics
+
+Some Amplify categories, such as Analytics, Auth, and DataStore, persist data to the local device. This data is automatically removed when a user uninstalls the app from the device. However, Auth information is stored in the local system keychain, which does not guarantee removal when an app is uninstalled. To clear this data, app developers should decide when to clear the data by signing out, for example, by using `Auth.signOut()` when the app is launched for the first time. 
+
+For example in a React application using Amplify you could clear the Auth data as follows:
+```javascript
+import Amplify from 'aws-amplify';
+import Auth from '@aws-amplify/auth';
+
+// Check if the app is launching for the first time
+// and sign out if it is
+if (/* check if app is launching for the first time */) {
+  Auth.signOut()
+   .then(data => console.log(data))
+   .catch(err => console.log(err));
+}
+```

@@ -1,0 +1,88 @@
+To create, update, and delete application data using Amplify Libraries' Data client in a React application, you will need to have an application connected to the API. 
+
+## Create an item
+
+To create an item in your React application, first generate the Data client with your backend Data schema. Then, you can add an item like this:
+
+```javascript
+import { generateClient } from 'aws-amplify/data';
+
+const client = generateClient();
+
+const { errors, data: newTodo } = await client.models.Todo.create({
+  content: "My new todo",
+  isDone: true,
+})
+```
+
+Note that you do not need to specify `createdAt` or `updatedAt` fields because Amplify automatically populates these fields for you.
+
+## Update an item
+
+To update the item, use the `update` function:
+
+```javascript
+const todo = {
+  id: 'some_id',
+  content: 'Updated content',
+};
+
+const { data: updatedTodo, errors } = await client.models.Todo.update(todo);
+```
+
+Note that you do not need to specify the `updatedAt` field. Amplify will automatically populate this field for you. If you specify extra input fields not expected by the API, this query will fail.
+
+## Delete an item
+
+You can then delete the Todo by using the delete mutation. To specify which item to delete, you only need to provide the `id` of that item:
+
+```javascript
+const toBeDeletedTodo = {
+  id: '123123213'
+}
+
+const { data: deletedTodo, errors } = await client.models.Todo.delete(toBeDeletedTodo)
+```
+
+Note that when deleting items in many-to-many relationships, the join table records must be deleted before deleting the associated records.
+
+## Troubleshoot unauthorized errors
+
+If you get unauthorized errors, you may need to update your authorization mode. To override the default authorization mode defined in your **amplify/data/resource.ts** file, pass an `authMode` property to the request or the client. 
+
+```javascript
+const { errors, data: newTodo } = await client.models.Todo.create(
+  {
+    content: 'My new todo',
+    isDone: true,
+  },
+  {
+    authMode: 'apiKey',
+  }
+);
+```
+
+## Cancel create, update, and delete requests
+
+You can cancel any mutation API request by calling `.cancel` on the mutation request promise that's returned by `.create(...)`, `.update(...)`, or `.delete(...)`.
+
+```javascript
+const promise = client.models.Todo.create({ content: 'New Todo' });
+
+try {
+  await promise;
+} catch (error) {
+  console.log(error);
+  if (client.isCancelError(error)) {
+    console.log(error.message); 
+    // handle user cancellation logic
+  }
+}
+
+// To cancel the above request
+client.cancel(promise, 'my message for cancellation');
+```
+
+Remember that you need to ensure that the promise returned from `.create()`, `.update()`, and `.delete()` has not been modified.
+
+In conclusion, you have now learned how to create, update, and delete application data using Amplify Libraries' Data client in a React application. The recommended next steps include using the API to query data and subscribe to real-time events to look for mutations in your data. Some resources that will help with this work include reading application data and subscribing to real-time events.

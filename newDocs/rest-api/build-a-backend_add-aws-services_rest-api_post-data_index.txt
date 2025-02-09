@@ -1,0 +1,29 @@
+To send a POST request with a JSON body in a React application using AWS Amplify, you can use the post method from the aws-amplify/api module. This method allows you to specify the API name, path, and options such as the request body.
+
+Here's an example of how to use the post method:
+```javascript
+import { post } from 'aws-amplify/api';
+
+async function postItem() {
+  try {
+    const restOperation = post({
+      apiName: 'myRestApi',
+      path: 'items',
+      options: {
+        body: {
+          message: 'Mow the lawn'
+        }
+      }
+    });
+
+    const { body } = await restOperation.response;
+    const response = await body.json();
+
+    console.log('POST call succeeded');
+    console.log(response);
+  } catch (error) {
+    console.log('POST call failed: ', JSON.parse(error.response.body));
+  }
+}
+```
+This code sends a POST request to the 'items' path of the 'myRestApi' API with a JSON body containing the message 'Mow the lawn'. The response from the server is then logged to the console. If the request fails, the error message is also logged to the console.

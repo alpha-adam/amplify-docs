@@ -1,0 +1,34 @@
+When using the Amplify Logger, all logged messages are saved locally on the user's device first and then flushed at a set interval that you can customize. You can also choose to flush events manually if needed.
+
+To customize the time interval for when logs are automatically flushed and sent to CloudWatch, you can set the `flushIntervalInSeconds` field in the logging configuration file. For example, to set the time interval to 120 seconds, you would update the configuration file as follows:
+```json
+{
+    "awsCloudWatchLoggingPlugin": {
+        "enable": true,
+        "logGroupName": "<log-group-name>",
+        "region": "<region>",
+        "localStoreMaxSizeInMB": 1,
+        "flushIntervalInSeconds": 120,
+        "loggingConstraints": {
+            "defaultLogLevel": "ERROR"
+        }
+    }
+}
+```
+Alternatively, you can provide a `flushIntervalInSeconds` parameter when initializing and configuring the `AWSCloudWatchLoggingPlugin` in your code.
+
+To manually flush logs, you can use the `flushLogs` function from the `AWSCloudWatchLoggingPlugin`. In React, you would first import the `AWSCloudWatchLoggingPlugin` and then execute the `flushLogs` function. Here's an example:
+```javascript
+import { Amplify } from 'aws-amplify';
+
+// Get the AWSCloudWatchLoggingPlugin
+const cloudWatchPlugin = await Amplify.Logging.getPlugin('awsCloudWatchLoggingPlugin');
+
+// Flush the logs
+cloudWatchPlugin.flushLogs(() => {
+    // logs flushed successfully
+}, (error) => {
+    // failed to flush logs
+});
+```
+Note that in React, you would typically use the `flushLogs` function provided by the `AWSCloudWatchLoggingPlugin` instance, rather than the `try await` syntax shown in the Swift example.

@@ -1,0 +1,35 @@
+Amplify Data allows you to configure custom identity and group claims instead of using the default Amazon Cognito claims. This can be useful if you want to populate claims from an external source like a database or 3rd party auth provider. 
+
+You can define custom claims to provide more flexibility in authorization rules. For example, you can check the `user_id` identity claim and the `user_groups` group claim that could come from a custom pre token generation Lambda trigger.
+
+To use custom claims, specify `identityClaim` or `groupClaim` as appropriate. In the example below, the `identityClaim` is specified and the record owner will check against this `user_id` claim. Similarly, if the `user_groups` claim contains a "Moderator" string then access will be granted.
+
+In your React application, you can perform CRUD operations against the model using `client.models.model-name` with the `userPool` auth mode. Here is an example:
+```javascript
+const client = generateClient();
+const { errors, data: newTodo } = await client.models.Post.create(
+  {
+    postname: 'My New Post',
+    content: 'My post content',
+  },
+  {
+    authMode: 'userPool',
+  }
+);
+```
+You can define your schema with custom claims like this:
+```javascript
+const schema = {
+  Post: {
+    id: 'string',
+    owner: 'string',
+    postname: 'string',
+    content: 'string',
+  },
+  authorization: (allow) => [
+    allow.owner().identityClaim('user_id'),
+    allow.groups(['Moderator']).withClaimIn('user_groups'),
+  ],
+};
+```
+This schema defines a `Post` model with an `owner` field that checks against the `user_id` claim, and allows access to the "Moderator" group if the `user_groups` claim contains the string "Moderator".

@@ -1,0 +1,30 @@
+To interact with bots in your React application using AWS Amplify, you can send messages to the chatbot backend using the send command. This method returns a promise that includes the chatbot response. 
+
+To send a message, provide a bot name and user input. For example, if a user wants to reserve a hotel for tonight, you can send this input to the chatbot and log the response. 
+
+Here is an example of how to send a message to a bot in React:
+```javascript
+const userInput = "I want to reserve a hotel for tonight";
+const response = await Interactions.send({
+  botName: "TheBotName",
+  message: userInput
+});
+console.log(response.message);
+```
+
+You can also display an end of chat message by registering a function to catch errors or chatbot confirmations when the session successfully ends. This can be done using the onComplete method. 
+
+Here is an example of how to display an end of chat message in React:
+```javascript
+Interactions.onComplete({
+  botName: "TheBotName",
+  callback: (error, completion) => {
+    if (error) {
+      alert('bot conversation failed');
+    } else if (completion) {
+      console.debug('done: ' + JSON.stringify(completion, null, 2));
+      alert('Trip booked. Thank you! What would you like to do next?');
+    }
+  }
+});
+```

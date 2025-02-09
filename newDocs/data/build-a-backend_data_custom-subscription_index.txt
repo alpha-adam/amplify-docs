@@ -1,0 +1,149 @@
+To add custom real-time subscriptions to your application, you need to define a custom subscription in your amplify/data/resource file. This involves setting the mutation that triggers the subscription event, the return type that matches the subscribed mutation's return type, and authorization rules. You can also optionally set filter arguments to customize server-side subscription filter rules.
+
+To define a custom subscription, use the `a.subscription()` function and specify the mutation that should trigger the subscription event using the `for` method. You can also specify a subscription handler to set custom filters and authorization rules.
+
+For example, to create a custom real-time subscription for a mutation called `publish`, you would use the following code:
+
+```javascript
+const schema = a.schema({
+  // Message type that's used for this PubSub sample
+  Message: a.customType({
+    content: a.string().required(),
+    channelName: a.string().required()
+  }),
+
+  // Message publish mutation
+  publish: a.mutation()
+   .arguments({
+      channelName: a.string().required(),
+      content: a.string().required()
+    })
+   .returns(a.ref('Message'))
+   .handler(a.handler.custom({ entry: './publish.js' }))
+   .authorization(allow => [allow.publicApiKey()]),
+
+  // Subscribe to incoming messages
+  receive: a.subscription()
+    // subscribes to the 'publish' mutation
+   .for(a.ref('publish')) 
+    // subscription handler to set custom filters
+   .handler(a.handler.custom({entry: './receive.js'})) 
+    // authorization rules as to who can subscribe to the data
+   .authorization(allow => [allow.publicApiKey()]),
+});
+```
+
+To subscribe to custom subscriptions client-side, you can use the `client.subscriptions` object and the `subscribe` function. For example:
+
+```javascript
+import { generateClient } from 'aws-amplify/data'
+import type { Schema } from '../amplify/data/resource'
+
+const client = generateClient<Schema>()
+
+const sub = client.subscriptions.receive()
+ .subscribe({
+    next: event => {
+      console.log(event)
+    }
+  }
+)
+```
+
+You can also try publishing an event using the custom mutation to test the real-time subscription.
+
+```javascript
+client.mutations.publish({
+  channelName: "world",
+  content: "My first message!"
+})
+```
+
+Your subscription event should be received and logs the payload into your app's developer console. Unsubscribe your subscription to disconnect using the `unsubscribe` function.
+
+```javascript
+sub.unsubscribe()
+```
+
+To add server-side subscription filters, you can add arguments to the custom subscriptions. For example, you can introduce a required `name` argument that allows your users to filter events based on a specific channel name.
+
+```javascript
+const schema = a.schema({
+  Channel: a.customType({
+    name: a.string(),
+    data: a.json()
+  }),
+  // Define a mutation to publish events to
+  publish: a.mutation()
+   .arguments({
+      name: a.string(),
+      data: a.json()
+    })
+   .returns(a.ref('Channel'))
+   .handler(a.handler.custom({
+      entry: "./publish.js"
+    }))
+   .authorization(allow => [allow.authenticated()]),
+  
+  // Subscribe to all events from the "publish" mutation
+  receive: a.subscription(['publish'])
+    // subscription filter
+   .arguments({ name: a.string() })
+   .authorization(allow => [allow.publicApiKey()])
+});
+```
+
+To customize the filters, modify the subscription handler. For example, you can allow a customer to pass in a `namePrefix` parameter that allows the end users to only receive channel events in channels that start with the `namePrefix`.
+
+```javascript
+const schema = a.schema({
+  Channel: a.model({
+    name: a.string(),
+  }).authorization(allow => [allow.publicApiKey()]),
+
+  Message: a.customType({
+    content: a.string().required(),
+    channelName: a.string().required()
+  }),
+
+  publish: a.mutation()
+   .arguments({
+      channelName: a.string().required(),
+      content: a.string().required()
+    })
+   .returns(a.ref('Message'))
+   .handler(a.handler.custom({ entry: './publish.js' }))
+   .authorization(allow => [allow.publicApiKey()]),
+
+  receive: a.subscription()
+   .for(a.ref('publish'))
+    // subscription filter
+   .arguments({ namePrefix: a.string() })
+   .handler(a.handler.custom({entry: './receive.js'}))
+   .authorization(allow => [allow.publicApiKey()])
+});
+```
+
+In your handler, you can set custom subscription filters based on arguments passed into the custom subscription. For example:
+
+```javascript
+import { util, extensions } from "@aws-appsync/utils"
+
+// Subscription handlers must return a `null` payload on the request
+export function request() { return { payload: null } }
+
+/**
+ * @param {import('@aws-appsync/utils').Context} ctx
+ */
+export function response(ctx) {
+  const filter = {
+    channelName: {
+      beginsWith: ctx.args.namePrefix
+    }
+  }
+
+  extensions.setSubscriptionFilter(util.transform.toSubscriptionFilter(filter))
+
+  return null
+}
+```

@@ -1,0 +1,76 @@
+Amazon Personalize can create recommendations by using event data, historical data, or a combination of both. The event data can then be used to create recommendations.
+
+To record event data, you need the following:
+* A dataset group
+* An event tracker
+
+For more information, see Record Events.
+
+After creating the Amazon Personalize dataset group, you need to add the personalize:PutEvents permission to your AWS Identity and Access Management (IAM) user roles. An example IAM policy is:
+```
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": "personalize:PutEvents",
+    "Resource": "arn:aws:personalize:<your-aws-region>:<your-account-id>:event-tracker/<your-resource-name>"
+  }]
+}
+```
+You need the tracking ID of your event tracker. 
+
+Configure Amazon Personalize in your React application:
+```javascript
+import { Amplify } from 'aws-amplify';
+Amplify.configure({
+  Analytics: {
+    Personalize: {
+      trackingId: '<tracking-id>',
+      region: 'us-east-1',
+      flushSize: 10,
+      flushInterval: 5000 
+    }
+  }
+});
+```
+You can use the Identify event type to track a user identity by specifying a unique identifier for the userId property. Consider recording Identify events after a user registers, logs in, updates their information, or loads pages accessible by a logged-in user.
+```javascript
+import { record } from 'aws-amplify/analytics/personalize';
+
+record({
+  eventType: 'Identify',
+  properties: {
+    userId: '<user-id>'
+  }
+});
+```
+You can send events to Amazon Personalize by calling the record operation. If you already use Identify to track end-user data, you can skip the userId.
+```javascript
+import { record } from 'aws-amplify/analytics/personalize';
+
+record({
+  eventType: '<event-type>',
+  properties: {
+    itemId: '<item-id>',
+    eventValue: '<event-value>'
+  }
+});
+```
+You can track iframe and HTML5 media types by using the MediaAutoTrack event type.
+```javascript
+import { record } from 'aws-amplify/analytics/personalize';
+
+record({
+  eventType: 'MediaAutoTrack',
+  properties: {
+    domElementId: 'media-dom-element-id',
+    itemId: '<item-d>'
+  }
+});
+```
+The recorded events are saved in a buffer and sent to the remote server periodically. If needed, you have the option to manually clear all the events from the buffer by using the flushEvents API.
+```javascript
+import { flushEvents } from 'aws-amplify/analytics/personalize';
+
+flushEvents();
+```

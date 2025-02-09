@@ -1,0 +1,26 @@
+For advanced use cases where Amplify does not provide the functionality, you can retrieve the escape hatch to access the underlying Amazon CloudWatch client.
+
+On Android, the escape hatch provides access to the underlying `CloudWatchLogsClient` instance. You can retrieve the escape hatch with the following code:
+```java
+AWSCloudWatchLoggingPlugin plugin = (AWSCloudWatchLoggingPlugin)Amplify.Logging.getPlugin("awsCloudWatchLoggingPlugin");
+CloudWatchLogsClient client = plugin.getEscapeHatch();
+```
+or in Kotlin:
+```kotlin
+val plugin = Amplify.Logging.getPlugin("awsCloudWatchLoggingPlugin") as AWSCloudWatchLoggingPlugin
+val client = plugin.escapeHatch
+```
+You will also need to add the necessary Gradle imports:
+```kotlin
+implementation("aws.sdk.kotlin:cloudwatchlogs:KOTLIN_SDK_VERSION")
+```
+On iOS, you can get a direct reference to the instance of CloudWatchLogsClientProtocol and directly interact with AWSCloudWatch via the AWS SDK for Swift. First, add the necessary import statements:
+```swift
+import AWSCloudWatchLoggingPlugin
+import AWSCloudWatchLogs
+```
+Then, you can retrieve the escape hatch with the following code:
+```swift
+let cloudWatchPlugin = try Amplify.Logging.getPlugin(for: "awsCloudWatchLoggingPlugin") as? AWSCloudWatchLoggingPlugin
+let cloudWatchClient: CloudWatchLogsClientProtocol? = cloudWatchPlugin?.getEscapeHatch()
+```

@@ -1,0 +1,107 @@
+To add location search functionality to a map in a React application, you can use the `maplibre-gl-geocoder` library in conjunction with Amplify Geo. First, ensure you have provisioned a search index resource and configured your app using the instructions in either Configure Location Search or Use existing Amazon Location Service resources, and that you have already set up displaying a map in your application.
+
+You can use the `Amplify UI Location Search` component to generate and display search results. To add a location search UI component to your map, you will use the `maplibre-gl-geocoder` library. Install the necessary dependencies with the command `npm add @maplibre/maplibre-gl-geocoder maplibre-gl@1 maplibre-gl-js-amplify`.
+
+Create a map onto which you want to add the location search UI component. Then, use the `createAmplifyGeocoder()` function from `maplibre-gl-js-amplify` to get a new instance of `MaplibreGeocoder` and add the location search UI component to the map.
+
+Here's an example of how to initialize the map and add the location search UI component:
+
+```javascript
+import { createMap, createAmplifyGeocoder } from "maplibre-gl-js-amplify";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+import "@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css";
+import "maplibre-gl-js-amplify/dist/public/amplify-geocoder.css"; 
+
+async function initializeMap() {
+    const el = document.createElement("div");
+    el.setAttribute("id", "map");
+    document.body.appendChild(el);
+
+    const map = await createMap({
+        container: "map",
+        center: [-123.1187, 49.2819], 
+        zoom: 11,
+    })
+
+    map.addControl(createAmplifyGeocoder());
+}
+
+initializeMap();
+```
+
+You can also use `maplibre-gl-geocoder` to display the location search UI component anywhere in your application, even outside the map, by extracting the HTML element using the `onAdd()` function and attaching it anywhere in your DOM instead of adding it via the map's `addControl()` function.
+
+```javascript
+const geocoder = createAmplifyGeocoder();
+document.getElementById("search").appendChild(geocoder.onAdd());
+```
+
+To customize the search icons used by the `maplibre-gl-geocoder`, you can pass a custom image to the `createAmplifyGeocoder()` function.
+
+```javascript
+import myIcon from "./myIcon.svg" 
+
+const icon = new Image(100, 100);
+icon.src = myIcon;
+
+const geocoder = createAmplifyGeocoder({ showResultMarkers: { element: icon } });
+map.addControl(geocoder);
+```
+
+Amplify Geo enables you to search for locations by text, addresses, or geo-coordinates using the `Geo.searchByText()`, `Geo.searchByCoordinates()`, `Geo.searchForSuggestions()`, and `Geo.searchByPlaceId()` APIs.
+
+To search for locations by text, you can use the `Geo.searchByText()` API, which enables you to search for places or points of interest by free-form text, such as an address, name, city, or region.
+
+```javascript
+import { Geo } from "@aws-amplify/geo"
+
+Geo.searchByText("Amazon Go Store")
+```
+
+You can customize your search results by providing parameters such as `countries`, `maxResults`, `biasPosition`, `searchAreaConstraints`, and `searchIndexName`.
+
+```javascript
+const searchOptionsWithBiasPosition = {
+  countries: string[], 
+  maxResults: number, 
+  biasPosition: [
+    longitude 
+    latitude 
+  ], 
+  searchIndexName: string, 
+}
+
+const searchOptionsWithSearchAreaConstraints = {
+  countries: ["USA"], 
+  maxResults: 25, 
+  searchAreaConstraints: [SWLongitude, SWLatitude, NELongitude, NELatitude], 
+  searchIndexName: string, 
+}
+
+Geo.searchByText('Amazon Go Stores', searchOptionsWithBiasPosition)
+```
+
+To search for locations by coordinates, you can use the `Geo.searchByCoordinates()` API, which is a reverse Geocoder that takes a coordinate point and returns information about what it finds at that point on the map.
+
+```javascript
+import { Geo } from "@aws-amplify/geo"
+
+Geo.searchByCoordinates([longitudePoint, latitudePoint])
+```
+
+You can also search for suggestions by using the `Geo.searchForSuggestions()` API, which enables you to search for suggestions by free-form text, such as a place, address, city, or region.
+
+```javascript
+import { Geo } from "@aws-amplify/geo"
+
+Geo.searchForSuggestions("Amazon Go Store")
+```
+
+Additionally, you can search for a place by its `placeId` using the `Geo.searchByPlaceId()` API.
+
+```javascript
+import { Geo } from "@aws-amplify/geo"
+
+Geo.searchByPlaceId(placeId)
+```

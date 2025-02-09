@@ -1,0 +1,36 @@
+Amplify helps you secure your application while providing an easy sign-in experience for your users, influenced by your security strategy. This security strategy includes the authentication method, security credentials, and enabling additional verification when needed.
+
+There are two main concepts: authentication and authorization. Authentication is the process of validating who you are, often referred to as AuthN, and is typically done by an Identity Provider or IdP, such as Apple, Facebook, Google, or Amazon. Authorization, on the other hand, is the process of validating what you can access, often referred to as AuthZ, and is sometimes done by looking at tokens with custom logic, predefined rules, or signed requests with policies.
+
+Common authentication methods and associated risks include external provider federation, which enables easier access for your users but shares data with third parties. To improve security credentials and verification for these authentication methods, you can modify the default password policy to ensure your users create stronger passwords, require additional contact information from users before they can reset passwords, and enable multi-factor authentication (MFA), which adds a layer of security at sign-in but may also add friction for your users.
+
+Amplify Auth is powered by Amazon Cognito, an identity and access management service that enables you to secure your web or mobile applications. Amazon Cognito is comprised of two services: Amazon Cognito User Pools, a full-featured user directory service to handle user registration, authentication, and account recovery, and Amazon Cognito Federated Identities or Identity Pools, a service used to authorize your users to interact with other AWS services.
+
+Amplify interfaces with User Pools to store your user information, including federation with other OpenID providers, and leverages federated identities to manage user access to AWS resources. Authorization is often done in one of two ways: clients pass tokens to the backend that perform custom logic to allow or deny actions, or clients sign requests and the backend validates the signature, allowing or denying actions depending on predefined policy.
+
+Before building, it's essential to understand that some initial configuration options in Amazon Cognito cannot be changed after the backend resources are configured. These include user attributes, sign-in methods, verification methods, and the sub attribute, which is a unique identifier within each user pool. Additionally, if MFA is set to required with phone number for all users, you will need to include MFA setup when users sign up. 
+
+In a React application, you can implement authentication and authorization using Amazon Cognito and Amplify. For example, you can use the `Auth` class from `@aws-amplify/auth` to authenticate users and then use the `Hub` class from `@aws-amplify/core` to authorize access to AWS resources. 
+
+```javascript
+import Amplify from '@aws-amplify/core';
+import Auth from '@aws-amplify/auth';
+
+// Initialize Amplify
+Amplify.configure({
+  Auth: {
+    // Your Amazon Cognito User Pool configuration
+  }
+});
+
+// Authenticate a user
+Auth.signIn(username, password)
+  .then((user) => {
+    // User is authenticated, you can now authorize access to AWS resources
+  })
+  .catch((error) => {
+    // Handle authentication error
+  });
+```
+
+It's recommended to visit the Amazon Cognito documentation for more details on these settings, including user pool attributes and adding MFA to a user pool.

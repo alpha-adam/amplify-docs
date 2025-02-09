@@ -1,0 +1,22 @@
+To view logs in Amazon CloudWatch, you need to access the log group that you created and specified during the initial setup. Each user's log messages are stored in a user-specific log stream within the log group. The log stream names are generated based on the user's device identifier and user identifier.
+
+For authenticated users, the log stream name is a combination of the device identifier and user identifier, separated by a period. For unauthenticated users, the log stream name is a combination of the device identifier and the string "guest".
+
+You can use the Amplify Auth category to retrieve the user identifier for a specific user if needed. Alternatively, you can retrieve the user identifier by visiting the Amazon Cognito console and inspecting the User ID in User pools.
+
+To access your logs in the AWS Console, follow these steps:
+1. Log into the AWS Console.
+2. Navigate to Amazon CloudWatch.
+3. In the left navigation panel, click on Logs and then click on Log groups.
+4. Enter your log group name in the Filter field.
+5. Click on your log group in the filtered results to view all log streams. 
+
+In a React application using AWS Amplify, you would use the `Auth` category from `@aws-amplify/auth` to retrieve the user identifier. For example:
+```javascript
+import { Auth } from '@aws-amplify/auth';
+
+Auth.currentAuthenticatedUser().then((user) => {
+  const userId = user.username;
+  // Use the user ID to construct the log stream name
+});
+```

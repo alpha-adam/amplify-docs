@@ -1,0 +1,25 @@
+To enable and disable logging when using the Amplify Logger, you can use the following methods. The Amplify Logger is enabled by default, unless it is disabled in the amplifyconfiguration_logging file.
+
+For Android, you can enable the Amplify Logger using 
+```java
+Amplify.Logging.enable();
+```
+and disable it using 
+```java
+Amplify.Logging.disable();
+```
+In React, you would use the Amplify Logger like this 
+```javascript
+import Amplify from 'aws-amplify';
+
+Amplify.Logging.enable();
+Amplify.Logging.disable();
+```
+For Swift, you can enable the Amplify Logger using 
+```swift
+Amplify.Logging.enable()
+```
+and disable it using 
+```swift
+Amplify.Logging.disable()
+```

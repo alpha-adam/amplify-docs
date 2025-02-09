@@ -1,0 +1,23 @@
+To update data using Amplify, you can use HTTP methods such as PUT. Here's how you can create or update an item via an API endpoint in a React application:
+
+To update an item, you would use the `put` method from `aws-amplify/api`. 
+
+Here's an example of how to do it:
+```javascript
+import { API } from 'aws-amplify';
+
+async function updateItems() {
+  try {
+    const item = { name: 'My first Item', message: 'Hello world!' };
+    const restOperation = API.put('items/1', {
+      body: item
+    }, {
+      apiName: 'myRestApi'
+    });
+    const response = await restOperation;
+    console.log('PUT call succeeded: ', response);
+  } catch (error) {
+    console.log('PUT call failed: ', error);
+  }
+}
+```

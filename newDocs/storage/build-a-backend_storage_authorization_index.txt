@@ -1,0 +1,104 @@
+Customize authorization for your storage bucket by defining access to file paths for guests, authenticated users, and user groups. Access can also be defined for functions that require access to the storage bucket.
+
+To customize authorization, you need to have authentication set up. If you haven't already, set it up by following the documentation.
+
+Note that paths in access definitions cannot have a '/' at the beginning of the string. By default, all paths are denied to all types of users unless explicitly granted.
+
+There are several access types, including guest users, authenticated users, user groups, owners, and functions. 
+
+To grant all guest users read access to files under a certain path, use the following access values:
+```javascript
+export const storage = defineStorage({
+  name: 'myProjectFiles',
+  access: (allow) => ({
+    'media/*': [
+      allow.guest.to(['read']) 
+    ]
+  })
+});
+```
+
+To grant all authenticated users read access to files under a certain path, use the following access configuration:
+```javascript
+export const storage = defineStorage({
+  name: 'myProjectFiles',
+  access: (allow) => ({
+    'media/*': [
+      allow.authenticated.to(['read']) 
+    ]
+  })
+});
+```
+
+When a user is part of a group, they are assigned the group role, which means permissions defined for the authenticated role will not apply for this user. To grant access to users within a group, you must explicitly define access permissions for the group against the desired prefix.
+
+If you have configured user groups when setting up auth, you can scope storage access to specific groups. For example, assume you have a `defineAuth` config with `admin` and `auditor` groups. With the following access definition, you can configure permissions such that auditors have read-only permissions to a certain path while admin has full permissions.
+```javascript
+export const storage = defineStorage({
+  name: 'myProjectFiles',
+  access: (allow) => ({
+    'media/*': [
+      allow.groups(['auditor']).to(['read']),
+      allow.groups(['admin']).to(['read', 'write', 'delete'])
+    ]
+  })
+});
+```
+
+In some use cases, you may want just the uploader of a file to be able to perform actions on it. You can do this by using the `entity_id` to represent the user which scopes files to individual users.
+
+The `entity_id` is a reserved token that will be replaced with the users' identifier when the file is being uploaded. You can specify the method of identification when defining access to the path like `allow.entity(<identification_method>).to([..])`. 
+
+For example, the following policy would allow authenticated users full access to a certain path that matches their identity id.
+```javascript
+export const storage = defineStorage({
+  name: 'myProjectFiles',
+  access: (allow) => ({
+    'media/{entity_id}/*': [
+      allow.entity('identity').to(['read', 'write', 'delete'])
+    ]
+  })
+});
+```
+
+In addition to granting application users access to storage files, you may also want to grant a backend function access to storage files. This could be used to enable a use case like resizing images or automatically deleting old files.
+
+For example, the following configuration is used to define function access.
+```javascript
+import { defineStorage, defineFunction } from '@aws-amplify/backend';
+
+const demoFunction = defineFunction({});
+
+export const storage = defineStorage({
+  name: 'myProjectFiles',
+  access: (allow) => ({
+    'media/*': [allow.resource(demoFunction).to(['read', 'write', 'delete'])]
+  })
+});
+```
+
+There are some rules for the types of paths that can be specified at the same time in the storage access definition. All paths must end with `/*`. Only one level of nesting is allowed. Wildcards cannot conflict with the `{entity_id}` token. A path cannot be a prefix of another path with an `{entity_id}` token.
+
+When one path is a subpath of another, the permissions on the subpath always override the permissions from the parent path. Permissions are not "inherited" from a parent path.
+
+When you configure access to a particular path, you can scope the access to one or more CRUDL actions. The available actions are `read`, `get`, `list`, `write`, and `delete`. Note that `read` is a combination of `get` and `list` access definitions and hence cannot be defined in the presence of `get` or `list`.
+
+To configure `defineStorage` in Amplify Gen 2 to behave the same way as the storage category in Gen 1, you can use the following definition.
+```javascript
+export const storage = defineStorage({
+  name: 'myProjectFiles',
+  access: (allow) => ({
+    'public/*': [
+      allow.guest.to(['read']),
+      allow.authenticated.to(['read', 'write', 'delete']),
+    ],
+    'protected/{entity_id}/*': [
+      allow.authenticated.to(['read']),
+      allow.entity('identity').to(['read', 'write', 'delete'])
+    ],
+    'private/{entity_id}/*': [
+      allow.entity('identity').to(['read', 'write', 'delete'])
+    ]
+  })
+});
+```

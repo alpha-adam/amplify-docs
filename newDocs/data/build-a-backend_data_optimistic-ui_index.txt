@@ -1,0 +1,348 @@
+Amplify Data can be used with TanStack Query to implement optimistic UI, allowing CRUD operations to be rendered immediately on the UI before the request roundtrip has completed. Using Amplify Data with TanStack additionally makes it easy to render loading and error states, and allows you to rollback changes on the UI when API calls are unsuccessful.
+
+To get started, you need to install TanStack Query and its devtools by running the command `npm i @tanstack/react-query @tanstack/react-query-devtools` in an existing Amplify project with a React frontend.
+
+You then need to modify your Data schema to use a specific example, such as a "Real Estate Property" example, and deploy the changes to your backend cloud sandbox by running `npx ampx sandbox`.
+
+Next, at the root of your project, you need to add the required TanStack Query imports and create a client. You can do this by creating a new file, for example `main.tsx`, and adding the following code:
+
+```tsx
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.tsx'
+import './index.css'
+import { Amplify } from 'aws-amplify'
+import outputs from '../amplify_outputs.json'
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+
+Amplify.configure(outputs)
+
+const queryClient = new QueryClient()
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <App />
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
+  </React.StrictMode>,
+)
+```
+
+To render a list of items returned from the Amplify Data API, you can use the TanStack `useQuery` hook, passing in the Data API query as the `queryFn` parameter. For example:
+
+```tsx
+import { generateClient } from 'aws-amplify/data'
+import type { Schema } from '../amplify/data/resource'
+import { useQuery } from '@tanstack/react-query'
+
+const client = generateClient<Schema>();
+
+function App() {
+  const {
+    data: realEstateProperties,
+    isLoading,
+    isSuccess,
+    isError: isErrorQuery,
+  } = useQuery({
+    queryKey: ["realEstateProperties"],
+    queryFn: async () => {
+      const response = await client.models.RealEstateProperty.list();
+
+      const allRealEstateProperties = response.data;
+
+      if (!allRealEstateProperties) return null;
+
+      return allRealEstateProperties;
+    },
+  });
+  // return...
+}
+```
+
+To optimistically render a newly created item, you can use the TanStack `useMutation` hook, passing in the Amplify Data API mutation as the `mutationFn` parameter. For example:
+
+```tsx
+import { generateClient } from 'aws-amplify/api'
+import type { Schema } from '../amplify/data/resource'
+import { useQueryClient, useMutation } from '@tanstack/react-query'
+
+const client = generateClient<Schema>();
+
+function App() {
+  const queryClient = useQueryClient();
+
+  const createMutation = useMutation({
+    mutationFn: async (input: { name: string, address: string }) => {
+      const { data: newRealEstateProperty } = await client.models.RealEstateProperty.create(input)
+      return newRealEstateProperty;
+    },
+    // When mutate is called:
+    onMutate: async (newRealEstateProperty) => {
+      // Cancel any outgoing refetches
+      // (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({ queryKey: ["realEstateProperties"] });
+
+      // Snapshot the previous value
+      const previousRealEstateProperties = queryClient.getQueryData([
+        "realEstateProperties",
+      ]);
+
+      // Optimistically update to the new value
+      if (previousRealEstateProperties) {
+        queryClient.setQueryData(["realEstateProperties"], (old: Schema["RealEstateProperty"]["type"][]) => [
+         ...old,
+          newRealEstateProperty,
+        ]);
+      }
+
+      // Return a context object with the snapshotted value
+      return { previousRealEstateProperties };
+    },
+    // If the mutation fails,
+    // use the context returned from onMutate to rollback
+    onError: (err, newRealEstateProperty, context) => {
+      console.error("Error saving record:", err, newRealEstateProperty);
+      if (context?.previousRealEstateProperties) {
+        queryClient.setQueryData(
+          ["realEstateProperties"],
+          context.previousRealEstateProperties
+        );
+      }
+    },
+    // Always refetch after error or success:
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["realEstateProperties"] });
+    },
+  });
+  // return...
+}
+```
+
+To query a single item with TanStack Query, you can use the `useQuery` hook, passing in the `get` query as the `queryFn` parameter. For example:
+
+```tsx
+import { generateClient } from 'aws-amplify/data'
+import type { Schema } from '../amplify/data/resource'
+import { useQuery } from '@tanstack/react-query'
+
+const client = generateClient<Schema>();
+
+function App() {
+  const currentRealEstatePropertyId = "SOME_ID"
+  const {
+    data: realEstateProperty,
+    isLoading,
+    isSuccess,
+    isError: isErrorQuery,
+  } = useQuery({
+    queryKey: ["realEstateProperties", currentRealEstatePropertyId],
+    queryFn: async () => {
+      if (!currentRealEstatePropertyId) { return }
+
+      const { data: property } = await client.models.RealEstateProperty.get({
+        id: currentRealEstatePropertyId,
+      });
+      return property;
+    },
+  });
+  // return...
+}
+```
+
+To optimistically render updates for a record, you can use the TanStack `useMutation` hook, passing in the update mutation as the `mutationFn` parameter. For example:
+
+```tsx
+import { generateClient } from 'aws-amplify/data'
+import type { Schema } from '../amplify/data/resource'
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+
+const client = generateClient<Schema>();
+
+function App() {
+  const queryClient = useQueryClient();
+
+  const updateMutation = useMutation({
+    mutationFn: async (realEstatePropertyDetails: { id: string, name?: string, address?: string }) => {
+      const { data: updatedProperty } = await client.models.RealEstateProperty.update(realEstatePropertyDetails);
+
+      return updatedProperty;
+    },
+    // When mutate is called:
+    onMutate: async (newRealEstateProperty: { id: string, name?: string, address?: string }) => {
+      // Cancel any outgoing refetches
+      // (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({
+        queryKey: ["realEstateProperties", newRealEstateProperty.id],
+      });
+
+      await queryClient.cancelQueries({
+        queryKey: ["realEstateProperties"],
+      });
+
+      // Snapshot the previous value
+      const previousRealEstateProperty = queryClient.getQueryData([
+        "realEstateProperties",
+        newRealEstateProperty.id,
+      ]);
+
+      // Optimistically update to the new value
+      if (previousRealEstateProperty) {
+        queryClient.setQueryData(
+          ["realEstateProperties", newRealEstateProperty.id],
+          /**
+           * `newRealEstateProperty` will at first only include updated values for
+           * the record. To avoid only rendering optimistic values for updated
+           * fields on the UI, include the previous values for all fields:
+           */
+          {...previousRealEstateProperty,...newRealEstateProperty }
+        );
+      }
+
+      // Return a context with the previous and new realEstateProperty
+      return { previousRealEstateProperty, newRealEstateProperty };
+    },
+    // If the mutation fails, use the context we returned above
+    onError: (err, newRealEstateProperty, context) => {
+      console.error("Error updating record:", err, newRealEstateProperty);
+      if (context?.previousRealEstateProperty) {
+        queryClient.setQueryData(
+          ["realEstateProperties", context.newRealEstateProperty.id],
+          context.previousRealEstateProperty
+        );
+      }
+    },
+    // Always refetch after error or success:
+    onSettled: (newRealEstateProperty) => {
+      if (newRealEstateProperty) {
+        queryClient.invalidateQueries({
+          queryKey: ["realEstateProperties", newRealEstateProperty.id],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["realEstateProperties"],
+        });
+      }
+    },
+  });
+  // return...
+}
+```
+
+To optimistically render deleting a record, you can use the TanStack `useMutation` hook, passing in the delete mutation as the `mutationFn` parameter. For example:
+
+```tsx
+import { generateClient } from 'aws-amplify/data'
+import type { Schema } from '../amplify/data/resource'
+import { useQueryClient, useMutation } from '@tanstack/react-query'
+
+const client = generateClient<Schema>();
+
+function App() {
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: async (realEstatePropertyDetails: { id: string }) => {
+      const { data: deletedProperty } = await client.models.RealEstateProperty.delete(realEstatePropertyDetails);
+      return deletedProperty;
+    },
+    // When mutate is called:
+    onMutate: async (newRealEstateProperty) => {
+      // Cancel any outgoing refetches
+      // (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({
+        queryKey: ["realEstateProperties", newRealEstateProperty.id],
+      });
+
+      await queryClient.cancelQueries({
+        queryKey: ["realEstateProperties"],
+      });
+
+      // Snapshot the previous value
+      const previousRealEstateProperty = queryClient.getQueryData([
+        "realEstateProperties",
+        newRealEstateProperty.id,
+      ]);
+
+      // Optimistically update to the new value
+      if (previousRealEstateProperty) {
+        queryClient.setQueryData(
+          ["realEstateProperties", newRealEstateProperty.id],
+          newRealEstateProperty
+        );
+      }
+
+      // Return a context with the previous and new realEstateProperty
+      return { previousRealEstateProperty, newRealEstateProperty };
+    },
+    // If the mutation fails, use the context we returned above
+    onError: (err, newRealEstateProperty, context) => {
+      console.error("Error deleting record:", err, newRealEstateProperty);
+      if (context?.previousRealEstateProperty) {
+        queryClient.setQueryData(
+          ["realEstateProperties", context.newRealEstateProperty.id],
+          context.previousRealEstateProperty
+        );
+      }
+    },
+    // Always refetch after error or success:
+    onSettled: (newRealEstateProperty) => {
+      if (newRealEstateProperty) {
+        queryClient.invalidateQueries({
+          queryKey: ["realEstateProperties", newRealEstateProperty.id],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["realEstateProperties"],
+        });
+      }
+    },
+  });
+  // return...
+}
+```
+
+To render loading and error states for optimistically rendered data, you can use the `isLoading` and `isError` states returned by the `useQuery` and `useMutation` hooks. For example:
+
+```tsx
+function App() {
+  const {
+    data: realEstateProperties,
+    isLoading,
+    isSuccess,
+    isError: isErrorQuery,
+  } = useQuery({
+    queryKey: ["realEstateProperties"],
+    queryFn: async () => {
+      const response = await client.models.RealEstateProperty.list();
+
+      const allRealEstateProperties = response.data;
+
+      if (!allRealEstateProperties) return null;
+
+      return allRealEstateProperties;
+    },
+  });
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (isErrorQuery) {
+    return <div>Error loading data</div>;
+  }
+
+  // return...
+}
+```
+
+You can also use the `useIsFetching` hook from TanStack Query to render a global loading indicator. For example:
+
+```tsx
+function GlobalLoadingIndicator() {
+  const isFetching = useIsFetching();
+
+  return isFetching? <div>Loading...</div> : null;
+}
+```
+
+This is a basic example of how to implement optimistic UI with Amplify Data and TanStack Query. You can customize the code to fit your specific needs and requirements.

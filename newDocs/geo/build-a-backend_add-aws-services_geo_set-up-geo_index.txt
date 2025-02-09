@@ -1,0 +1,47 @@
+To set up Amplify Geo, you need to create a Geo resource powered by Amazon Location Services. You can use the AWS Cloud Development Kit (AWS CDK) to create the resource. 
+
+First, you need to install the necessary dependencies, including `aws-amplify` and `@aws-amplify/geo`. You can do this by running the command `npm add aws-amplify @aws-amplify/geo` in your terminal.
+
+Next, you need to import and load the configuration file in your app. You can do this by adding the following code to your app's root entry point:
+```javascript
+import { Amplify } from 'aws-amplify';
+import outputs from '../amplify_outputs.json';
+Amplify.configure(outputs);
+```
+If you are using Next.js, you need to add the following code to your `pages/_app.js` file instead:
+```javascript
+import { Amplify } from 'aws-amplify';
+import outputs from '@/amplify_outputs.json';
+Amplify.configure(outputs);
+```
+Make sure to call `Amplify.configure` as early as possible in your application's life cycle.
+
+To initialize Amplify Geo, you need to add the AWS Location Geo plugin to your app. You can do this by using the `Amplify.addPlugin` method.
+
+To display a map in your application, you can use the Amplify React MapView component or the MapLibre GL library with the `maplibre-gl-js-amplify` library.
+
+Note that the Geo plugin has a dependency on Cognito Auth, so you need to install and configure Cognito Auth as well.
+
+For Android and iOS, you need to install the Amplify Libraries and initialize Amplify Geo using the `Amplify.addPlugin` method.
+
+If you want to use existing Amazon Location Service resources, you can follow a different guide. If you want to use Amazon Location Service APIs not directly supported by Geo, you can use the escape hatch to access the Amazon Location Service SDK.
+
+The pricing plan for the Map example is set to `RequestBasedUsage`. You should review the location service pricing and terms to learn more about the pricing plan. 
+
+Here is an example of how to create a map using the Amplify MapView component:
+```javascript
+import { MapView } from '@aws-amplify/geo';
+
+const MyMap = () => {
+  return (
+    <MapView
+      style={{
+        flex: 1,
+        height: '100%',
+        width: '100%',
+      }}
+    />
+  );
+};
+```
+This will render a map in your application. You can customize the map by using various props and methods provided by the MapView component.

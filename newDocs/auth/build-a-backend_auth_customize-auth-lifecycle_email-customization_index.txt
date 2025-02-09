@@ -1,0 +1,42 @@
+To customize the emails your users receive when signing up with AWS Amplify, you can modify the default behavior of the email attribute in the auth settings. 
+
+When users sign up, they receive a verification email to confirm their email address. You can customize this email by changing the email attribute from true to an object. This object can have several properties, including verificationEmailStyle, verificationEmailSubject, and verificationEmailBody. 
+
+For example, you can set the verificationEmailStyle to "CODE" and specify a custom subject and body for the email. The verificationEmailBody is a function that takes a createCode function as an argument, which generates the verification code. You can use this code in the email body.
+
+In React, you can achieve this by modifying the auth settings as follows:
+```javascript
+import { defineAuth } from "@aws-amplify/backend"
+
+export const auth = defineAuth({
+  loginWith: {
+    email: {
+      verificationEmailStyle: "CODE",
+      verificationEmailSubject: "Welcome to my app!",
+      verificationEmailBody: (createCode) => `Use this code to confirm your account: ${createCode()}`,
+    },
+  },
+})
+```
+
+You can also customize the invitation email that is sent to users when you set up a user account on their behalf in the Amplify console. To do this, you can override the userInvitation attribute of the email object. This attribute has two properties: emailSubject and emailBody. The emailBody is a function that takes two arguments: user and code. These arguments are functions that must be called to get the user's username and temporary password.
+
+In React, you can customize the invitation email as follows:
+```javascript
+import { defineAuth } from "@aws-amplify/backend"
+
+export const auth = defineAuth({
+  loginWith: {
+    email: {
+      verificationEmailStyle: "CODE",
+      verificationEmailSubject: "Welcome to my app!",
+      verificationEmailBody: (createCode) => `Use this code to confirm your account: ${createCode()}`,
+      userInvitation: {
+        emailSubject: "Welcome to my app!",
+        emailBody: (user, code) =>
+          `We're happy to have you! You can now login with username ${user()} and temporary password ${code()}`,
+      },
+    },
+  },
+})
+```

@@ -1,0 +1,19 @@
+The Amplify Logger sends errors that occur when using it through Amplify Hub. To ensure that errors do not occur when logging, log messages should be validated and follow the best security practices. Additionally, you should ensure that log messages do not exceed the Amazon CloudWatch log event size of 256 KB.
+
+You can get logging error events by listening/subscribing to the logging events from the Amplify Hub.
+
+In React, you can listen to log events using the Amplify Hub. The Hub sends log events when there is an error writing to the local log or sending log events to CloudWatch. 
+
+Here is an example of how you can listen to log events in React:
+
+```javascript
+import { Hub } from 'aws-amplify';
+
+Hub.listen('logging', (data) => {
+  if (data.eventName === 'writeLogFailure') {
+    console.log('Error writing to local log');
+  } else if (data.eventName === 'flushLogFailure') {
+    console.log('Error sending log events to CloudWatch');
+  }
+});
+```

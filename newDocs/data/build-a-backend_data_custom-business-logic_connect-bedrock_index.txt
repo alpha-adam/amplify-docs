@@ -1,0 +1,76 @@
+Amazon Bedrock is a fully managed service that simplifies the use of foundation models for generative AI development. It offers a curated selection of high-performing models from leading AI companies and provides a unified API for access and use. With Amazon Bedrock, you can streamline generative AI development by choosing from a range of models, integrating them easily, and benefiting from built-in security and privacy features.
+
+To connect to Amazon Bedrock from your AWS Amplify app, you can follow these steps:
+
+1. Add Amazon Bedrock as a data source to your app. You can do this by using a Lambda function or a custom resolver powered by AppSync JavaScript resolvers.
+
+2. Define a custom query that will be used to invoke the generative AI model in Amazon Bedrock. This query will take a prompt as an argument and return the generated text.
+
+3. Configure custom business logic handler code that will be used to invoke the generative AI model. This code will take the user's prompt, invoke the model, and return the generated text.
+
+4. Invoke the custom query to prompt the generative AI model. You can do this by calling the query from your app's frontend code and passing in the user's prompt.
+
+Here's an example of how you might invoke the custom query from a React app:
+
+```tsx
+const { data, errors } = await client.queries.generateHaiku({
+  prompt: "Frank Herbert's Dune",
+});
+```
+
+You can also create a simple UI that prompts a generative AI model to create a haiku based on user input. For example:
+
+```tsx
+import type { Schema } from '@/amplify/data/resource';
+import type { FormEvent } from 'react';
+import { useState } from 'react';
+import { Amplify } from 'aws-amplify';
+import { generateClient } from 'aws-amplify/api';
+import outputs from '@/amplify_outputs.json';
+
+Amplify.configure(outputs);
+
+const client = generateClient<Schema>();
+
+export default function App() {
+  const [prompt, setPrompt] = useState<string>('');
+  const [answer, setAnswer] = useState<string | null>(null);
+
+  const sendPrompt = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const { data, errors } = await client.queries.generateHaiku({
+      prompt
+    });
+
+    if (!errors) {
+      setAnswer(data);
+      setPrompt('');
+    } else {
+      console.log(errors);
+    }
+  };
+
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-center p-24 dark:text-white">
+      <div>
+        <h1 className="text-3xl font-bold text-center mb-4">Haiku Generator</h1>
+        <form className="mb-4 self-center max-w-[500px]" onSubmit={sendPrompt}>
+          <input
+            className="text-black p-2 w-full"
+            placeholder="Enter a prompt..."
+            name="prompt"
+            value={prompt}
+            onChange={(event) => setPrompt(event.target.value)}
+          />
+        </form>
+        <div className="text-center">
+          <pre>{answer}</pre>
+        </div>
+      </div>
+    </main>
+  );
+}
+```
+
+By following these steps and using Amazon Bedrock with your AWS Amplify app, you can leverage the power of generative AI models to create innovative and engaging user experiences.

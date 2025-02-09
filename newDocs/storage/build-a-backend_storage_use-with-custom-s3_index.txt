@@ -1,0 +1,100 @@
+You can use Amplify Storage APIs with your own S3 buckets instead of the ones created by Amplify. 
+
+To do this, you must have Amplify Auth configured in your project. 
+
+First, you need to add necessary permissions to the S3 bucket by going to the Amazon S3 console, selecting the S3 bucket, and editing the bucket policy. 
+
+The policy should look something like this:
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "Statement1",
+      "Principal": { "AWS": "arn:aws:iam::<AWS-account-ID>:role/<role-name>" },
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:DeleteObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::<bucket-name>/*"
+      ]
+    }
+  ]
+}
+```
+Replace `<AWS-account-ID>` with your AWS account ID, `<role-name>` with the IAM role associated with your Amplify Auth setup, and `<bucket-name>` with the S3 bucket name.
+
+Next, you need to specify the S3 bucket in Amplify's backend config by using the `addOutput` method from the backend definition object in your `amplify/backend.ts` file:
+```javascript
+const backend = defineBackend({
+  auth,
+  data,
+});
+
+backend.addOutput({
+  storage: {
+    aws_region: "<region>",
+    bucket_name: "<bucket-name>"
+  },
+});
+```
+Replace `<region>` with the region of the bucket and `<bucket-name>` with the S3 bucket name.
+
+After configuring the necessary permissions, you can start using the storage APIs with your chosen S3 bucket.
+
+If you're not using an Amplify backend, you can still use existing storage resources with Amplify Storage by configuring your storage options manually and ensuring Amplify Auth is properly configured in your project.
+
+You can configure the Amplify Storage client library to interact with the additional resources by passing the resource metadata to `Amplify.configure`:
+```typescript
+import { Amplify } from 'aws-amplify';
+
+Amplify.configure({
+  Auth: {
+    // add your auth configuration
+  },
+  Storage: {
+    S3: {
+      bucket: '<your-default-bucket-name>',
+      region: '<your-default-bucket-region>',
+      buckets: {
+        '<your-default-bucket-friendly-name>': {
+          bucketName: '<your-default-bucket-name>',
+          region: '<your-default-bucket-region>'
+        },
+        '<your-additional-bucket-friendly-name>': {
+          bucketName: '<your-additional-bucket-name>',
+          region: '<your-additional-bucket-region>'
+        }
+      }
+    }
+  }
+});
+```
+Alternatively, you can create or modify the `amplify_outputs.json` file directly:
+```json
+{
+  "auth": {
+    // add your auth configuration
+  },
+  "storage": {
+    "aws_region": "<your-default-bucket-region>", 
+    "bucket_name": "<your-default-bucket-name>",
+    "buckets": [
+      {
+        "name": "<your-default-bucket-friendly-name>", 
+        "bucket_name": "<your-default-bucket-name>", 
+        "aws_region": "<your-default-bucket-region>" 
+      },
+      {
+        "name": "<your-additional-bucket-friendly-name>",
+        "bucket_name": "<your-additional-bucket-name>",
+        "aws_region": "<your-additional-bucket-region>"
+      }
+    ]
+  }
+}
+```

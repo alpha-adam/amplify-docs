@@ -1,0 +1,187 @@
+Amazon Rekognition is a machine learning service provided by Amazon Web Services (AWS) that allows developers to incorporate image and video analysis into their applications. It uses state-of-the-art machine learning models to analyze images and videos, providing valuable insights such as object and scene detection, text recognition, face analysis, and more.
+
+Key features of Amazon Rekognition include object and scene detection, text detection and recognition, facial analysis, facial recognition, and content moderation. 
+
+To integrate Amazon Rekognition into your React application, follow these steps:
+
+1. Set up your project by following the instructions in the Quickstart guide.
+
+2. Install the Amazon Rekognition SDK by running the command npm add @aws-sdk/client-rekognition in your project's root folder.
+
+3. Create a new file named amplify/storage/resource.ts and add the content to configure a storage resource.
+
+```typescript
+import { defineStorage } from '@aws-amplify/backend';
+export const storage = defineStorage({
+  name: 'predictions_gen2'
+});
+```
+
+4. Add Amazon Rekognition as an HTTP Data Source and configure the proper IAM policy for Lambda to effectively utilize the desired feature and grant permission to access the storage. Update the amplify/backend.ts file as shown below.
+
+```typescript
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import { defineBackend } from '@aws-amplify/backend';
+import { auth } from './auth/resource';
+import { data } from './data/resource';
+import { storage } from './storage/resource';
+const backend = defineBackend({
+  auth,
+  data,
+  storage
+});
+const rekognitionDataSource = backend.data.addHttpDataSource(
+  "RekognitionDataSource",
+  `https://rekognition.${backend.data.stack.region}.amazonaws.com`,
+  {
+    authorizationConfig: {
+      signingRegion: backend.data.stack.region,
+      signingServiceName: "rekognition",
+    },
+  }
+);
+rekognitionDataSource.grantPrincipal.addToPrincipalPolicy(
+  new PolicyStatement({
+    actions: ["rekognition:DetectText", "rekognition:DetectLabels"],
+    resources: ["*"],
+  })
+);
+backend.storage.resources.bucket.grantReadWrite(
+  rekognitionDataSource.grantPrincipal
+);
+```
+
+5. Define the function handler by creating a new file, amplify/data/identifyText.ts. This function analyzes the image and extracts text using the Amazon Rekognition DetectText service.
+
+```typescript
+export function request(ctx) {
+  return {
+    method: "POST",
+    resourcePath: "/",
+    params: {
+      body: {
+        Image: {
+          S3Object: {
+            Bucket: ctx.env.S3_BUCKET_NAME,
+            Name: ctx.arguments.path,
+          },
+        },
+      },
+      headers: {
+        "Content-Type": "application/x-amz-json-1.1",
+        "X-Amz-Target": "RekognitionService.DetectText",
+      },
+    },
+  };
+}
+export function response(ctx) {
+  return JSON.parse(ctx.result.body)
+   .TextDetections.filter((item) => item.Type === "LINE")
+   .map((item) => item.DetectedText)
+   .join("\n")
+   .trim();
+}
+```
+
+6. Define the custom query using the a.handler.custom() modifier, which takes the name of the data source and an entry point for your resolvers. In your amplify/data/resource.ts file, specify RekognitionDataSource as the data source and identifyText.js as the entry point.
+
+```typescript
+import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
+const schema = a.schema({
+  identifyText: a
+   .query()
+   .arguments({
+      path: a.string(),
+    })
+   .returns(a.string())
+   .authorization((allow) => [allow.publicApiKey()])
+   .handler(
+      a.handler.custom({
+        entry: "./identifyText.js",
+        dataSource: "RekognitionDataSource",
+      })
+    ),
+});
+export type Schema = ClientSchema<typeof schema>;
+export const data = defineData({
+  schema,
+  authorizationModes: {
+    defaultAuthorizationMode: "apiKey",
+    apiKeyAuthorizationMode: {
+      expiresInDays: 30,
+    },
+  },
+});
+```
+
+7. Update Storage permissions to manage access to various paths within your storage bucket. Modify the file amplify/storage/resource.ts as shown below.
+
+```typescript
+import { defineStorage } from "@aws-amplify/backend"
+export const storage = defineStorage({
+  name: "predictions_gen2",
+  access: allow => ({
+    'public/*': [
+      allow.guest.to(['list', 'write', 'get'])
+    ]
+  })
+})
+```
+
+8. Configure the frontend by importing and loading the configuration file in your app. It's recommended you add the Amplify configuration step to your app's root entry point.
+
+```typescript
+import { Amplify } from "aws-amplify";
+import outputs from "../amplify_outputs.json";
+Amplify.configure(outputs);
+```
+
+To invoke the Text Recognition API in a React app, you can use the following code:
+
+```typescript
+import { type ChangeEvent, useState } from "react";
+import { generateClient } from "aws-amplify/api";
+import { uploadData } from "aws-amplify/storage";
+import { Schema } from "@/amplify/data/resource";
+const client = generateClient<Schema>();
+type IdentifyTextReturnType = Schema["identifyText"]["returnType"];
+function App() {
+  const [path, setPath] = useState<string>("");
+  const [textData, setTextData] = useState<IdentifyTextReturnType>();
+  const handleTranslate = async (event: ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) {
+      const file = event.target.files[0];
+      const s3Path = "public/" + file.name;
+      try {
+        uploadData({
+          path: s3Path,
+          data: file,
+        });
+        setPath(s3Path);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  };
+  const recognizeText = async () => {
+    const { data } = await client.queries.identifyText({
+      path, 
+    });
+    setTextData(data);
+  };
+  return (
+    <div>
+      <h1>Amazon Rekognition Text Recognition</h1>
+      <div>
+        <input type="file" onChange={handleTranslate} />
+        <button onClick={recognizeText}>Recognize Text</button>
+        <div>
+          <h3>Recognized Text:</h3>
+          {textData}
+        </div>
+      </div>
+    </div>
+  );
+}
+export default App;
+```

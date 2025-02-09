@@ -1,0 +1,25 @@
+To test your REST API, you can use the terminal with the curl command-line tool. If you don't have curl installed, you can follow the installation instructions on the official curl documentation website.
+
+To test your API using curl, replace `<your-api-endpoint>` and `<your-api-stage>` with your actual API endpoint and stage. 
+
+For a GET request, use the following command:
+```
+curl <your-api-endpoint>/<your-api-stage>/items
+```
+For a POST request, use the following command:
+```
+curl -H "Content-Type: application/json" -d '{"name":"item-1"}' <your-api-endpoint>/<your-api-stage>/items
+```
+If you're using Windows, make sure to use double quotes around the JSON data:
+```
+curl -H "Content-Type: application/json" -d "{\"name\":\"item-1\"}" <your-api-endpoint>/<your-api-stage>/items
+```
+Alternatively, you can test your API using the API Gateway console. To do this, follow these steps:
+
+1. Sign in to the API Gateway console.
+2. Choose your REST API.
+3. In the Resources pane, choose the method you want to test.
+4. Select the `GET` method and add any query string parameters you want to test.
+5. Choose **Test** to run the test.
+
+The API Gateway console will display the request, status, latency, response body, response headers, and logs for the test.

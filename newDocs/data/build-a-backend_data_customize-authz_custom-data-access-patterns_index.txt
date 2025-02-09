@@ -1,0 +1,84 @@
+You can define your own custom authorization rule with a Lambda function. To do this, you will need to indicate which models or fields should use a custom authorization rule and pass in the function to be used for a custom authorization rule.
+
+In your backend, you will need to define a schema that includes the custom authorization rule. For example, if you have a Todo model, you can define the schema as follows:
+
+```typescript
+const schema = {
+  Todo: {
+    content: 'string',
+    authorization: (allow) => [allow.custom()],
+  },
+};
+```
+
+You will then need to define the custom authorization rule in your Lambda function. The Lambda function will receive an authorization token from the client and execute the desired authorization logic. The AppSync GraphQL API will receive a payload from Lambda after invocation to allow or deny the API call accordingly.
+
+To configure a Lambda function as the authorization mode, you can create a new file `custom-authorizer.ts`. You can use the following Lambda function code template as a starting point for your authorization handler code:
+
+```typescript
+export const handler = async (event) => {
+  const {
+    authorizationToken,
+    requestContext: { apiId, accountId },
+  } = event;
+  const response = {
+    isAuthorized: authorizationToken === 'custom-authorized',
+    resolverContext: {
+      userid: 'user-id',
+      info: 'contextual information A',
+      more_info: 'contextual information B',
+    },
+    deniedFields: [
+      `arn:aws:appsync:${process.env.AWS_REGION}:${accountId}:apis/${apiId}/types/Event/fields/comments`,
+      `Mutation.createEvent`,
+    ],
+    ttlOverride: 300,
+  };
+  return response;
+};
+```
+
+In your React application, you can perform CRUD operations against the model using the `client.models.<model-name>` with the `lambda` auth mode. For example:
+
+```typescript
+const client = generateClient<Schema>();
+const { errors, data: newTodo } = await client.models.Todo.create(
+  {
+    content: 'My new todo',
+  },
+  {
+    authMode: 'lambda',
+  }
+);
+```
+
+The Lambda function receives an event that includes the authorization token, API ID, and account ID. The function needs to return a JSON response that includes the `isAuthorized` field, `resolverContext` field, and optionally the `deniedFields` and `ttlOverride` fields.
+
+For example, the event received by the Lambda function might look like this:
+
+```json
+{
+  "authorizationToken": "ExampleAuthToken123123123",
+  "requestContext": {
+    "apiId": "aaaaaa123123123example123",
+    "accountId": "111122223333",
+    "requestId": "f4081827-1111-4444-5555-5cf4695f339f",
+    "queryString": "mutation CreateEvent {...}\n\nquery MyQuery {...}\n",
+    "operationName": "MyQuery",
+    "variables": {}
+  }
+}
+```
+
+And the Lambda function needs to return a response like this:
+
+```json
+{
+  "isAuthorized": true,
+  "resolverContext": {
+    "banana": "very yellow"
+  },
+  "deniedFields": ["TypeName.FieldName"],
+  "ttlOverride": 10
+}
+```

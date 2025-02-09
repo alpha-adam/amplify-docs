@@ -1,0 +1,148 @@
+To add custom queries and mutations to your AWS Amplify application, you need to follow three steps. 
+
+First, you define a custom query or mutation. A query is used when the request only needs to read data and will not modify any backend data, while a mutation is used when the request will modify backend data. You need to set a return type and, optionally, arguments for your custom query or mutation. 
+
+In React, you can define your custom query or mutation in your amplify/data/resource.ts file. For example, to define a custom query, you can use the `a.query()` method and specify the return type and arguments. 
+
+```typescript
+const schema = a.schema({
+  EchoResponse: a.customType({
+    content: a.string(),
+    executionDuration: a.float()
+  }),
+
+  echo: a
+   .query()
+   .arguments({
+      content: a.string()
+    })
+   .returns(a.ref('EchoResponse'))
+});
+```
+
+To define a custom mutation, you can use the `a.mutation()` method and specify the return type and arguments. 
+
+```typescript
+const schema = a.schema({
+  Post: a.model({
+    id: a.id(),
+    content: a.string(),
+    likes: a.integer()
+  }),
+
+  likePost: a
+   .mutation()
+   .arguments({
+      postId: a.string()
+    })
+   .returns(a.ref('Post'))
+});
+```
+
+Second, you need to configure custom business logic handler code. You can either define it in a function or using a custom resolver powered by AppSync JavaScript resolver. 
+
+To define a function, you can create a handler.ts file in your amplify/data/echo-handler/ folder and import the utility type for your function handler via the Schema type from your backend resource. 
+
+```typescript
+export const handler: Schema["echo"]["functionHandler"] = async (event, context) => {
+  const start = performance.now();
+  return {
+    content: `Echoing content: ${event.arguments.content}`,
+    executionDuration: performance.now() - start
+  };
+};
+```
+
+Then, in your amplify/data/resource.ts file, you can define the function using `defineFunction` and reference the function with your query or mutation using `a.handler.function()` as a handler. 
+
+```typescript
+const echoHandler = defineFunction({
+  entry: './echo-handler/handler.ts'
+})
+
+const schema = a.schema({
+  EchoResponse: a.customType({
+    content: a.string(),
+    executionDuration: a.float()
+  }),
+
+  echo: a
+   .query()
+   .arguments({
+      content: a.string()
+    })
+   .returns(a.ref('EchoResponse'))
+   .handler(a.handler.function(echoHandler))
+});
+```
+
+To use a custom resolver, you can define a custom handler using `a.handler.custom` in your amplify/data/resource.ts file. 
+
+```typescript
+const schema = a.schema({
+  Post: a.model({
+    content: a.string(),
+    likes: a.integer()
+  }),
+
+  likePost: a
+   .mutation()
+   .arguments({
+      postId: a.id()
+    })
+   .returns(a.ref('Post'))
+   .handler(a.handler.custom({
+      dataSource: a.ref('Post'),
+      entry: './increment-like.js'
+    }))
+});
+```
+
+You can then define the custom resolver in a separate file, such as amplify/data/increment-like.js. 
+
+```typescript
+export function request(ctx) {
+  return {
+    operation: 'UpdateItem',
+    key: util.dynamodb.toMapValues({ id: ctx.args.postId}),
+    update: {
+      expression: 'ADD likes :plusOne',
+      expressionValues: { ':plusOne': { N: 1 } },
+    }
+  }
+}
+
+export function response(ctx) {
+  return ctx.result
+}
+```
+
+Third, you need to invoke the custom query or mutation. You can do this using the generated Data client. 
+
+```typescript
+const { data, errors } = await client.queries.echo({
+  content: 'hello world!!!'
+});
+
+const { data, errors } = await client.mutations.likePost({
+  postId: 'hello'
+});
+```
+
+Note that all handlers must be of the same type. You cannot mix and match `a.handler.function` with `a.handler.custom` within a single `.handler()` modifier. 
+
+Additionally, you can use async function handlers to execute long-running operations asynchronously, improving the responsiveness of your API. To define an async function handler, you can use the `.async()` method when defining your handler. 
+
+```typescript
+const signUpForNewsletter = defineFunction({
+  entry: './sign-up-for-newsletter/handler.ts'
+});
+
+const schema = a.schema({
+  someAsyncOperation: a.mutation()
+   .arguments({
+      email: a.email().required()
+    })
+   .handler(a.handler.function(signUpForNewsletter).async())
+});
+```

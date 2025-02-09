@@ -1,0 +1,82 @@
+To customize authorization rules in AWS Amplify Gen 2, you can use the `.authorization()` modifier. This modifier operates on the deny-by-default principle, meaning that if an authorization rule is not specifically configured, it is denied.
+
+There are several available authorization strategies, including:
+
+* Public data access using `publicApiKey` or `guest`
+* Per user data access using `owner`
+* Any signed-in data access using `authenticated`
+* Per user group data access using `group`
+* Custom authorization rules using `custom`
+
+You can apply authorization rules globally, to specific data models, or to specific fields. Amplify will always use the most specific authorization rule available. If there are multiple authorization rules present, they will be logically OR'ed.
+
+Here's an example of how to configure authorization rules in React:
+```javascript
+const schema = {
+  Post: {
+    content: 'string',
+    createdBy: 'string'
+  }
+};
+
+const authorizationRules = {
+  Post: {
+    auth: [
+      {
+        allow: 'publicApiKey',
+        operations: ['read']
+      },
+      {
+        allow: 'owner',
+        operations: ['create', 'read', 'update', 'delete']
+      }
+    ]
+  }
+};
+```
+In this example, anyone with a public API key can read all posts, and the owner of a post can create, read, update, and delete their own posts.
+
+You can also configure multiple authorization rules, which will be logically OR'ed. For example:
+```javascript
+const authorizationRules = {
+  Post: {
+    auth: [
+      {
+        allow: 'guest',
+        operations: ['read']
+      },
+      {
+        allow: 'owner',
+        operations: ['create', 'read', 'update', 'delete']
+      }
+    ]
+  }
+};
+```
+In this example, unauthenticated users (guests) can read all posts, and the owner of a post can create, read, update, and delete their own posts.
+
+Note that IAM authorization is enabled by default for all Amplify Gen 2 projects, which allows for administrative access to your API using IAM policies.
+
+It's also important to note that authorization rules are only supported on data models and custom operations, and not on custom types. However, Amplify will add appropriate authorization rules to custom types to allow authenticated users to access them.
+
+To authenticate with the corresponding authorization mode on the client-side, you can use the following code:
+```javascript
+import { API } from 'aws-amplify';
+
+// Creating a post is restricted to Cognito User Pools
+const post = {
+  title: 'Hello World'
+};
+API.graphql({
+  query: 'createPost',
+  variables: { input: post },
+  authMode: 'AMAZON_COGNITO_USER_POOLS'
+});
+
+// Listing posts is available to unauthenticated users (verified by Amazon Cognito identity pool's unauthenticated role)
+API.graphql({
+  query: 'listPosts',
+  authMode: 'AWS_IAM'
+});
+```
+This code creates a new post using the `createPost` mutation, which is restricted to Cognito User Pools, and lists all posts using the `listPosts` query, which is available to unauthenticated users.

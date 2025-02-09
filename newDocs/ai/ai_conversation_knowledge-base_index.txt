@@ -1,0 +1,79 @@
+Amazon Bedrock knowledge bases are a great way to implement Retrieval Augmented Generation, or RAG for short. RAG is a common pattern in building generative AI applications that involves storing a lot of content, like documentation, in a vector database. 
+
+When setting up an Amazon Bedrock knowledge base, be aware that the default setup uses OpenSearch Serverless, which can incur costs even if you're not using it. If you're just testing this out, make sure to turn off the OpenSearch Serverless instance when you're done to avoid getting a large AWS bill.
+
+To integrate a Bedrock knowledge base with your conversation route in a React application, first create an Amazon Bedrock knowledge base in the AWS console, CLI, or with CDK. 
+
+Then, create a custom query and tool to interact with the knowledge base. This can be done by defining a schema for the knowledge base and creating a query that allows you to search the knowledge base. 
+
+```javascript
+const schema = {
+  knowledgeBase: {
+    query: (input) => {
+      // handler to interact with the knowledge base
+    },
+    returns: (result) => {
+      // return the result of the query
+    },
+    authorization: (allow) => {
+      // authorization rules for the query
+    },
+  },
+  chat: {
+    aiModel: "Claude 3.5 Haiku",
+    systemPrompt: `You are a helpful assistant.`,
+    tools: [
+      {
+        name: 'searchDocumentation',
+        description: 'Performs a similarity search over the documentation for ...',
+        query: (input) => {
+          // reference to the knowledgeBase query
+        },
+      },
+    ]
+  }
+}
+```
+
+Next, write an AWS AppSync resolver to connect the query to the knowledge base. You'll need to know the ID of the knowledge base you want to use. 
+
+```javascript
+export function request(ctx) {
+  const { input } = ctx.args;
+  return {
+    resourcePath: "/knowledgebases/[KNOWLEDGE_BASE_ID]/retrieve",
+    method: "POST",
+    params: {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        retrievalQuery: {
+          text: input,
+        },
+      }),
+    },
+  };
+}
+
+export function response(ctx) {
+  return JSON.stringify(ctx.result.body);
+}
+```
+
+Finally, define the data source for the knowledge base query and give it permission to call the knowledge base. This can be done in the Amplify backend file. 
+
+```javascript
+const KnowledgeBaseDataSource = {
+  // configuration for the knowledge base data source
+};
+
+KnowledgeBaseDataSource.grantPrincipal.addToPrincipalPolicy(
+  {
+    resources: [
+      `arn:aws:bedrock:[region]:[account ID]:knowledge-base/[knowledge base ID]`
+    ],
+    actions: ["bedrock:Retrieve"],
+  },
+);
+```

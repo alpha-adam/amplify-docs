@@ -1,0 +1,259 @@
+After a user has finished signup, they can proceed to sign in. Amplify Auth signin flows can be multi-step processes. The required steps are determined by the configuration you provided when you define your auth resources. 
+
+Depending on the configuration, you may need to call various APIs to finish authenticating a user's signin attempt. To identify the next step in a signin flow, inspect the nextStep parameter in the signin result.
+
+When called successfully, the signin APIs will return an AuthSignInResult. Inspect the nextStep property in the result to see if additional signin steps are required.
+
+The nextStep property is of type object that contains a property called signInStep. The signInStep can be one of the following: 
+- CONFIRM_SIGN_IN_WITH_SMS_CODE: Amplify Auth has sent the user a random code over SMS and is waiting for the user to verify that code.
+- CONFIRM_SIGN_IN_WITH_TOTP_CODE: Amplify Auth is waiting for the user to enter the TOTP code from their associated authenticator app during set up.
+- CONFIRM_SIGN_IN_WITH_EMAIL_CODE: Amplify Auth has sent the user a random code to their email address and is waiting for the user to verify that code.
+- CONFIRM_SIGN_IN_WITH_PASSWORD: The user must provide their password as the first factor authentication method.
+- CONTINUE_SIGN_IN_WITH_MFA_SELECTION: The user must select the MFA method to use.
+- CONTINUE_SIGN_IN_WITH_EMAIL_SETUP: The user must provide an email address to complete the sign in process.
+- CONTINUE_SIGN_IN_WITH_TOTP_SETUP: The user must provide a TOTP code to complete the sign in process.
+- CONTINUE_SIGN_IN_WITH_MFA_SETUP_SELECTION: The user must select the MFA method to setup.
+- CONTINUE_SIGN_IN_WITH_FIRST_FACTOR_SELECTION: The user must select an authentication factor to use.
+- CONFIRM_SIGN_IN_WITH_CUSTOM_CHALLENGE: Amplify Auth is awaiting completion of a custom authentication challenge.
+- CONFIRM_SIGN_IN_WITH_NEW_PASSWORD: Amplify Auth requires the user choose a new password they proceeding with the sign in.
+- RESET_PASSWORD: Amplify Auth requires that the user reset their password before proceeding.
+- CONFIRM_SIGN_UP: Amplify Auth requires that the user confirm their email or phone number before proceeding.
+- DONE: The sign-in flow is complete, which means the user is successfully authenticated.
+
+To confirm sign-in with SMS MFA, you need to prompt the user to enter the code and then pass the value to the confirmSignIn API.
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+async function confirmSignInWithSmsMfa(code) {
+  try {
+    const result = await withSSRContext({ req: {} }).Auth.confirmSignIn({
+      challengeResponse: code,
+    });
+    if (result.isSignedIn) {
+      console.log('Confirm sign in succeeded');
+    } else {
+      console.log('Confirm sign in not complete');
+      console.log('Next step:', result.nextStep);
+    }
+  } catch (error) {
+    console.log('Confirm sign in failed:', error);
+  }
+}
+```
+
+To confirm sign-in with TOTP MFA, you need to prompt the user to enter the TOTP code and then pass the value to the confirmSignIn API.
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+async function confirmSignInWithTotpMfa(code) {
+  try {
+    const result = await withSSRContext({ req: {} }).Auth.confirmSignIn({
+      challengeResponse: code,
+    });
+    if (result.isSignedIn) {
+      console.log('Confirm sign in succeeded');
+    } else {
+      console.log('Confirm sign in not complete');
+      console.log('Next step:', result.nextStep);
+    }
+  } catch (error) {
+    console.log('Confirm sign in failed:', error);
+  }
+}
+```
+
+To confirm sign-in with Email MFA, you need to prompt the user to enter the code and then pass the value to the confirmSignIn API.
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+async function confirmSignInWithEmailMfa(code) {
+  try {
+    const result = await withSSRContext({ req: {} }).Auth.confirmSignIn({
+      challengeResponse: code,
+    });
+    if (result.isSignedIn) {
+      console.log('Confirm sign in succeeded');
+    } else {
+      console.log('Confirm sign in not complete');
+      console.log('Next step:', result.nextStep);
+    }
+  } catch (error) {
+    console.log('Confirm sign in failed:', error);
+  }
+}
+```
+
+To continue sign-in with MFA selection, you need to prompt the user to select the MFA method and then pass the selected method to the confirmSignIn API.
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+async function continueSignInWithMfaSelection(mfaMethod) {
+  try {
+    const result = await withSSRContext({ req: {} }).Auth.confirmSignIn({
+      challengeResponse: mfaMethod,
+    });
+    if (result.isSignedIn) {
+      console.log('Confirm sign in succeeded');
+    } else {
+      console.log('Confirm sign in not complete');
+      console.log('Next step:', result.nextStep);
+    }
+  } catch (error) {
+    console.log('Confirm sign in failed:', error);
+  }
+}
+```
+
+To continue sign-in with Email setup, you need to prompt the user to enter the email address and then pass the email address to the confirmSignIn API.
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+async function continueSignInWithEmailSetup(email) {
+  try {
+    const result = await withSSRContext({ req: {} }).Auth.confirmSignIn({
+      challengeResponse: email,
+    });
+    if (result.isSignedIn) {
+      console.log('Confirm sign in succeeded');
+    } else {
+      console.log('Confirm sign in not complete');
+      console.log('Next step:', result.nextStep);
+    }
+  } catch (error) {
+    console.log('Confirm sign in failed:', error);
+  }
+}
+```
+
+To continue sign-in with TOTP setup, you need to prompt the user to enter the TOTP code and then pass the TOTP code to the confirmSignIn API.
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+async function continueSignInWithTotpSetup(code) {
+  try {
+    const result = await withSSRContext({ req: {} }).Auth.confirmSignIn({
+      challengeResponse: code,
+    });
+    if (result.isSignedIn) {
+      console.log('Confirm sign in succeeded');
+    } else {
+      console.log('Confirm sign in not complete');
+      console.log('Next step:', result.nextStep);
+    }
+  } catch (error) {
+    console.log('Confirm sign in failed:', error);
+  }
+}
+```
+
+To confirm sign-in with a custom challenge, you need to prompt the user to enter the custom challenge answer and then pass the answer to the confirmSignIn API.
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+async function confirmSignInWithCustomChallenge(answer) {
+  try {
+    const result = await withSSRContext({ req: {} }).Auth.confirmSignIn({
+      challengeResponse: answer,
+    });
+    if (result.isSignedIn) {
+      console.log('Confirm sign in succeeded');
+    } else {
+      console.log('Confirm sign in not complete');
+      console.log('Next step:', result.nextStep);
+    }
+  } catch (error) {
+    console.log('Confirm sign in failed:', error);
+  }
+}
+```
+
+To confirm sign-in with a new password, you need to prompt the user to enter the new password and then pass the new password to the confirmSignIn API.
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+async function confirmSignInWithNewPassword(password) {
+  try {
+    const result = await withSSRContext({ req: {} }).Auth.confirmSignIn({
+      challengeResponse: password,
+    });
+    if (result.isSignedIn) {
+      console.log('Confirm sign in succeeded');
+    } else {
+      console.log('Confirm sign in not complete');
+      console.log('Next step:', result.nextStep);
+    }
+  } catch (error) {
+    console.log('Confirm sign in failed:', error);
+  }
+}
+```
+
+To reset the password, you need to invoke the resetPassword API and follow the reset password flow.
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+async function resetPassword(username) {
+  try {
+    const result = await withSSRContext({ req: {} }).Auth.resetPassword(username);
+    console.log('Reset password succeeded');
+    console.log('Next step:', result.nextStep);
+  } catch (error) {
+    console.log('Reset password failed:', error);
+  }
+}
+```
+
+To confirm sign-up, you need to invoke the confirmSignUp API and follow the confirm sign-up flow.
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+async function confirmSignUp(username, confirmationCode) {
+  try {
+    const result = await withSSRContext({ req: {} }).Auth.confirmSignUp(username, confirmationCode);
+    console.log('Confirm sign up succeeded');
+  } catch (error) {
+    console.log('Confirm sign up failed:', error);
+  }
+}
+```
+
+The sign-in flow is complete when the next step is DONE, which means the user is successfully authenticated. As a convenience, the SignInResult also provides the isSignedIn property, which will be true if the next step is DONE. 
+
+```javascript
+import Amplify from 'aws-amplify';
+import { withSSRContext } from 'aws-amplify';
+
+async function getSignInResult() {
+  try {
+    const result = await withSSRContext({ req: {} }).Auth.currentAuthenticatedUser();
+    if (result.isSignedIn) {
+      console.log('Sign in is complete');
+    } else {
+      console.log('Sign in is not complete');
+      console.log('Next step:', result.nextStep);
+    }
+  } catch (error) {
+    console.log('Sign in failed:', error);
+  }
+}
+```

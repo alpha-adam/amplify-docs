@@ -1,0 +1,52 @@
+Identifiers for models can be defined using the `.identifier()` method. If this method is not used, a field named `id` of type `ID` will be automatically generated.
+
+For example, consider a `Todo` model with a `content` field and a `completed` field. Without defining an identifier, the model will automatically have an `id` field:
+```javascript
+const schema = {
+  Todo: {
+    content: 'string',
+    completed: 'boolean',
+  }
+}
+```
+You can use Amplify Data to define single-field and composite identifiers. A single-field identifier can be defined by passing the name of the field to the `.identifier()` method. For example:
+```javascript
+const schema = {
+  Todo: {
+    todoId: { type: 'id', required: true },
+    content: 'string',
+    completed: 'boolean',
+  },
+  identifiers: ['todoId']
+}
+```
+This will create a `Todo` model with a `todoId` field as the identifier.
+
+To create a new `Todo` item with a custom identifier:
+```javascript
+const client = /* your Amplify client */;
+const todo = await client.models.Todo.create({ todoId: 'MyUniqueTodoId', content: 'Buy Milk', completed: false });
+console.log(`New Todo created: ${todo.todoId}`);
+```
+A composite identifier can be defined by passing an array of field names to the `.identifier()` method. For example:
+```javascript
+const schema = {
+  StoreBranch: {
+    geoId: { type: 'id', required: true },
+    name: { type: 'string', required: true },
+    country: 'string',
+    state: 'string',
+    city: 'string',
+    zipCode: 'string',
+    streetAddress: 'string',
+  },
+  identifiers: ['geoId', 'name']
+}
+```
+This will create a `StoreBranch` model with a composite identifier consisting of the `geoId` and `name` fields.
+
+To retrieve a `StoreBranch` item with a composite identifier:
+```javascript
+const client = /* your Amplify client */;
+const branch = await client.models.StoreBranch.get({ geoId: '123', name: 'Downtown' });
+```

@@ -1,0 +1,32 @@
+A foundation model is a large, general-purpose machine learning model that has been pre-trained on a vast amount of data. These models are trained in an unsupervised or self-supervised manner, meaning they learn patterns and representations from the unlabeled training data without being given specific instructions or labels.
+
+Foundation models are useful because they are general-purpose and you don't need to train the models yourself, but are powerful enough to take on a range of applications. They are inherently stateless, taking input in the form of text or images and generating text or images, and are also inherently non-deterministic, meaning providing the same input can generate different output.
+
+To use foundation models on Bedrock, you need to request access to the models in the AWS console. Be sure to check the region you are building your Amplify app in, as not all models are available in all regions.
+
+Each foundation model in Amazon Bedrock has its own pricing and throughput limits for on-demand use. On-demand use is serverless, and you only pay for what you use. The cost for using foundation models is calculated by token usage, where a token refers to chunks of data that were sent as input and how much data was generated.
+
+The Amplify AI Kit uses Bedrock's Converse API to leverage a unified API across models. The supported models for Amplify AI kit include AI21 Labs, Amazon, Anthropic, Cohere, Meta, and Mistral AI. Each model has its own strengths and weaknesses, and you should try different models for different use-cases to find the right fit.
+
+When choosing a model, consider the context window, latency, cost, and use-case fit. The context window refers to the amount of information you can send to the model, and is defined by the number of tokens it can receive. Smaller models tend to have a lower latency than larger models, but can also sometimes be less powerful.
+
+To use different models in your Amplify AI backend, update the aiModel attribute in your schema using the a.ai.model() function. This function gives you access to friendly names for the Bedrock models, and can be used to define different models for different functionality in your application.
+
+For example, to use the Claude 3.5 Haiku model, you can define your schema like this:
+```javascript
+const schema = a.schema({
+  summarizer: a.generation({
+    aiModel: a.ai.model("Claude 3.5 Haiku")
+  })
+})
+```
+Alternatively, you can use the model ID, which can be found in the Bedrock console or documentation:
+```javascript
+const schema = a.schema({
+  summarizer: a.generation({
+    aiModel: {
+      resourcePath: 'meta.llama3-1-405b-instruct-v1:0'
+    }
+  })
+})
+```

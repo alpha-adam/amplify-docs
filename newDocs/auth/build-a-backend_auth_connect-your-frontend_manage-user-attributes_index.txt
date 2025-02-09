@@ -1,0 +1,128 @@
+User attributes such as email address and phone number help identify individual users. Defining the user attributes included in user profiles makes user data easy to manage at scale. This information helps personalize user journeys, tailor content, provide intuitive account control, and more. You can capture information upfront during sign-up or enable customers to update their profile after sign-up.
+
+### Pass User Attributes During Sign-up
+
+You can create user attributes during sign-up or when the user is authenticated. To do this as part of sign-up, you can pass them in the `userAttributes` object of the `signUp` API. For example, in a React application using AWS Amplify:
+```typescript
+import { signUp } from 'aws-amplify/auth';
+
+await signUp({
+  username: 'jdoe',
+  password: 'mysecurerandompassword#123',
+  options: {
+    userAttributes: {
+      email: 'me@domain.com',
+      phone_number: '+12128601234', 
+      given_name: 'Jane',
+      family_name: 'Doe',
+      nickname: 'Jane',
+    },
+  },
+});
+```
+### Configure Custom User Attributes During Sign-up
+
+Custom attributes can be passed in with the `userAttributes` option of the `signUp` API. For example:
+```typescript
+import { signUp } from 'aws-amplify/auth';
+
+await signUp({
+  username: 'john.doe@example.com',
+  password: 'hunter2',
+  options: {
+    userAttributes: {
+      'custom:display_name': 'john_doe123',
+    }
+  }
+});
+```
+### Retrieve User Attributes
+
+You can retrieve user attributes for your users to read in their profile using the `fetchUserAttributes` API. For example:
+```typescript
+import { fetchUserAttributes } from 'aws-amplify/auth';
+
+await fetchUserAttributes();
+```
+### Update User Attribute
+
+You can use the `updateUserAttribute` API to create or update existing user attributes. For example:
+```typescript
+import { updateUserAttribute } from 'aws-amplify/auth';
+
+async function handleUpdateUserAttribute(attributeKey, value) {
+  try {
+    const output = await updateUserAttribute({
+      userAttribute: {
+        attributeKey,
+        value
+      }
+    });
+    // handle next steps
+  } catch (error) {
+    console.log(error);
+  }
+}
+```
+Note that if you change an attribute that requires confirmation, the user will receive a confirmation code. This code can be used with the `confirmUserAttribute` API to confirm the change.
+
+### Update User Attributes
+
+You can use the `updateUserAttributes` API to create or update multiple existing user attributes. For example:
+```typescript
+import { updateUserAttributes } from 'aws-amplify/auth';
+
+await updateUserAttributes({
+  userAttributes: {
+    email: 'me@domain.com',
+    name: 'Jon Doe',
+  },
+});
+```
+### Verify User Attribute
+
+Some attributes require confirmation for the attribute update to complete. If the attribute needs to be confirmed, part of the result of the `updateUserAttribute` or `updateUserAttributes` APIs will indicate that a confirmation code was sent. When the user gets the confirmation code, you can present a UI to the user to enter the code and invoke the `confirmUserAttribute` API with their input:
+```typescript
+import { confirmUserAttribute } from 'aws-amplify/auth';
+
+async function handleConfirmUserAttribute({ userAttributeKey, confirmationCode }) {
+  try {
+    await confirmUserAttribute({ userAttributeKey, confirmationCode });
+  } catch (error) {
+    console.log(error);
+  }
+}
+```
+### Send User Attribute Verification Code
+
+If an attribute needs to be verified while the user is authenticated, invoke the `sendUserAttributeVerificationCode` API:
+```typescript
+import { sendUserAttributeVerificationCode } from 'aws-amplify/auth';
+
+async function handleSendUserAttributeVerificationCode(key) {
+  try {
+    await sendUserAttributeVerificationCode({
+      userAttributeKey: key
+    });
+  } catch (error) {
+    console.log(error);
+  }
+}
+```
+### Delete User Attributes
+
+The `deleteUserAttributes` API allows deleting one or more user attributes:
+```typescript
+import { deleteUserAttributes } from 'aws-amplify/auth';
+
+async function handleDeleteUserAttributes(keys) {
+  try {
+    await deleteUserAttributes({
+      userAttributeKeys: ['custom:my_custom_attribute',...keys]
+    });
+  } catch (error) {
+    console.log(error);
+  }
+}
+```
+Next steps include learning how to set up password change and recovery, and learning how to set up custom attributes.

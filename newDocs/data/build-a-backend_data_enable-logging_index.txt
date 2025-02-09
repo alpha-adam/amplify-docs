@@ -1,0 +1,31 @@
+To enable logging for your Amplify data resource, you can use Amazon CloudWatch logs. You can learn more about the logging and monitoring capabilities for your GraphQL API in the AWS AppSync documentation.
+
+To enable default logging configuration, you can set the logging property to true in the call to defineData. For example:
+```
+const data = defineData({
+  logging: true
+});
+```
+This applies the default configuration, which includes:
+- Excluding verbose content from logs
+- No field-level logging
+- Retaining logs for 1 week
+
+You can customize individual configuration values by providing a DataLogConfig object. For example:
+```
+const data = defineData({
+  logging: {
+    excludeVerboseContent: false,
+    fieldLogLevel: 'all',
+    retention: '1 month'
+  }
+});
+```
+Be careful when setting excludeVerboseContent to false, as this can log full queries and user parameters, which may contain sensitive data. It's recommended to limit CloudWatch log access to only those roles or users who genuinely require it.
+
+The logging configuration properties include:
+- logging: enables default logging or overrides default fields with a DataLogConfig object
+- DataLogConfig fields:
+  - excludeVerboseContent: defaults to true, when false logs can contain request-level logs
+  - fieldLogLevel: defaults to 'none', supported values include 'none', 'error', 'info', 'debug', and 'all'
+  - retention: defaults to '1 week', supported values include '1 day', '3 days', '5 days', '1 week', '2 weeks', '1 month', and others up to 'infinite'

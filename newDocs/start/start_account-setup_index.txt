@@ -1,0 +1,29 @@
+To configure AWS for local development with Amplify, you need to set up temporary credentials with IAM Identity Center and AWS Organizations. This will enable you to define single-sign-on (SSO), users, groups, permission sets, and more for your team.
+
+If you already have an AWS account and profile configured locally, you don't need to follow this guide. Just add the AmplifyBackendDeployFullAccess IAM role to your configured AWS profile.
+
+To set up Identity Center, follow these steps:
+
+1. Create a user with Amplify permissions: Sign in to the AWS Console, enable IAM Identity Center, and create a user with the necessary permissions.
+2. Create a password for the user: Reset the password for the user and choose a password.
+3. Install the AWS CLI: Download and install the AWS CLI on your local machine.
+4. Set up a local AWS profile: Configure an AWS profile that uses the SSO user.
+5. Bootstrap your AWS account: Use the AWS profile with AWS Amplify and complete the bootstrapping process.
+
+The bootstrapping process provisions resources for the AWS CDK, including an Amazon S3 bucket and IAM roles. This is a one-time setup that allows you to deploy AWS CDK apps into an AWS environment.
+
+To complete the bootstrapping process, sign in to the AWS Management Console as the account root user or a user with AdministratorAccess permissions. Then, return to the terminal and create a new Amplify sandbox environment using the configured AWS profile.
+
+Here's an example of how to create a user with Amplify permissions using the AWS CLI:
+```bash
+aws sso-admin create-user --identity-store-id <identity-store-id> --user-name amplify-admin --display-name 'Amplify Admin' --name Formatted=string,FamilyName=Admin,GivenName=Amplify --emails '{"Type":"Work","Value":"<email-address>"}'
+```
+And here's an example of how to configure an AWS profile that uses the SSO user:
+```console
+aws configure sso
+SSO session name (Recommended): amplify-admin
+SSO start URL: <START SESSION URL>
+SSO region: <your-region>
+SSO registration scopes [sso:account:access]: 
+```
+Note that you need to replace `<identity-store-id>`, `<email-address>`, `<START SESSION URL>`, and `<your-region>` with the actual values for your AWS account.

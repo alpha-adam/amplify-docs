@@ -1,0 +1,45 @@
+Amplify Auth does not support signing in with only a username and password. However, it can be configured to enable usernames for display purposes. Amazon Cognito offers two ways to provision login mechanisms: username attributes and alias attributes.
+
+Username attributes allow you to customize which attribute can be used as the username, such as allowing users to sign in with an email or phone number instead of a username. Alias attributes allow you to specify which attributes can be used with sign-in in addition to a username.
+
+In Amazon Cognito, usernames are immutable, meaning that after the initial sign-up, users cannot change their username later. This may be undesirable in some applications, which can motivate the use of alias attributes. Alias attributes allow you to define a mutable preferred username in addition to an immutable username.
+
+Amplify Auth uses username attributes to configure Cognito to accept an email or phone number as the username. Users will then need to verify their ownership of the specified email or phone number to confirm their account.
+
+You can also configure your auth resource to accept a preferred username to be used as the display name. This is not a username the user will be able to sign in with, but it can be used to mask their personal information such as their email or phone number when displaying publicly.
+
+To configure a preferred username, you can define your auth resource in a file such as `amplify/auth/resource.ts` with the following code:
+```typescript
+import { defineAuth } from '@aws-amplify/backend';
+
+export const auth = defineAuth({
+  loginWith: {
+    email: true,
+  },
+  userAttributes: {
+    preferredUsername: {
+      mutable: true,
+      required: false
+    }
+  }
+});
+```
+This will allow users to enter a preferred username when they sign up, which can be used as their display name.
+
+If you want to override the default behavior and allow your users to sign up with an immutable username, you can use CDK to modify your auth resource's configuration directly. You can do this by adding the following code to your `amplify/backend.ts` file:
+```typescript
+import { defineBackend } from "@aws-amplify/backend"
+import { auth } from "./auth/resource"
+import { data } from "./data/resource"
+
+const backend = defineBackend({
+  auth,
+  data,
+})
+
+const { cfnUserPool } = backend.auth.resources.cfnResources
+cfnUserPool.usernameAttributes = []
+```
+This will allow users to sign up with a username that cannot be changed later.
+
+To learn more about configuring email sign-up or phone sign-up, you can visit the relevant documentation pages.

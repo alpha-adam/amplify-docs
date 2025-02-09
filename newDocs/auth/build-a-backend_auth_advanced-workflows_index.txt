@@ -1,0 +1,118 @@
+## Advanced Workflows
+
+Advanced workflows in the Amplify auth category include subscribing to events, identity pool federation, auth-related Lambda triggers, and working with AWS service objects.
+
+### Identity Pool Federation
+
+Identity pool federation allows users to sign in using a well-known external identity provider (IdP), such as Login with Amazon, Facebook, Google, or any other OpenID Connect (OIDC)-compatible IdP. They can receive an authentication token and then exchange that token for temporary security credentials in AWS that map to an IAM role with permissions to use the resources in your AWS account.
+
+To use identity pool federation, you don't need to create custom sign-in code or manage your own user identities. Instead, users of your app can sign in using an external IdP, and then you can use the `federateToIdentityPool` API to get AWS credentials directly from Cognito Federated Identities.
+
+### Federate to Identity Pool
+
+You can use the `federateToIdentityPool` API to get AWS credentials directly from Cognito Federated Identities. If you have logged in with `Auth.signIn`, you cannot call `federateToIdentityPool` as Amplify will perform this federation automatically for you in the background. In general, you should only call `Auth.federatedSignIn` when using OAuth flows.
+
+Here is an example of how to use `federateToIdentityPool` in React:
+```javascript
+import { Auth } from 'aws-amplify';
+
+const federateToIdentityPool = async (token, provider) => {
+  try {
+    const session = await Auth.federateToIdentityPool(token, provider);
+    console.log(session);
+  } catch (error) {
+    console.error(error);
+  }
+};
+```
+
+### Retrieve Session
+
+After federated login, you can retrieve the session using the `Auth.fetchAuthSession` API.
+
+### Token Refresh
+
+Automatic authentication token refresh is not supported when federated. By default, Amplify will not automatically refresh the tokens from the federated providers. You will need to handle the token refresh logic and provide the new token to the `federateToIdentityPool` API.
+
+### Clear Session
+
+You can clear the federated session using the `Auth.clearFederationToIdentityPool` API.
+
+### Provide Custom Identity ID
+
+You can provide a custom identity ID to the `federateToIdentityPool` API. This is useful when you want to use the same identity ID across multiple devices.
+
+### Subscribing to Events
+
+You can take specific actions when users sign-in or sign-out by subscribing to authentication events in your app.
+
+### Lambda Triggers
+
+With the triggers property of `defineAuth` and `defineFunction` from the new Functions implementation, you can define Lambda Triggers for your Cognito User Pool. These enable you to add custom functionality to your registration and authentication flows.
+
+### Pre Authentication and Pre Sign-up Lambda Triggers
+
+If you have a Pre Authentication Lambda trigger enabled, you can pass `clientMetadata` as an option for `signIn`. This metadata can be used to implement additional validations around authentication.
+
+### Passing Metadata to Other Lambda Triggers
+
+Many Cognito Lambda Triggers also accept unsanitized key-value pairs in the form of a `clientMetadata` attribute. This attribute can be specified for various Auth APIs which result in Cognito Lambda Trigger execution.
+
+### Working with AWS Service Objects
+
+You can use AWS Service Interface Objects to work with AWS Services in an authenticated state. You can call methods on any AWS Service interface object by passing your credentials from Amplify `fetchAuthSession` to the service call constructor.
+
+Here is an example of how to use AWS Service Interface Objects in React:
+```javascript
+import { Auth } from 'aws-amplify';
+import { Route53 } from 'aws-sdk/clients/route53';
+
+const changeResourceRecordSets = async () => {
+  try {
+    const { credentials } = await Auth.fetchAuthSession();
+    const route53 = new Route53({
+      apiVersion: '2013-04-01',
+      credentials,
+    });
+    // More code working with route53 object
+  } catch (error) {
+    console.error(error);
+  }
+};
+```
+
+### Custom Token Providers
+
+Create a custom Auth token provider for situations where you would like to provide your own tokens for a service. For example, using OIDC Auth with AppSync. You must supply the token provider to Amplify via the `Amplify.configure` method call.
+
+Here is an example of how to create a custom token provider in React:
+```javascript
+import { Amplify } from 'aws-amplify';
+import { TokenProvider } from 'aws-amplify/auth';
+
+const myTokenProvider: TokenProvider = {
+  async getTokens({ forceRefresh } = {}) {
+    if (forceRefresh) {
+      // Try to obtain new tokens if possible
+    }
+
+    const accessTokenString = '<insert JWT from provider>';
+    const idTokenString = '<insert JWT from provider>';
+
+    return {
+      accessToken: {
+        // token details
+      },
+      idToken: {
+        // token details
+      },
+    };
+  },
+};
+
+Amplify.configure(awsconfig, {
+  Auth: {
+    tokenProvider: myTokenProvider,
+  },
+});
+```

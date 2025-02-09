@@ -1,0 +1,107 @@
+To use existing Amazon Location Services resources with your Amplify backend or frontend application, you need to surface backend resource outputs to the `amplify_outputs.json` file. This can be achieved by using the `addOutput` method.
+
+For example, you can add your existing Amazon Location Service resources to your Amplify backend configuration like this:
+```javascript
+const backend = {
+  geo: {
+    awsRegion: "your-aws-region",
+    maps: {
+      items: {
+        "your-friendly-map-name": {
+          name: "your-map-name",
+          style: "your-map-style",
+        },
+      },
+      default: "your-friendly-map-name",
+    },
+  },
+}
+```
+Before you can use your existing Amazon Location Service resources with Amplify Geo, you need to ensure your role has the right authorization permissions through Cognito. There are two roles created by Cognito: an "authenticated role" that grants signed-in-user-level access and an "unauthenticated role" that allows unauthenticated access to resources. You need to attach the necessary policies for the appropriate resources and roles.
+
+The policies should include the following actions:
+- `geo:GetMapTile`
+- `geo:GetMapSprites`
+- `geo:GetMapGlyphs`
+- `geo:GetMapStyleDescriptor`
+- `geo:SearchPlaceIndexForPosition`
+- `geo:SearchPlaceIndexForText`
+- `geo:GetGeofence`
+- `geo:PutGeofence`
+- `geo:BatchPutGeofence`
+- `geo:BatchDeleteGeofence`
+- `geo:ListGeofences`
+
+These policies should be attached to the Amazon Location Service resources, including maps, place indices, and geofence collections.
+
+Here is an example of what the policy might look like:
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "GetTiles",
+      "Effect": "Allow",
+      "Action": [
+        "geo:GetMapTile",
+        "geo:GetMapSprites",
+        "geo:GetMapGlyphs",
+        "geo:GetMapStyleDescriptor"
+      ],
+      "Resource": "arn:aws:geo:your-geo-region:your-account-id:map/your-map-name"
+    },
+    {
+      "Sid": "Search",
+      "Effect": "Allow",
+      "Action": [
+        "geo:SearchPlaceIndexForPosition",
+        "geo:SearchPlaceIndexForText"
+      ],
+      "Resource": "arn:aws:geo:your-geo-region:your-account-id:place-index/your-index-name"
+    },
+    {
+      "Sid": "Geofence",
+      "Effect": "Allow",
+      "Action": [
+        "geo:GetGeofence",
+        "geo:PutGeofence",
+        "geo:BatchPutGeofence",
+        "geo:BatchDeleteGeofence",
+        "geo:ListGeofences",
+      ],
+      "Resource": "arn:aws:geo:your-geo-region:your-account-id:geofence-collection/your-collection-name"
+    }
+  ]
+}
+```
+To configure the client library directly, you can import and configure the generated `amplify_outputs.json` file, then manually configure Amplify Geo. Here is an example of how to do this:
+```javascript
+import { Amplify } from 'aws-amplify';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure(outputs);
+Amplify.configure({
+  Geo: {
+    LocationService: {
+      maps: {
+        items: {
+          "your-map-name": {
+            style: 'VectorEsriStreets'
+          }
+        },
+        default: 'your-preferred-default-map'
+      },
+      searchIndices: {
+        items: ['your-geo-index'],
+        default: 'your-default-index'
+      },
+      geofenceCollections: {
+        items: ['your-geo-collection'],
+        default: 'your-default-collection'
+      },
+      region: 'your-geo-region'
+    }
+  }
+});
+```
+After configuring Amplify Geo, you can proceed to display a map or add location search to your app.

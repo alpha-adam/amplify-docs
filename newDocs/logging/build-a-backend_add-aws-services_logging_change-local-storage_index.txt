@@ -1,0 +1,33 @@
+When using the Amplify Logger in a React application, all logged messages are saved locally on the user's device first before sending them to CloudWatch. This section explains how to configure the maximum amount of local logs that are stored. This can be helpful in determining how much logs are stored locally depending on your network availability and offline use cases.
+
+To change the local storage maximum size, you can update the `localStoreMaxSizeInMB` field in the Amplify configuration. For example, to set the local storage size to 2 MB, you can use the following configuration:
+```json
+{
+  "awsCloudWatchLoggingPlugin": {
+    "enable": true,
+    "logGroupName": "<log-group-name>",
+    "region": "<region>",
+    "localStoreMaxSizeInMB": 2,
+    "flushIntervalInSeconds": 60,
+    "loggingConstraints": {
+      "defaultLogLevel": "WARN"
+    }
+  }
+}
+```
+In a React application, you would typically configure Amplify using the `Amplify.configure` method. To set the local storage size, you would create an `AWSCloudWatchLoggingPluginConfiguration` object and pass it to the `Amplify.addPlugin` method. Here is an example of how you might do this in React:
+```jsx
+import Amplify from 'aws-amplify';
+import { AWSCloudWatchLoggingPlugin } from 'aws-amplify';
+
+const loggingConfiguration = {
+  logGroupName: '<log-group-name>',
+  region: '<region>',
+  localStoreMaxSizeInMB: 2,
+};
+
+const loggingPlugin = new AWSCloudWatchLoggingPlugin(loggingConfiguration);
+
+Amplify.addPlugin(loggingPlugin);
+```
+Note that you will need to replace `<log-group-name>` and `<region>` with the actual values for your AWS CloudWatch log group and region.

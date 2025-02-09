@@ -1,0 +1,9 @@
+Amplify Gen 2 collects anonymous telemetry data about general usage of the Command Line Interface (CLI). This means that when you use the Amplify CLI, some data about how you use it is sent back to Amplify. However, participating in this telemetry program is optional, and you can choose to opt out if you prefer.
+
+If you opt out, none of the Amplify apps you work with on that computer will send telemetry data. To opt out, you can run the command `npx ampx configure telemetry disable` from the root of your Amplify app. This will store your decision to opt out for your user, so you won't have to do it again for each app.
+
+If you change your mind and want to opt back in, you can do so by running the command `npx ampx configure telemetry enable` from the root of your Amplify app. 
+
+In some cases, you might only want to opt out of telemetry for a single session. To do this, you can define an environment variable `AMPLIFY_DISABLE_TELEMETRY` and set it to 1. This will disable telemetry for that one session, without changing your overall preference. 
+
+Note that telemetry collection is not enabled or disabled based on the React code itself, but rather through the use of the Amplify CLI and the commands provided above.

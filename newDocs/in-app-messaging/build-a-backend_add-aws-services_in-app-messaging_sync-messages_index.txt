@@ -1,0 +1,9 @@
+To trigger in-app messages, you need to sync them from your In-App Messaging campaigns to your users' devices. These messages are then displayed when a matching event is triggered, such as an analytics or In-App Messaging event. You have control over when and how often this sync is performed.
+
+To sync messages in a React application, use the `syncMessages` function from the `aws-amplify/in-app-messaging` module. Here's an example:
+```js
+import { syncMessages } from 'aws-amplify/in-app-messaging';
+
+await syncMessages();
+```
+Note that syncing messages will always overwrite any existing messages on the user's device, ensuring they are up to date after each sync.

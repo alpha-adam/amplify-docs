@@ -1,0 +1,48 @@
+Are you using Google Maps or another similar Map Provider and would like to switch over to using Amplify Geo or Amazon Location Service? This tutorial will show you how to take your existing Google Maps APIs and switch over to using Amplify Geo.
+
+To get started with Amplify Geo, you should be familiar with the Google Maps JavaScript API and with front-end web development concepts including HTML, CSS, and JavaScript. 
+You will need Amplify Geo and a text editor to complete this tutorial.
+
+A key difference to notice between using Amplify Geo and Google Maps is the convention for specifying coordinates. With Google Maps Platform, the convention is [lat, lng], but with Amplify Geo, the order is swapped to be [lng, lat]. This was done to match the geojson spec which is also used by MapLibre.
+
+When using Google Maps Platform or other similar services like Mapbox, you will first be prompted to go to the Google Cloud Console to set up APIs and create an API key. With Amplify Geo, you will instead setup Amplify Auth and the MapView component will read the auth configuration from the amplify_outputs.json file. Behind the scenes, Amplify Auth uses Amazon Cognito to set up client credentials with access to Location Service and Geo will use those credentials when making any location-related API calls.
+
+To create a webpage with a map using Amplify Geo, you can start by creating a new HTML file and adding the necessary scripts and styles to import MapLibre GL JS and CSS, and Amplify JS. You will also need to create a div element with an id of 'map' that will be the map's container.
+
+To display a map, you can use the createMap function from AmplifyMapLibre, passing in the container, center coordinates, and zoom level as options. For example:
+```js
+const map = await createMap({
+  container: document.getElementById('map'), 
+  center: [-122.4783, 37.8199], 
+  zoom: 13 
+});
+```
+To display a marker, you can use the Marker class from maplibregl, setting the lngLat and adding it to the map. For example:
+```js
+const marker = new maplibregl.Marker().setLngLat([-122.4783, 37.8199]).addTo(map);
+```
+To add a popup, you can use the Popup class from maplibregl, setting the HTML content and adding it to the marker. For example:
+```js
+const popup = new maplibregl.Popup().setHTML(
+  `<h3>Golden Gate Bridge</h3><p>The hex code for the bridge's color is: #c0362c</p>`
+);
+
+const marker = new maplibregl.Marker()
+ .setLngLat([-122.4783, 37.8199])
+ .setPopup(popup)
+ .addTo(map);
+```
+To add a search component, you can use the createAmplifyGeocoder function from AmplifyMapLibre, adding the geocoder control to the map. For example:
+```js
+const geocoder = createAmplifyGeocoder();
+map.addControl(geocoder);
+```
+To add a standalone search component, you can create a div element and append the geocoder control to it. For example:
+```js
+const el = document.createElement("div");
+el.setAttribute("id", "search");
+document.body.appendChild(el);
+
+const geocoder = createAmplifyGeocoder();
+document.getElementById("search").appendChild(geocoder.onAdd());
+```

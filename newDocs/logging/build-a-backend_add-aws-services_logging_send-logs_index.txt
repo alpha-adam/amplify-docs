@@ -1,0 +1,31 @@
+With the Amplify Logger, you can send logs to Amazon CloudWatch from errors that are caught by the Amplify library or by adding your own custom log messages. You can also customize which levels of log messages to send to CloudWatch.
+
+When logging messages, you should follow best security practices, including validating log messages and ensuring they don't contain personally identifiable information and/or sensitive data.
+
+You can log messages using the Amplify logger to a specific namespace to help you group logs that are similar when they are sent to CloudWatch. To accomplish this, get an instance of the Logger and specify a category name and/or namespace. Use the Logger instance to log messages at the desired log level. The category name and namespace values are used to tag your log messages that will appear in CloudWatch.
+
+You can also log JSON formatted log messages to leverage AWS CloudWatch query and filter supports.
+
+Here is an example in React:
+```javascript
+const logger = Amplify.Logging.logger('Authentication', 'my-namespace');
+try {
+  const result = doSomething();
+  logger.debug(`result: ${result}`);
+} catch (error) {
+  logger.error('operation failed', error);
+}
+```
+The following are existing Amplify category names that are used by default by Amplify when automatically logging errors from the library:
+* ANALYTICS
+* API
+* AUTH
+* DATASTORE
+* HUB
+* LOGGING
+* NOTIFICATIONS
+* PREDICTIONS
+* STORAGE
+* GEO
+
+Note that the Amplify category names may vary depending on the platform being used.

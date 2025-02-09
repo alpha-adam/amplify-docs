@@ -1,0 +1,17 @@
+To deploy resources into your AWS account using AWS Amplify, you need to prepare your AWS environment by bootstrapping it. This process involves setting up your AWS account and region to work with the AWS Cloud Development Kit (AWS CDK), which is used by Amplify to scaffold backend resource configurations and deployments.
+
+Bootstrapping is a necessary step before deploying a CDK stack into your AWS environment. You can learn more about bootstrapping by visiting the AWS documentation.
+
+When deploying an Amplify app, you may encounter an error message indicating that there is an issue with the CDKToolkit stack. This typically means that one or more resources within the stack has failed to create or update. To resolve this issue, you can navigate to the AWS CloudFormation console, select your CDKToolkit stack, and view the resource events to identify any problems.
+
+You can fix the issue by manually updating your CDKToolkit stack using the AWS CloudShell or by running the bootstrap command using the AWS CDK CLI from your terminal. The command to update the stack is 
+```bash
+npx aws-cdk@latest bootstrap aws://<your-aws-account-id>/<your-aws-region>
+```
+If you continue to experience issues after applying this workaround, you should file an issue in the GitHub repository for Amplify Backend.
+
+Another common error is the "Stack CDKToolkit already exists" error, which occurs when you are deploying an Amplify app for the first time and have previously bootstrapped your AWS account to work with CDK. To resolve this issue, you can also manually update your CDKToolkit stack using the AWS CloudShell or by running the bootstrap command using the AWS CDK CLI from your terminal. The command to update the stack is 
+```bash
+npx aws-cdk@latest bootstrap aws://<your-aws-account-id>/<your-aws-region>
+```
+If you continue to experience issues after applying this workaround, you should file an issue in the GitHub repository for Amplify Backend.

@@ -1,0 +1,63 @@
+To fully harness the potential of In-App Messaging, you must segment and target your In-App Messaging campaigns to specific user subsets. By identifying users with additional information, including their device demographics, location and any attributes of your choosing, you will be able to display intelligent, targeted in-app messages to the right users.
+
+To identify a user, you can use the `identifyUser` function from the `aws-amplify/in-app-messaging` library. This function takes an object with two properties: `userId` and `userProfile`. The `userId` is a unique identifier for the user, and the `userProfile` is an object that contains additional information about the user. 
+
+The `userProfile` object can have several properties, including `email`, `name`, and `plan`, which are used to store basic user information. It can also have a `customProperties` object, which can store any additional attributes of your choosing, such as hobbies or interests. 
+
+Additionally, the `userProfile` object can have a `demographic` property, which contains information about the user's device, such as the app version, locale, make, model, platform, and timezone. It can also have a `location` property, which contains information about the user's location, such as city, country, postal code, region, latitude, and longitude. 
+
+Finally, the `userProfile` object can have a `metrics` property, which can store any metrics or statistics about the user, such as the number of logins. 
+
+Here is an example of how to use the `identifyUser` function in a React application:
+```js
+import { identifyUser } from 'aws-amplify/in-app-messaging';
+
+await identifyUser({
+  userId: 'user-id',
+  userProfile: {
+    email: 'example@service.com',
+    name: 'name-of-the-user',
+    plan: 'plan-they-subscribe-to',
+    customProperties: {
+      hobbies: ['cooking', 'knitting'],
+    },
+    demographic: {
+      appVersion: '1.0',
+      locale: 'en_US',
+      make: 'Apple',
+      model: 'iPhone',
+      modelVersion: '13',
+      platform: 'iOS',
+      platformVersion: '15',
+      timezone: 'Americas/Los_Angeles'
+    },
+    location: {
+      city: 'Seattle',
+      country: 'US',
+      postalCode: '98121',
+      region: 'WA',
+      latitude: 47.6062,
+      longitude: -122.3321
+    },
+    metrics: {
+      logins: 157
+    },
+  },
+});
+```
+
+When using `identifyUser` with Amazon Pinpoint, you can also configure the `address`, `optOut`, and `userAttributes` properties under `options`. Here is an example:
+```js
+import { identifyUser } from 'aws-amplify/in-app-messaging';
+
+await identifyUser({
+  userId: 'user-id',
+  options: {
+    address: 'device-token-or-email-address',
+    optOut: 'ALL',
+    userAttributes: {
+      interests: ['soccer', 'shoes'],
+    }
+  },
+});
+```

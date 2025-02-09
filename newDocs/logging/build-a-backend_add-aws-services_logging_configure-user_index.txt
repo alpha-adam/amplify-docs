@@ -1,0 +1,67 @@
+Each Amplify authenticated user can be configured to have their own unique logging configuration. This is helpful in enabling you to debug issues more granularly for your users.
+
+To configure user log levels, you can retrieve the user ID using Amplify Auth. You can do this by using the Amplify Auth category.
+
+In React, you can retrieve the user ID by using the Amplify Auth library. 
+
+To configure user log levels, you can set different default and category log levels for an authenticated user. 
+
+Here is an example of setting different default and category log levels for an authenticated user in React:
+
+```javascript
+import Amplify from 'aws-amplify';
+import { AWSCloudWatchLoggingPlugin } from 'aws-amplify';
+
+const categoryLogLevels = {
+  "Storage": "VERBOSE",
+  "Api": "VERBOSE"
+};
+
+const userLogLevel = {
+  defaultLogLevel: "DEBUG",
+  categoryLogLevel: categoryLogLevels
+};
+
+const userLogLevels = {
+  "xyz-123": userLogLevel
+};
+
+const loggingConstraints = {
+  defaultLogLevel: "ERROR",
+  userLogLevel: userLogLevels
+};
+
+const loggingConfiguration = {
+  logGroupName: "<log-group-name>",
+  region: "<region>",
+  loggingConstraints: loggingConstraints
+};
+
+Amplify.addPlugin(new AWSCloudWatchLoggingPlugin(loggingConfiguration));
+```
+
+Alternatively, you can also configure user log levels by using a configuration file. 
+
+```json
+{
+  "awsCloudWatchLoggingPlugin": {
+    "enable": true,
+    "logGroupName": "<log-group-name>",
+    "region": "<region>",
+    "localStoreMaxSizeInMB": 1,
+    "flushIntervalInSeconds": 60,
+    "loggingConstraints": {
+      "defaultLogLevel": "ERROR",
+      "userLogLevel": {
+        "xyz-123": {
+          "defaultLogLevel": "DEBUG",
+          "categoryLogLevel": {
+            "Storage": "VERBOSE",
+            "Api": "VERBOSE"
+          }
+        }
+      }
+    }
+  }
+}
+```

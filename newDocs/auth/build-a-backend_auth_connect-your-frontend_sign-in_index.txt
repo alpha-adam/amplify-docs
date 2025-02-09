@@ -1,0 +1,78 @@
+Amplify provides a client library that enables you to interact with backend resources such as Amplify Auth. The quickest way to get started with Amplify Auth in your frontend application is with the Authenticator component, which provides a customizable UI and complete authentication flows.
+
+To use the signIn API, you need to call the signIn function and pass in the username and password. The API will return a result that includes a nextStep property, which can be used to determine if further action is required. For example, if the user needs to confirm their sign in with a code sent via SMS or email, the nextStep property will be set to CONFIRM_SIGN_IN_WITH_SMS_CODE or CONFIRM_SIGN_IN_WITH_EMAIL_CODE.
+
+You can handle the next steps by calling the confirmSignIn function and passing in the challenge response. For example, if the user needs to confirm their sign in with a code sent via SMS, you can call confirmSignIn and pass in the code received via SMS.
+
+Here is an example of how to use the signIn API in React:
+```tsx
+import { signIn } from 'aws-amplify/auth';
+
+async function handleSubmit(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const username = form.elements.email.value;
+  const password = form.elements.password.value;
+  try {
+    const result = await signIn({
+      username,
+      password,
+    });
+    if (result.nextStep.signInStep === 'CONFIRM_SIGN_IN_WITH_SMS_CODE') {
+      // prompt user for otp code delivered via SMS
+      const code = prompt('Enter the code sent via SMS');
+      const confirmResult = await confirmSignIn({
+        challengeResponse: code,
+      });
+      if (confirmResult.nextStep.signInStep === 'DONE') {
+        console.log('Sign in successful!');
+      }
+    } else if (result.nextStep.signInStep === 'DONE') {
+      console.log('Sign in successful!');
+    }
+  } catch (error) {
+    console.error('Error signing in:', error);
+  }
+}
+```
+You can also use the signIn API with other authentication methods such as passwordless authentication with SMS or email OTP, or with external identity providers like Google or Facebook.
+
+To sign in with an external identity provider, you can use the signInWithRedirect function and pass in the provider. For example:
+```ts
+import { signInWithRedirect } from 'aws-amplify/auth';
+
+signInWithRedirect({ provider: 'Google' });
+```
+You can also use the autoSignIn API to automatically sign in a user when it was previously enabled by the signUp API.
+
+To use passwordless authentication with SMS or email OTP, you can pass the preferredChallenge parameter to the signIn API. For example:
+```ts
+import { signIn } from 'aws-amplify/auth';
+
+async function handleSubmit(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const username = form.elements.email.value;
+  try {
+    const result = await signIn({
+      username,
+      options: {
+        authFlowType: 'USER_AUTH',
+        preferredChallenge: 'SMS_OTP',
+      },
+    });
+    if (result.nextStep.signInStep === 'CONFIRM_SIGN_IN_WITH_SMS_CODE') {
+      // prompt user for otp code delivered via SMS
+      const code = prompt('Enter the code sent via SMS');
+      const confirmResult = await confirmSignIn({
+        challengeResponse: code,
+      });
+      if (confirmResult.nextStep.signInStep === 'DONE') {
+        console.log('Sign in successful!');
+      }
+    }
+  } catch (error) {
+    console.error('Error signing in:', error);
+  }
+}
+```

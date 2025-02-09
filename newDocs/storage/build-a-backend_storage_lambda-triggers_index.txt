@@ -1,0 +1,68 @@
+To listen to storage events in React, you can configure function triggers to enable event-based workflows when files are uploaded or deleted. This is achieved by modifying the defineStorage configuration in your storage definition.
+
+First, add the following code to your storage definition to configure triggers for upload and delete events:
+
+```javascript
+const storage = defineStorage({
+  name: 'myProjectFiles',
+  triggers: {
+    onUpload: defineFunction({
+      entry: './on-upload-handler.ts'
+    }),
+    onDelete: defineFunction({
+      entry: './on-delete-handler.ts'
+    })
+  }
+});
+```
+
+Then, create function definitions for the upload and delete handlers. These handlers will be invoked when an object is uploaded or deleted from the bucket.
+
+```javascript
+// on-upload-handler.ts
+import type { S3Handler } from 'aws-lambda';
+
+export const handler: S3Handler = async (event) => {
+  const objectKeys = event.Records.map((record) => record.s3.object.key);
+  console.log(`Upload handler invoked for objects [${objectKeys.join(', ')}]`);
+};
+```
+
+```javascript
+// on-delete-handler.ts
+import type { S3Handler } from 'aws-lambda';
+
+export const handler: S3Handler = async (event) => {
+  const objectKeys = event.Records.map((record) => record.s3.object.key);
+  console.log(`Delete handler invoked for objects [${objectKeys.join(', ')}]`);
+};
+```
+
+These handlers will be invoked whenever an object is uploaded or deleted from the bucket.
+
+If you need more advanced triggers, you can use the addEventNotification method in your backend configuration. This allows you to define more complex event notifications, such as triggering a Lambda function when a file with a specific prefix and suffix is uploaded.
+
+```javascript
+// backend.ts
+import { EventType } from 'aws-cdk-lib/aws-s3';
+import { LambdaDestination } from 'aws-cdk-lib/aws-s3-notifications';
+import { defineBackend } from '@aws-amplify/backend';
+import { storage } from './storage/resource';
+import { yourLambda } from './functions/yourLambda/resource';
+
+const backend = defineBackend({
+  storage,
+  yourLambda,
+});
+
+backend.storage.resources.bucket.addEventNotification(
+  EventType.OBJECT_CREATED_PUT,
+  new LambdaDestination(backend.yourLambda.resources.lambda),
+  {
+    prefix: 'protected/uploads/',
+    suffix: '-uploadManifest.json',
+  }
+);
+```
+
+This modification creates a new AWS CloudFormation handler that specifically handles checking the prefix and suffix, and triggers the Lambda function accordingly.

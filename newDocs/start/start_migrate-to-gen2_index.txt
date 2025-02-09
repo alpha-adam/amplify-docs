@@ -1,0 +1,39 @@
+Migrating from Gen 1 to Gen 2
+
+AWS is actively developing migration tooling to aid in transitioning projects from Gen 1 to Gen 2. Until then, it is recommended to continue working with Gen 1 Amplify projects. Both Gen 1 and Gen 2 will be supported for the foreseeable future. For new projects, adopting Gen 2 is recommended to take advantage of its enhanced capabilities. 
+
+Gen 1 vs Gen 2 Feature Matrix
+
+The following tables present a feature matrix for Gen 1 customers who are considering Gen 2 for their apps. This will help determine the support availability for various features.
+
+### Auth
+
+Features like configuring username, email, and phone number are available in both Gen 1 and Gen 2, with some features requiring CDK in Gen 2. Social media sign-in options like Facebook, Google, and Amazon are available in both versions. Features like user pool groups, email verification, sign-up attributes, and auth trigger support are also available in both Gen 1 and Gen 2. 
+
+However, some features like custom auth challenge flow are only available in Gen 1. First-class OIDC and SAML support are available in Gen 2, but not in Gen 1.
+
+### Data
+
+Features like model, primary key, secondary key, hasOne, hasMany, and belongsTo are available in both Gen 1 and Gen 2. However, manyToMany is only available in Gen 1. Auth configurations at the model and field levels are available in both versions, with some features requiring CDK in Gen 2.
+
+Some features like searchable, predictions, and custom GraphQL transformer plugins are only available in Gen 1. However, MySQL and PostgreSQL support, as well as in-IDE end-to-end type safety, are only available in Gen 2.
+
+### Storage
+
+Features like provisioning S3 buckets, auth and guest access, and configuring CRUD access are available in both Gen 1 and Gen 2. Lambda triggers for S3 buckets and file browsers in the console are also available in both versions. However, visual configuration is only available in Gen 1.
+
+### Functions
+
+Features like function runtime, environment variables, and secrets are available in both Gen 1 and Gen 2. Function templates like AWS AppSync GraphQL API request and CRUD function for DynamoDB are also available in both versions. However, some features like function build options for Node.js and function logs in the console are only available in Gen 1.
+
+Some features like custom function handlers and function resource access permissions are available in both Gen 1 and Gen 2, with some features requiring CDK in Gen 2.
+
+### Other Categories
+
+REST API, analytics, geo, predictions, and interactions features are available in both Gen 1 and Gen 2, with some variations depending on the platform. However, some features are only available in Gen 1 or Gen 2, or require custom CDK configurations. 
+
+For example, in Android and Swift, REST API is not available in Gen 2, while in Flutter, it is available with custom CDK. In Angular, JavaScript, Next.js, React, React Native, and Vue, REST API is available with custom CDK in Gen 2. 
+
+Similarly, analytics and geo features are available with custom CDK in Gen 2 for most platforms, while predictions and interactions are not available in Gen 2 for some platforms. 
+
+In general, Gen 2 offers more features and capabilities than Gen 1, especially when it comes to authentication, data modeling, and storage. However, some features are only available in Gen 1 or require custom CDK configurations in Gen 2.

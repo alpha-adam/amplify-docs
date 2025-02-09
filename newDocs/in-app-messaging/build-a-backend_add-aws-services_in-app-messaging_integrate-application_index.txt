@@ -1,0 +1,127 @@
+To integrate your React application with In-app Messaging, first install the required packages. For React Native, run the following command in your terminal:
+```
+npm add @aws-amplify/react-native @react-native-community/netinfo @react-native-async-storage/async-storage
+```
+For React, run the following command:
+```
+npm add @aws-amplify/ui-react @aws-amplify/ui-react-notifications
+```
+Next, install Amplify UI for your framework. For React Native, run:
+```
+npm add @aws-amplify/ui-react-native react-native-safe-area-context@^4.2.5
+```
+For React, run:
+```
+npm add @aws-amplify/ui-react @aws-amplify/ui-react-notifications
+```
+Now, integrate Amplify UI into your application. For React Native, wrap your application root component in the `withInAppMessaging` Higher-Order Component:
+```javascript
+import { withInAppMessaging } from '@aws-amplify/ui-react-native';
+
+const App = () => (
+  {/* Your application code */}
+);
+
+export default withInAppMessaging(App);
+```
+For React, do the same:
+```javascript
+import { withInAppMessaging } from '@aws-amplify/ui-react-notifications';
+import '@aws-amplify/ui-react/styles.css';
+
+const App = () => (
+  {/* Your application code */}
+);
+
+export default withInAppMessaging(App);
+```
+Your entry file should look like this for React Native:
+```jsx
+import React, { useEffect } from 'react';
+import { Button, View } from 'react-native';
+import {
+  initializeInAppMessaging,
+  syncMessages,
+  dispatchEvent
+} from 'aws-amplify/in-app-messaging';
+import { withInAppMessaging } from '@aws-amplify/ui-react-native';
+import { record } from 'aws-amplify/analytics';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure(outputs);
+initializeInAppMessaging();
+
+const myFirstEvent = { name: 'my_first_event' };
+
+const App = () => {
+  useEffect(() => {
+    syncMessages();
+  }, []);
+
+  return (
+    <View>
+      <Button
+        onPress={() => {
+          record(myFirstEvent);
+        }}
+        title="Record Analytics Event"
+      />
+      <Button
+        onPress={() => {
+          dispatchEvent(myFirstEvent);
+        }}
+        title="Send In-App Messaging Event"
+      />
+    </View>
+  );
+};
+
+export default withInAppMessaging(App);
+```
+And like this for React:
+```jsx
+import React, { useEffect } from 'react';
+import {
+  initializeInAppMessaging,
+  syncMessages,
+  dispatchEvent
+} from 'aws-amplify/in-app-messaging';
+import { Button, View } from '@aws-amplify/ui-react';
+import { withInAppMessaging } from '@aws-amplify/ui-react-notifications';
+import { record } from 'aws-amplify/analytics';
+import '@aws-amplify/ui-react/styles.css';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure(outputs);
+initializeInAppMessaging();
+
+const myFirstEvent = { name: 'my_first_event' };
+
+const App = () => {
+  useEffect(() => {
+    syncMessages();
+  }, []);
+
+  return (
+    <View>
+      <Button
+        onClick={() => {
+          record(myFirstEvent);
+        }}
+      >
+        Record Analytics Event
+      </Button>
+      <Button
+        onClick={() => {
+          dispatchEvent(myFirstEvent);
+        }}
+      >
+        Send In-App Messaging Event
+      </Button>
+    </View>
+  );
+};
+
+export default withInAppMessaging(App);
+```
+You can now build and run your app. If you click on one of the buttons, the in-app message you defined in the Pinpoint console should be displayed in your app.

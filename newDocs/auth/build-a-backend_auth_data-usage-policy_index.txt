@@ -1,0 +1,21 @@
+Apple requires app developers to provide the data usage policy of the app when submitting their app to the App Store. The Amplify Library is used to interact with AWS resources and gathers API usage metrics from the AWS services accessed. This process involves adding a user agent to the request made to the AWS service, which includes information about the Amplify Library version, operating system name, and version. AWS collects this data to generate metrics related to library usage, but it is not linked to the user's identity and not used for tracking purposes.
+
+The Amplify Library collects various types of data, which can be categorized into several groups. These groups include contact info, user content, identifiers, and other data. The contact info group includes data such as name, email address, and phone number, which are linked to the user's identity and used for app functionality. The user content group includes data such as photos or videos and audio data, which are not linked to the user's identity and used for app functionality.
+
+The identifiers group includes data such as user ID and device ID, which are linked to the user's identity and used for app functionality and analytics. The other data group includes data such as OS version, OS name, locale info, app version, and network information, which are not linked to the user's identity and used for analytics and app functionality.
+
+Some Amplify categories, such as Analytics and Auth, persist data to the local device. This data is automatically removed when a user uninstalls the app from the device. However, Amplify stores Auth information in the local system keychain, which does not guarantee any particular behavior around whether data is removed when an app is uninstalled.
+
+To clear auth information, app developers should decide when to clear the data by signing out. One strategy for accomplishing this would be to detect whether or not the app is launching for the first time and invoke Auth.signOut() if the app has not been launched before. In a React application, this could be implemented using the following code:
+```
+import { Auth } from '@aws-amplify/auth';
+
+// Detect whether or not the app is launching for the first time
+const isFirstLaunch = localStorage.getItem('isFirstLaunch') === null;
+
+if (isFirstLaunch) {
+  // Invoke Auth.signOut() if the app has not been launched before
+  Auth.signOut();
+  localStorage.setItem('isFirstLaunch', 'false');
+}
+```

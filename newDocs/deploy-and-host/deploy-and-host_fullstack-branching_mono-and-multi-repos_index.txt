@@ -1,0 +1,95 @@
+You might have different frontend and backend teams that maintain their own repositories. With AWS Amplify Gen 2, you can deploy repositories that have backend-only code, so frontend and backend teams can operate independently of each other.
+
+To deploy the backend app, you can follow these steps:
+1. Set up a backend-only Amplify project by running `mkdir backend-app && cd backend-app && npm create amplify@latest` and committing the code to a Git provider of your choice.
+2. Connect the `backend-app` in the new console by navigating to the Amplify console and selecting **Create new app**.
+3. When you connect the repository, notice that the only auto-detected framework is Amplify.
+4. Once you choose **Save and deploy**, your backend project will build.
+
+To deploy the frontend app, you can follow these steps:
+1. Set up the frontend app by running `npm create next-app@14 -- multi-repo-example --typescript --eslint --no-app --no-src-dir --no-tailwind --import-alias '@/*'`.
+2. Install Amplify dependencies by running `npm add @aws-amplify/backend-cli aws-amplify @aws-amplify/ui-react`.
+3. To connect to the deployed backend, run `npx ampx generate outputs --branch main --app-id <your-backend-app-id>`, which will generate the `amplify_outputs.json` file containing information about your backend.
+4. Validate that your frontend can connect to the backend by adding the `Authenticator` login form to your app.
+
+To connect the frontend to the backend, you can use the following code:
+```javascript
+import { withAuthenticator } from '@aws-amplify/ui-react';
+import { Amplify } from 'aws-amplify';
+import outputs from '@/amplify_outputs.json';
+
+Amplify.configure(outputs);
+
+function App({ Component, pageProps }) {
+  return <Component {...pageProps} />;
+}
+
+export default withAuthenticator(App);
+```
+
+You can also add an `amplify.yml` build-spec to your repository:
+```yml
+version: 1
+backend:
+  phases:
+    build:
+      commands:
+        - npm ci --cache.npm --prefer-offline
+        - npx ampx generate outputs --branch main --app-id BACKEND-APPID
+frontend:
+  phases:
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    baseDirectory:.next
+    files:
+      - '**/*'
+  cache:
+    paths:
+      -.next/cache/**/*
+      -.npm/**/*
+      - node_modules/**/*
+```
+
+To trigger a frontend build on backend updates, you can create an incoming webhook in the Amplify Console:
+1. Navigate to the **multi-repo-example** app, under **Hosting > Build settings** select **Create webhook**.
+2. Provide a **name** for the webhook and select the **target branch** to build on incoming webhook requests.
+3. Copy the `curl` command to trigger a build for the **multi-repo-example** app.
+
+You can then update the build settings for the `backend-app` to include the `curl` command:
+```yml
+version: 1
+backend:
+  phases:
+    build:
+      commands:
+        - npm ci --cache.npm --prefer-offline
+        - npx ampx pipeline-deploy --branch $AWS_BRANCH --app-id $AWS_APP_ID
+        - curl -X POST -d {} "https://webhooks.amplify.ca-central-1.amazonaws.com/prod/webhooks?id=WEBHOOK-ID&token=TOKEN&operation=startbuild" -H "Content-Type:application/json"
+```
+
+To share schema type definitions between the frontend and backend, you can add a `paths` entry in the `tsconfig.json` of your frontend app that points to the `amplify/data/resource.ts` file in your backend app:
+```json
+{
+  "compilerOptions": {
+    "paths": {
+      "@/data-schema": ["../backend-app/amplify/data/resource"]
+    }
+  }
+}
+```
+You can then import the `Schema` type from this path in your frontend code to get code completion and strong typing for your API calls:
+```javascript
+import { generateClient } from "aws-amplify/data";
+import type { Schema } from "@/data-schema";
+
+const client = generateClient<Schema>();
+
+const createTodo = async () => {
+  await client.models.Todo.create({
+    content: window.prompt("Todo content?"),
+    isDone: false,
+  });
+}
+```

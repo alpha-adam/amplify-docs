@@ -1,0 +1,59 @@
+To label objects in an image, you first need to complete the getting started section where you set up the IAM roles with the right policy actions. 
+
+When working with the API, you can detect labels such as identifying objects like desks or chairs in an image. This can be achieved by using the Predictions.identify method, which takes an object with a source and type property. The source property contains the image file, and the type property is set to 'LABELS' to detect labels. 
+
+Here is an example of how to use it in a React application:
+```
+import { Predictions } from '@aws-amplify/predictions';
+
+Predictions.identify({
+  labels: {
+    source: {
+      file: yourImageFile
+    },
+    type: 'LABELS'
+  }
+})
+ .then((response) => {
+    const { labels } = response;
+    labels.forEach((object) => {
+      const { name, boundingBoxes } = object;
+      // do something with the label and bounding box
+    });
+  })
+ .catch((err) => console.log({ err }));
+```
+
+You can also detect unsafe content in an image by setting the type property to 'UNSAFE'. 
+
+Here is an example of how to use it in a React application:
+```
+import { Predictions } from '@aws-amplify/predictions';
+
+const { unsafe } = await Predictions.identify({
+  labels: {
+    source: {
+      file: yourImageFile
+    },
+    type: 'UNSAFE'
+  }
+})
+// do something with the unsafe content
+```
+
+To detect both labels and unsafe content, you can set the type property to 'ALL'. 
+
+Here is an example of how to use it in a React application:
+```
+import { Predictions } from '@aws-amplify/predictions';
+
+const { labels, unsafe } = await Predictions.identify({
+  labels: {
+    source: {
+      file: yourImageFile
+    },
+    type: 'ALL'
+  }
+})
+// do something with the labels and unsafe content
+```

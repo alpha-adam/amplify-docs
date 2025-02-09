@@ -1,0 +1,20 @@
+The User management page in the Amplify console provides a user-friendly interface for managing your application's users. You can create and manage users and groups, edit user attributes, and suspend users. 
+
+If you have not yet created an auth resource, you should visit the Auth setup guide to learn how to set this up.
+
+To access the User management page, log in to the Amplify console and choose your app. Select the branch you would like to access, then select Authentication from the left navigation bar, and finally select User management.
+
+To create a user, go to the User management page and select the Users tab. Then select Create user and enter a unique identifier, such as an email address, username, or phone number, and a temporary password. Choose Create user to create the new user. 
+
+A user can be confirmed by using pre-built UI components and Amplify libraries in your React application. For example, you can use the Auth library to confirm a user:
+```javascript
+import { Auth } from 'aws-amplify';
+
+Auth.confirmSignUp(username, code);
+```
+
+To create a group, go to the User management page and choose the Groups tab. Then choose Create group and enter a name for the group. Choose Create group to create the new group.
+
+To add users to a group, go to the User management page and choose the Groups tab. Select the name of the group to add users to, then choose Add users. Choose how you want to search for users to add from the Search menu, add one or multiple users, and then choose Add users.
+
+To delete a group, go to the User management page and choose the Groups tab. Select the name of the group to delete, then choose Delete. A confirmation window will be displayed, enter Delete and choose Confirm deletion to delete the group.

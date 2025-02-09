@@ -1,0 +1,91 @@
+To set up a function in AWS Amplify, you will be using AWS Lambda functions to perform tasks and customize workflows. Functions can respond to events from other resources, execute some logic in-between events, or act as standalone jobs. They are used in various settings, including authentication flow customizations, resolvers for GraphQL APIs, handlers for individual REST API routes, and scheduled jobs.
+
+To get started, you need to create a new directory and a resource file. Then, define the function using `defineFunction`. 
+
+```javascript
+// amplify/functions/say-hello/resource.js
+import { defineFunction } from '@aws-amplify/backend';
+
+export const sayHello = defineFunction({
+  name: 'say-hello',
+  entry: './handler.js'
+});
+```
+
+Next, create the corresponding handler file. This is where your function code will go.
+
+```javascript
+// amplify/functions/say-hello/handler.js
+export const handler = async (event, context) => {
+  // your function code goes here
+  return 'Hello, World!';
+};
+```
+
+The handler file must export a function named "handler". This is the entry point to your function.
+
+Lastly, this function needs to be added to your backend.
+
+```javascript
+// amplify/backend.js
+import { defineBackend } from '@aws-amplify/backend';
+import { sayHello } from './functions/say-hello/resource';
+
+defineBackend({
+  sayHello
+});
+```
+
+Now when you run `npx ampx sandbox` or deploy your app on Amplify, it will include your function.
+
+To invoke your function, you can add your function as a handler for a custom query with your Amplify Data resource. This will enable you to strongly type function arguments and the return statement, and use this to author your function's business logic.
+
+```javascript
+// amplify/data/resource.js
+import { defineData } from '@aws-amplify/backend';
+import { sayHello } from '../functions/say-hello/resource';
+
+const schema = {
+  sayHello: {
+    type: 'query',
+    args: {
+      name: 'string'
+    },
+    returns: 'string',
+    handler: sayHello
+  }
+};
+
+export const data = defineData({
+  schema,
+  authorizationModes: {
+    defaultAuthorizationMode: "iam"
+  }
+});
+```
+
+Now you can use this query from the schema export to strongly type your function handler.
+
+```javascript
+// amplify/functions/say-hello/handler.js
+import { schema } from '../../data/resource';
+
+export const handler = async (event) => {
+  const { name } = event.arguments;
+  return `Hello, ${name}!`;
+};
+```
+
+Finally, use the data client to invoke your function by calling its associated query.
+
+```javascript
+// src/App.js
+import { DataStore } from 'aws-amplify';
+import { sayHello } from './amplify/data/resource';
+
+DataStore.query(sayHello, { name: "Amplify" })
+ .then((data) => console.log(data))
+ .catch((error) => console.error(error));
+```
+
+You can also explore additional features, such as environment variables and secrets, granting access to other resources, example use cases, and modifying underlying resources with CDK.

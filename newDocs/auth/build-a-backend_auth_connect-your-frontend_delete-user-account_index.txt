@@ -1,0 +1,19 @@
+Enabling users to delete their account can improve trust and transparency. Amplify Auth allows you to programmatically enable self-service account deletion.
+
+To set up account deletion, you can use the Amplify Libraries. The `deleteUser` API will delete a user from the Auth category and sign out the user. If your application uses a Cognito User Pool, this action will only delete the user from the Cognito User Pool and will not affect Cognito Identity Pool alone.
+
+Before deleting a user, you may need to delete associated user data that is not stored in Cognito, such as data stored with Amplify Data. This is to comply with guidelines like GDPR that require deleting data associated with a deleted account.
+
+To enable account deletion in a React application, you can use the following method:
+```javascript
+import { Auth } from 'aws-amplify';
+
+async function handleDeleteUser() {
+  try {
+    await Auth.deleteUser();
+  } catch (error) {
+    console.log(error);
+  }
+}
+```
+This code will delete the user's account and sign them out. You should update your UI to let users know that their account is deleted and test the functionality with a test user. Note that the user will be signed out of your application when they delete their account.

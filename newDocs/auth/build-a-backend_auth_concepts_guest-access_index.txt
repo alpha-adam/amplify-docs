@@ -1,0 +1,12 @@
+The Auth Plugin in AWS Amplify Gen 2 can be set up to automatically get guest credentials when a device is online. This allows you to use certain features without needing to sign in. However, you won't be able to do things that require a user account, such as changing your password or updating your profile. You can still get a unique ID for the device using the fetchAuthSession method.
+
+For Amplify Auth, this guest access is also available and works the same way. The unique ID can be obtained through the fetchAuthSession method.
+
+In Amplify Gen 2, guest access is allowed by default. To turn it off, you need to update the backend settings. You can do this by changing the backend.ts file to include the following code:
+
+```javascript
+const { cfnIdentityPool } = backend.auth.resources.cfnResources;
+cfnIdentityPool.allowUnauthenticatedIdentities = false;
+```
+
+This code turns off guest access by setting allowUnauthenticatedIdentities to false.

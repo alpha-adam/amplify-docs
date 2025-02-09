@@ -1,0 +1,14 @@
+To transcribe audio to text, also known as speech-to-text, in your React application using AWS Amplify, you need to have completed the getting started section first, where you set up the IAM roles with the right policy actions.
+
+You can use the Predictions API to transcribe a PCM audio byte buffer to text, such as a recording from a microphone. 
+```javascript
+const { Predictions } = require('@aws-amplify/predictions');
+const transcription = await Predictions.convert({
+  transcription: {
+    source: {
+      bytes: // your audio byte buffer
+    }
+  }
+})
+```
+The language data input type must support streaming for it to work with Amplify Predictions. For a complete list of supported languages and language-specific features, refer to the AWS Transcribe documentation.

@@ -1,0 +1,16 @@
+The Data manager page in the Amplify Console is a user-friendly interface for managing the backend GraphQL API data of an application. It allows you to create and update application data in real-time, eliminating the need to build separate admin views.
+
+To use the Data manager, you need to have already created a data resource. If you haven't, you can visit the Data setup guide to get started.
+
+To access the Data manager, follow these steps:
+1. Log in to the Amplify console and choose your app.
+2. Select the branch you want to access.
+3. Select Data from the left navigation bar.
+4. Then, select Data manager.
+
+Once you're on the Data manager page, you can perform various actions:
+- To create a record, select a table from the dropdown, click Create, enter your custom values, and submit.
+- To update a record, select a table, choose a record, make changes, and submit.
+- To delete a record(s), select a table, choose the record(s), and select delete item(s) from the Actions dropdown.
+- To seed records, select a table, choose Auto-generate data from the Actions dropdown, specify the number of rows and constraints, and generate data. Note that you can generate up to 100 records at a time, but this feature is not available for tables with certain field types.
+- To download records, select a table, choose an option from the Actions dropdown (Download selected items or Download all items), and your data will be downloaded as a CSV file.

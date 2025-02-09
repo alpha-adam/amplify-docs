@@ -1,0 +1,94 @@
+The public authorization strategy grants everyone access to the API, which is protected behind the scenes with an API key. You can also override the authorization provider to use an unauthenticated IAM role from Cognito instead of an API key for public access.
+
+To grant everyone access, use the public authorization strategy. Behind the scenes, the API will be protected with an API key.
+
+To implement this in React, you can use the following code:
+```javascript
+const schema = {
+  Todo: {
+    content: 'string',
+  },
+  authorization: {
+    allow: ['publicApiKey'],
+  },
+};
+```
+In your React application, you can perform CRUD operations against the model using the `client.models` object by specifying the `apiKey` auth mode.
+```javascript
+const client = generateClient(schema);
+
+const { errors, data: newTodo } = await client.models.Todo.create(
+  {
+    content: 'My new todo',
+  },
+  {
+    authMode: 'apiKey',
+  }
+);
+```
+If the API key has not expired, you can extend the expiration date by deploying your app again. The API key expiration date will be set to `expiresInDays` days from the date when the app is deployed.
+```javascript
+export const data = defineData({
+  schema,
+  authorizationModes: {
+    defaultAuthorizationMode: 'apiKey',
+    apiKeyAuthorizationMode: {
+      expiresInDays: 7,
+    },
+  },
+});
+```
+You can rotate an API key if it was expired, compromised, or deleted. To rotate an API key, you can override the logical ID of the API key resource in the `amplify/backend` file. This will create a new API key with a new logical ID.
+```javascript
+const backend = defineBackend({
+  auth,
+  data,
+});
+
+backend.data.resources.cfnResources.cfnApiKey.overrideLogicalId(
+  `recoverApiKey${new Date().getTime()}`
+);
+```
+You can also override the authorization provider to use an Amazon Cognito identity pool's unauthenticated role. In this case, you can use the `identityPool` auth mode.
+```javascript
+const schema = {
+  Todo: {
+    content: 'string',
+  },
+  authorization: {
+    allow: ['guest'],
+  },
+};
+```
+In your React application, you can perform CRUD operations against the model using the `client.models` object with the `identityPool` auth mode.
+```javascript
+const client = generateClient(schema);
+
+const { errors, data: newTodo } = await client.models.Todo.create(
+  {
+    content: 'My new todo',
+  },
+  {
+    authMode: 'identityPool',
+  }
+);
+```
+Note that if you're not using the auto-generated `amplify_outputs.json` file, you must set the Amplify Library resource configuration's `allowGuestAccess` flag to `true`. This lets the Amplify Library use the unauthenticated role from your Cognito identity pool when your user isn't logged in.
+```javascript
+import Amplify from 'aws-amplify';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure(
+  {
+   ...outputs,
+    Auth: {
+      Cognito: {
+        identityPoolId: config.aws_cognito_identity_pool_id,
+        userPoolClientId: config.aws_user_pools_web_client_id,
+        userPoolId: config.aws_user_pools_id,
+        allowGuestAccess: true,
+      },
+    },
+  }
+);
+```

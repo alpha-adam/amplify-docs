@@ -1,0 +1,132 @@
+To subscribe to real-time events in your React application using AWS Amplify, you will need to set up a real-time list query and a real-time event subscription. 
+
+First, ensure you have an application connected to the API and data already created to modify. 
+
+To set up a real-time list query, use `observeQuery` to get a real-time list of your app data at all times. You can integrate `observeQuery` with React's `useState` and `useEffect` hooks. 
+
+Here's an example:
+
+```javascript
+import { useState, useEffect } from 'react';
+import { generateClient } from 'aws-amplify/data';
+import type { Schema } from '../amplify/data/resource';
+
+type Todo = Schema['Todo']['type'];
+
+const client = generateClient<Schema>();
+
+export default function MyComponent() {
+  const [todos, setTodos] = useState<Todo[]>([]);
+
+  useEffect(() => {
+    const sub = client.models.Todo.observeQuery().subscribe({
+      next: ({ items, isSynced }) => {
+        setTodos([...items]);
+      },
+    });
+    return () => sub.unsubscribe();
+  }, []);
+
+  return (
+    <ul>
+      {todos.map((todo) => (
+        <li key={todo.id}>{todo.content}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+To set up a real-time event subscription, use the `onCreate`, `onUpdate`, or `onDelete` methods provided by the `client.models.Todo` object. 
+
+Here's an example:
+
+```javascript
+import { generateClient } from 'aws-amplify/data';
+import type { Schema } from '../amplify/data/resource';
+
+const client = generateClient<Schema>();
+
+// Subscribe to creation of Todo
+const createSub = client.models.Todo.onCreate().subscribe({
+  next: (data) => console.log(data),
+  error: (error) => console.warn(error),
+});
+
+// Subscribe to update of Todo
+const updateSub = client.models.Todo.onUpdate().subscribe({
+  next: (data) => console.log(data),
+  error: (error) => console.warn(error),
+});
+
+// Subscribe to deletion of Todo
+const deleteSub = client.models.Todo.onDelete().subscribe({
+  next: (data) => console.log(data),
+  error: (error) => console.warn(error),
+});
+
+// Stop receiving data updates from the subscription
+createSub.unsubscribe();
+updateSub.unsubscribe();
+deleteSub.unsubscribe();
+```
+
+If you want to filter your subscriptions, you can pass a `filter` argument to the `onCreate`, `onUpdate`, or `onDelete` methods. 
+
+Here's an example:
+
+```javascript
+const sub = client.models.Todo.onCreate({
+  filter: {
+    content: {
+      contains: 'groceries',
+    },
+  },
+}).subscribe({
+  next: (data) => console.log(data),
+  error: (error) => console.warn(error),
+});
+```
+
+To unsubscribe from a subscription, call the `unsubscribe` method on the subscription object. 
+
+Here's an example:
+
+```javascript
+sub.unsubscribe();
+```
+
+When dealing with related model mutations, note that mutations do not trigger real-time updates for related models. If you need to update a related model when a mutation occurs, you must manually "touch" the relevant record.
+
+To monitor the connection state for changes, use the `Hub` local eventing system. 
+
+Here's an example:
+
+```javascript
+import { CONNECTION_STATE_CHANGE, ConnectionState } from 'aws-amplify/data';
+import { Hub } from 'aws-amplify/utils';
+
+Hub.listen('api', (data: any) => {
+  const { payload } = data;
+  if (payload.event === CONNECTION_STATE_CHANGE) {
+    const connectionState = payload.data.connectionState as ConnectionState;
+    console.log(connectionState);
+  }
+});
+```
+
+Connection states include `Connected`, `ConnectedPendingDisconnect`, `ConnectedPendingKeepAlive`, `ConnectedPendingNetwork`, `Connecting`, `ConnectionDisrupted`, `ConnectionDisruptedPendingNetwork`, and `Disconnected`. 
+
+When using server-side subscription filters, be aware of the limitations. For example, specifying an empty object `{}` as a filter is not recommended, and using dynamic group authorization may have limitations. 
+
+To troubleshoot connection issues and automated reconnection, monitor the subscription status for changes and handle errors accordingly. Depending on your use case, you may want to take action to catch up when your app comes back online after being offline. 
+
+In conclusion, setting up real-time events in your React application using AWS Amplify involves creating a real-time list query and a real-time event subscription, filtering subscriptions, and handling connection states. Be sure to unsubscribe from subscriptions when no longer needed and monitor connection states for changes. 
+
+For further customization, consider exploring the AWS Amplify documentation on data modeling, authentication, and authorization. 
+
+Next steps may include continuing to build out and customize your information architecture for your data, customizing your auth rules, customizing your data model, and adding custom business logic. 
+
+Note that the examples provided are in JavaScript and use React hooks for state management. The code snippets demonstrate how to set up real-time events, filter subscriptions, and handle connection states. 
+
+By following these steps and using the provided code snippets, you can effectively set up real-time events in your React application using AWS Amplify.

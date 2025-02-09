@@ -1,0 +1,52 @@
+To use existing Amazon Pinpoint resources with your Amplify backend or frontend application, you need to surface the backend resource outputs to the `amplify_outputs.json` file. You can do this by using the `addOutput` method.
+
+For example, in your `amplify/backend.ts` file, you would add the following code:
+```javascript
+import { defineBackend } from "@aws-amplify/backend"
+
+const backend = defineBackend({})
+
+backend.addOutput({
+  analytics: {
+    amazon_pinpoint: {
+      aws_region: "your-aws-region",
+      app_id: "your-pinpoint-app-id",
+    },
+  },
+})
+```
+Alternatively, you can configure the client library directly using `Amplify.configure()`. This manual setup enables you to use your existing Amazon Pinpoint resource in your app.
+
+For example, in your React application, you would add the following code:
+```javascript
+import { Amplify } from 'aws-amplify';
+
+Amplify.configure({
+  Analytics: {
+    Pinpoint: {
+      appId: 'your-pinpoint-app-id',
+      region: 'your-aws-region',
+      bufferSize: 1000,
+      flushSize: 100,
+      flushInterval: 5000,
+      resendLimit: 5
+    }
+  }
+});
+```
+Note that you need to replace `your-aws-region` and `your-pinpoint-app-id` with your actual AWS region and Pinpoint app ID.
+
+Additionally, Amazon Pinpoint requires an AWS Identity and Access Management (IAM) policy to use the `record` and `identifyUser` APIs. You need to update your IAM policy to include the following:
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["mobiletargeting:UpdateEndpoint", "mobiletargeting:PutEvents"],
+      "Resource": ["arn:aws:mobiletargeting:*:your-account-id:apps/your-pinpoint-app-id*"]
+    }
+  ]
+}
+```
+Make sure to replace `your-account-id` and `your-pinpoint-app-id` with your actual AWS account ID and Pinpoint app ID.

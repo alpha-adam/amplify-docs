@@ -1,0 +1,13 @@
+Connected forms in AWS Amplify Gen 2 are forms that are bound to a model in your app's data schema. When a connected form is submitted, it automatically creates or updates a record in the bound data model, mapping some or all of the form's input fields to fields in the data model. These forms work seamlessly with any Amplify GraphQL API and do not require `onSubmit` handling.
+
+To generate connected forms, you need to install the Amplify UI library by running `npm add @aws-amplify/ui-react` in your terminal. Then, deploy a data model from your sandbox environment and run `npx ampx generate forms` from your project root. This command generates create and update forms for each model defined in your schema, which can be found in the `ui-components` folder.
+
+If you update your data model and need to regenerate the forms, make sure to back up the original `ui-components` folder before running `npx ampx generate forms` again.
+
+To render a React form in your app, start by adding the necessary imports and configuration to your application's entrypoint file. This includes importing the `@aws-amplify/ui-react` styles and `ThemeProvider`, as well as configuring Amplify with your `amplify_outputs.json` file.
+
+Next, wrap your `<App />` component with the `ThemeProvider` component to apply the Amplify UI theme. Then, import your generated form by name, such as `TodoCreateForm`, and place it in your code where you want the form to render.
+
+There are two types of forms: Create forms and Update forms. Create forms render a form with empty inputs and generate a new record upon submission if connected to a data model. Update forms expect an input value to pre-populate the form and can be connected to a data model using the `id` prop or the model prop.
+
+For example, you can use the `id` prop to update a record like this: `<AuthorUpdateForm id="ac74af5c-3aab-4274-8f41-23e1e6576af5" />`. Alternatively, you can use the model prop to pass a record to the form, like this: `<AuthorUpdateForm author={authorRecord}>`.

@@ -1,0 +1,111 @@
+To identify entities from images using Amplify, you need to use the `Predictions.identify` function. This function detects entities from an image and potentially related information such as position, faces, and landmarks. It can also identify celebrities and entities that were previously added.
+
+Before you start, make sure to complete the getting started section where you set up the IAM roles with the right policy actions.
+
+The `Predictions.identify` function returns a Promise that resolves to an object with the entities that were identified. The input can be sent directly from the browser using a File object or an ArrayBuffer object, or an Amazon S3 key from a project bucket.
+
+Here are some examples of how to use the `Predictions.identify` function:
+
+Detect entities directly from an image uploaded from the browser:
+```javascript
+const response = await Predictions.identify({
+  entities: {
+    source: {
+      file,
+    },
+  }
+});
+```
+
+Detect entities directly from an image binary from the browser:
+```javascript
+const response = await Predictions.identify({
+  entities: {
+    source: {
+      bytes: imageArrayBuffer,
+    },
+  }
+});
+```
+
+Detect entities from an Amazon S3 key:
+```javascript
+const response = await Predictions.identify({
+  entities: {
+    source: {
+      key: pathToPhoto,
+      level: 'guest' | 'private' | 'protected', 
+    },
+  }
+});
+```
+
+You can also detect the bounding box of faces from an image with its landmarks:
+```javascript
+const { entities } = await Predictions.identify({
+  entities: {
+    source: {
+      file,
+    },
+  }
+})
+for (const { boundingBox, landmarks } of entities) {
+  const { 
+    width, 
+    height, 
+    left, 
+    top 
+  } = boundingBox;
+  
+  for (const landmark of landmarks) {
+    const {
+      type, 
+      x, 
+      y 
+    } = landmark;
+  }
+}
+```
+
+To detect celebrities on an image, you can use the `celebrityDetection` option:
+```javascript
+const { entities } = await Predictions.identify({
+  entities: {
+    source: {
+      file,
+    },
+    celebrityDetection: true 
+  }
+})
+
+for (const { boundingBox, landmarks, metadata } of entities) {
+  const { 
+    name,
+    urls 
+  } = metadata; 
+  
+  //...
+}
+```
+
+You can also detect entities from previously uploaded images:
+```javascript
+const { entities } = await Predictions.identify({
+  entities: {
+    source: {
+      file,
+    },
+    collection: true
+  }
+})
+
+for (const { boundingBox, metadata } of entities) {
+  const {
+    width, 
+    height, 
+    left, 
+    top 
+  } = boundingBox;
+  const { externalImageId } = metadata; 
+}
+```

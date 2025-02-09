@@ -1,0 +1,68 @@
+Amplify Geo provides solutions for common use cases with Amazon Location Service, but for any functionality that is not currently supported by Amplify Geo, you can access the Amazon Location Service SDK directly.
+
+To get started with the AWS SDK for Amazon Location Service using Amplify Auth credentials, follow this guide.
+
+First, install the necessary dependencies with the command npm add @aws-sdk/client-location.
+
+To connect your app to the Amazon Location Service, initialize the Amazon Location Service client by calling the following function in your React app:
+
+```javascript
+import { Amplify } from 'aws-amplify';
+import { fetchAuthSession } from 'aws-amplify/auth';
+import {
+  LocationClient,
+  AssociateTrackerConsumerCommand
+} from '@aws-sdk/client-location';
+import outputs from '../amplify_outputs.json';
+Amplify.configure(outputs);
+
+const createClient = async () => {
+  const session = await fetchAuthSession();
+  const client = new LocationClient({
+    credentials: session.credentials,
+    region: amplifyconfig.aws_project_region
+  });
+  return client;
+};
+```
+
+To use the Amazon Location Service APIs, ensure you've provisioned resources and configured your app using the instructions in the Amplify Geo Maps docs or the Amazon Location Service console. You can check out the Amazon Location API Reference documentation for a complete list of supported features.
+
+For example, to update a device position and get a device position using the tracker, use the following code:
+
+```javascript
+// UpdateDevicePosition API
+const params = {
+  TrackerName: 'trackerId',
+  Updates: [
+    {
+      DeviceId: 'deviceId',
+      Position: [-122.431297, 37.773972],
+      SampleTime: new Date()
+    }
+  ]
+};
+const command = new BatchUpdateDevicePositionCommand(params);
+client.send(command, (err, data) => {
+  if (err) console.error(err);
+  if (data) console.log(data);
+});
+
+// GetDevicePosition API
+const client = await createClient();
+const params = {
+  TrackerName: 'trackerId',
+  DeviceId: 'deviceId'
+};
+const command = new GetDevicePositionCommand(params);
+client.send(command, (err, data) => {
+  if (err) console.error(err);
+  if (data) console.log(data);
+});
+```
+
+If you need functionality in the AWS services used by the Amplify Geo category that isn't available, Amplify provides an escape hatch to access the low-level client instance for Amazon Location Service.
+
+For platforms other than React, the escape hatch is also available.
+
+Documentation resources are available for managing Amazon Location Service resources, using Amazon Location Maps, searching place and geolocation data, and managing tracker resources.

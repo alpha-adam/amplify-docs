@@ -1,0 +1,331 @@
+The Storage and GraphQL API categories in AWS Amplify can be used together to associate a file, such as an image or video, with a particular record. For example, you might create a User model with a profile picture, or a Post model with an associated image.
+
+To set up your project, follow the instructions in the Quickstart guide. 
+
+Next, define your model by opening the `amplify/data/resource.ts` file and adding the model as shown below:
+
+```typescript
+const schema = a.schema({
+  Song: a
+   .model({
+      id: a.id().required(),
+      name: a.string().required(),
+      coverArtPath: a.string(),
+    })
+   .authorization((allow) => [allow.publicApiKey()]),
+});
+```
+
+Then, configure Storage by creating a file `amplify/storage/resource.ts` and adding the following code:
+
+```typescript
+export const storage = defineStorage({
+  name: "amplify-gen2-files",
+  access: (allow) => ({
+    "images/*": [allow.authenticated.to(["read", "write", "delete"])],
+  }),
+});
+```
+
+Configure the storage in the `amplify/backend.ts` file as demonstrated below:
+
+```typescript
+import { defineBackend } from "@aws-amplify/backend";
+import { auth } from "./auth/resource";
+import { data } from "./data/resource";
+import { storage } from "./storage/resource";
+
+export const backend = defineBackend({
+  auth,
+  data,
+  storage,
+});
+```
+
+To create a record with an associated file, use the Amplify Data client to create a record, upload a file to Storage, and then update the record to associate it with the uploaded file. 
+
+Here's how to create a record and associate it with a file in React:
+
+```typescript
+import { generateClient } from "aws-amplify/api";
+import { uploadData, getUrl } from "aws-amplify/storage";
+import type { Schema } from "../amplify/data/resource";
+
+// Generating the client
+const client = generateClient<Schema>({
+  authMode: "apiKey",
+});
+
+// Create the API record:
+const response = await client.models.Song.create({
+  name: `My first song`,
+});
+
+const song = response.data;
+
+if (!song) return;
+
+// Upload the Storage file:
+const result = await uploadData({
+  path: `images/${song.id}-${file.name}`,
+  data: file,
+  options: {
+    contentType: "image/png", // contentType is optional
+  },
+}).result;
+
+// Add the file association to the record:
+const updateResponse = await client.models.Song.update({
+  id: song.id,
+  coverArtPath: result?.path,
+});
+
+const updatedSong = updateResponse.data;
+```
+
+To add or update a file for an associated record, update the record with the path returned by the Storage upload.
+
+Here's how to add or update a file for an associated record in React:
+
+```typescript
+// Upload the Storage file:
+const result = await uploadData({
+  path: `images/${currentSong.id}-${file.name}`,
+  data: file,
+  options: {
+    contentType: "image/png", // contentType is optional
+  },
+}).result;
+
+// Add the file association to the record:
+const response = await client.models.Song.update({
+  id: currentSong.id,
+  coverArtPath: result?.path,
+});
+
+const updatedSong = response.data;
+```
+
+To query a record and retrieve the associated file, first query the record, then use Storage to get the signed URL.
+
+Here's how to query a record and retrieve the associated file in React:
+
+```typescript
+const response = await client.models.Song.get({
+  id: currentSong.id,
+});
+
+const song = response.data;
+
+// If the record has no associated file, we can return early.
+if (!song?.coverArtPath) return;
+
+// Retrieve the signed URL:
+const signedURL = await getUrl({ path: song.coverArtPath });
+```
+
+To delete and remove files associated with API records, you can remove the file association, continue to persist both file and record, remove the record association and delete the file, or delete both file and record.
+
+Here's how to delete and remove files associated with API records in React:
+
+```typescript
+// Remove the file association, continue to persist both file and record
+const updatedSong = await client.models.Song.update({
+  id: song.id,
+  coverArtPath: null,
+});
+
+// Remove the record association and delete the file
+await remove({ path: song.coverArtPath });
+
+// Delete both file and record
+await client.models.Song.delete({ id: song.id });
+```
+
+To work with multiple files, you can add a list of file keys to the record.
+
+Here's how to create a record with multiple associated files in React:
+
+```typescript
+// Upload all files to Storage:
+const imagePaths = await Promise.all(
+  Array.from(e.target.files).map(async (file) => {
+    const result = await uploadData({
+      path: `images/${photoAlbum.id}-${file.name}`,
+      data: file,
+      options: {
+        contentType: "image/png", // contentType is optional
+      },
+    }).result;
+
+    return result.path;
+  })
+);
+
+// Add the file association to the record:
+const updateResponse = await client.models.PhotoAlbum.update({
+  id: photoAlbum.id,
+  imagePaths: imagePaths,
+});
+```
+
+To add new files to an associated record, update the record with the paths returned by the Storage uploads.
+
+Here's how to add new files to an associated record in React:
+
+```typescript
+// Upload all files to Storage:
+const newimagePaths = await Promise.all(
+  Array.from(e.target.files).map(async (file) => {
+    const result = await uploadData({
+      path: `images/${currentPhotoAlbum.id}-${file.name}`,
+      data: file,
+      options: {
+        contentType: "image/png", // contentType is optional
+      },
+    }).result;
+
+    return result.path;
+  })
+);
+
+// Update the record with the merged file associations:
+const response = await client.models.PhotoAlbum.update({
+  id: currentPhotoAlbum.id,
+  imagePaths: [...newimagePaths,...photoAlbum.imagePaths],
+});
+```
+
+To update the file for an associated record, update the list of file keys.
+
+Here's how to update the file for an associated record in React:
+
+```typescript
+// Upload new file to Storage:
+const result = await uploadData({
+  path: `images/${currentPhotoAlbum.id}-${file.name}`,
+  data: file,
+  options: {
+    contentType: "image/png", // contentType is optional
+  },
+}).result;
+
+// Update the record with the updated file associations:
+const response = await client.models.PhotoAlbum.update({
+  id: currentPhotoAlbum.id,
+  imagePaths: [
+   ...photoAlbum.imagePaths.filter((path) => path!== lastImagePath),
+    result.path,
+  ],
+});
+```
+
+To query a record and retrieve the associated files, first query the record, then use Storage to retrieve all of the signed URLs.
+
+Here's how to query a record and retrieve the associated files in React:
+
+```typescript
+// Query the record to get the file paths:
+const response = await client.models.PhotoAlbum.get({
+  id: currentPhotoAlbum.id,
+});
+
+const photoAlbum = response.data;
+
+// If the record has no associated files, we can return early.
+if (!photoAlbum?.imagePaths) return;
+
+// Retrieve the signed URLs for the associated images:
+const signedUrls = await Promise.all(
+  photoAlbum.imagePaths.map(async (imagePath) => {
+    if (!imagePath) return;
+    return await getUrl({ path: imagePath });
+  })
+);
+```
+
+To delete and remove files associated with API records when working with multiple files, you can remove the file association, continue to persist both files and record, remove the record association and delete the files, or delete both files and record.
+
+Here's how to delete and remove files associated with API records when working with multiple files in React:
+
+```typescript
+// Remove the file association, continue to persist both files and record
+const updatedPhotoAlbum = await client.models.PhotoAlbum.update({
+  id: photoAlbum.id,
+  imagePaths: null,
+});
+
+// Remove the record association and delete the files
+await Promise.all(
+  photoAlbum?.imagePaths.map(async (imagePath) => {
+    if (!imagePath) return;
+    await remove({ path: imagePath });
+  })
+);
+
+// Delete both files and record
+await client.models.PhotoAlbum.delete({ id: photoAlbum.id });
+```
+
+It's also important to consider data consistency when working with records and files. The recommended access patterns may remove deleted files, but favor leaving orphans over leaving records that point to non-existent files. This optimizes for read latency by ensuring clients rarely attempt to fetch a non-existent file from Storage. However, any app that deletes files can inherently cause records on-device to point to non-existent files. 
+
+To handle this, you can use real-time data / GraphQL subscriptions to keep your app's local state in sync with the global state. You can also add meaningful error handling around these cases and retry failed operations. 
+
+Here's an example of a complete React application that demonstrates how to work with files and records:
+
+```typescript
+import React, { useState } from "react";
+import { generateClient } from "aws-amplify/api";
+import { uploadData, getUrl, remove } from "aws-amplify/storage";
+import type { Schema } from "../amplify/data/resource";
+
+// Generating the client
+const client = generateClient<Schema>({
+  authMode: "apiKey",
+});
+
+function App() {
+  const [currentSong, setCurrentSong] = useState(null);
+  const [currentImageUrl, setCurrentImageUrl] = useState(null);
+
+  async function createSongWithImage(e) {
+    // Create the API record:
+    const response = await client.models.Song.create({
+      name: `My first song`,
+    });
+
+    const song = response.data;
+
+    if (!song) return;
+
+    // Upload the Storage file:
+    const result = await uploadData({
+      path: `images/${song.id}-${e.target.files[0].name}`,
+      data: e.target.files[0],
+      options: {
+        contentType: "image/png", // contentType is optional
+      },
+    }).result;
+
+    // Add the file association to the record:
+    const updateResponse = await client.models.Song.update({
+      id: song.id,
+      coverArtPath: result?.path,
+    });
+
+    const updatedSong = updateResponse.data;
+    setCurrentSong(updatedSong);
+
+    // If the record has no associated file, we can return early.
+    if (!updatedSong?.coverArtPath) return;
+
+    // Retrieve the file's signed URL:
+    const signedURL = await getUrl({ path: updatedSong.coverArtPath });
+    setCurrentImageUrl(signedURL.url.toString());
+  }
+
+  //...
+}
+```
+
+This application demonstrates how to create a song with an associated image, add a new image to a song, get the image for a song, remove an image from a song, delete an image for a song, and delete a song and its associated image. It also handles data consistency by favoring leaving orphans over leaving records that point to non-existent files.

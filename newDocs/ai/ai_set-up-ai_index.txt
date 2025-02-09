@@ -1,0 +1,148 @@
+In this guide, you will learn how to get started with the Amplify AI kit. This includes defining your AI backend with Conversation and Generation routes, and securely connecting to them from your frontend application.
+
+To get started, you can use one of the samples provided by AWS. 
+
+Before you begin, you will need Node.js version 18.16.0 or later, npm version 6.14.4 or later, and git version 2.14.1 or later. You will also need an AWS account that is set up for local development and has access to the Bedrock Foundation Model(s) you want to use.
+
+Running inference on large language models can be costly. However, Amazon Bedrock is a serverless service, so you only pay for what you use. Be mindful of the costs associated with building generative AI applications.
+
+To create an Amplify backend, run the create amplify script in your project directory using the command `npm create amplify@latest`. Then, run the Amplify sandbox using the command `npx ampx sandbox`. This will provision the cloud resources you define in your amplify folder and watch for updates and redeploy them.
+
+To build an AI backend, you define AI 'routes' in your Amplify Data schema. An AI route is like an API endpoint for interacting with backend AI functionality. There are currently two types of routes: Conversation and Generation. 
+
+A conversation route is a streaming, multi-turn API. Conversations and messages are automatically stored in DynamoDB, so users can resume conversations. Examples of this include chat-based AI experiences or conversational UI.
+
+A generation route is a single synchronous request-response API. A generation route is just an AppSync Query. Examples of this include generating alt text for an image, generating structured data from unstructured input, summarization, etc.
+
+To define AI routes, open your `amplify/data/resource.ts` file and use `a.generation()` and `a.conversation()` in your schema. For example:
+
+```typescript
+import { a, defineData, type ClientSchema } from '@aws-amplify/backend';
+
+const schema = a.schema({
+  chat: a.conversation({
+    aiModel: a.ai.model('Claude 3.5 Haiku'),
+    systemPrompt: 'You are a helpful assistant',
+  })
+  .authorization((allow) => allow.owner()),
+
+  generateRecipe: a.generation({
+    aiModel: a.ai.model('Claude 3.5 Haiku'),
+    systemPrompt: 'You are a helpful assistant that generates recipes.',
+  })
+  .arguments({
+    description: a.string(),
+  })
+  .returns(
+    a.customType({
+      name: a.string(),
+      ingredients: a.string().array(),
+      instructions: a.string(),
+    })
+  )
+  .authorization((allow) => allow.authenticated()),
+});
+```
+
+Once the cloud sandbox is up and running, it will also create an `amplify_outputs.json` file, which includes relevant connection information to your AI routes and other Amplify configuration.
+
+To connect your frontend code to your backend, you need to configure the Amplify library with the Amplify client configuration file, generate a new API client from the Amplify library, and make an API request with end-to-end type-safety.
+
+First, install the Amplify client library to your project using the command `npm add aws-amplify @aws-amplify/ui-react @aws-amplify/ui-react-ai` for React, Next.js, or React Native, or `npm add aws-amplify` for JavaScript, Vue, or Angular.
+
+Then, configure the Amplify library with the `amplify_outputs.json` file. For React, you can do this in the file where the React application is mounted:
+
+```tsx
+import { Amplify } from 'aws-amplify';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure(outputs);
+```
+
+For Next.js, you can do this in the `pages/_app.tsx` file for the Pages router or in the `app/ConfigureAmplify.tsx` file for the App router.
+
+Next, generate a type-safe frontend client to talk to your backend using your backend data schema and the `generateClient()` function provided by the Amplify libraries. For React, you can do this in a `client.ts` file:
+
+```typescript
+import { generateClient } from "aws-amplify/api";
+import { Schema } from "../amplify/data/resource";
+import { createAIHooks } from "@aws-amplify/ui-react-ai";
+
+export const client = generateClient<Schema>({ authMode: "userPool" });
+export const { useAIConversation, useAIGeneration } = createAIHooks(client);
+```
+
+Finally, you can use the `useAIGeneration` hook to make a request to your generation route. For example:
+
+```tsx
+import * as React from 'react';
+import { Flex, TextAreaField, Loader, Text, View, Button } from "@aws-amplify/ui-react"
+import { useAIGeneration } from "./client";
+
+export default function App() {
+  const [description, setDescription] = React.useState("");
+  const [{ data, isLoading }, generateRecipe] =
+    useAIGeneration("generateRecipe");
+
+  const handleClick = async () => {
+    generateRecipe({ description });
+  };
+
+  return (
+    <Flex direction="column">
+      <Flex direction="row">
+        <TextAreaField
+          autoResize
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          label="Description"
+        />
+        <Button onClick={handleClick}>Generate recipe</Button>
+      </Flex>
+      {isLoading ? (
+        <Loader variation="linear" />
+      ) : (
+        <>
+          <Text fontWeight="bold">{data?.name}</Text>
+          <View as="ul">
+            {data?.ingredients?.map((ingredient) => (
+              <View as="li" key={ingredient}>
+                {ingredient}
+              </View>
+            ))}
+          </View>
+          <Text>{data?.instructions}</Text>
+        </>
+      )}
+    </Flex>
+  );
+}
+```
+
+You can also use the `useAIConversation` hook to make a request to your conversation route. For example:
+
+```tsx
+import { Authenticator } from "@aws-amplify/ui-react";
+import { AIConversation } from '@aws-amplify/ui-react-ai';
+import { useAIConversation } from './client';
+
+export default function App() {
+  const [
+    {
+      data: { messages },
+      isLoading,
+    },
+    handleSendMessage,
+  ] = useAIConversation('chat');
+
+  return (
+    <Authenticator>
+      <AIConversation
+        messages={messages}
+        isLoading={isLoading}
+        handleSendMessage={handleSendMessage}
+      />
+    </Authenticator>
+  );
+}
+```

@@ -1,0 +1,52 @@
+To grant a Lambda function access to an API and data in AWS Amplify Gen 2, you can configure an authorization rule on the schema object using the `authorization` method. This method uses a `deny-by-default` authorization model, meaning that function access must be explicitly defined in the schema.
+
+To start, create a new directory and a resource file, `amplify/functions/data-access/resource.ts`. Then, define the function with `defineFunction` and export it. This function can be passed directly to `allow.resource()` in the schema authorization rules, allowing the function to execute Query, Mutation, and Subscription operations against the GraphQL API.
+
+You can narrow down access to one or more operations using the `.to()` method. For example, you can allow query and subscription operations but not mutations.
+
+Function access can only be configured on the schema object and not on individual models or fields.
+
+To access the API using `aws-amplify`, you need to configure the Amplify data client in the handler file for your function. You can do this by using `getAmplifyDataClientConfig` and `generateClient`.
+
+Here is an example of how to grant access to a function:
+```javascript
+const schema = new Schema({
+  Todo: new Model({
+    name: new Field(String),
+    description: new Field(String),
+    isDone: new Field(Boolean)
+  })
+})
+ .authorization((allow) => [
+    allow.resource(functionWithDataAccess)
+  ]);
+```
+And here is an example of how to narrow down access to one or more operations:
+```javascript
+const schema = new Schema({
+  Todo: new Model({
+    name: new Field(String),
+    description: new Field(String),
+    isDone: new Field(Boolean)
+  })
+})
+ .authorization((allow) => [
+    allow.resource(functionWithDataAccess).to(['query', 'listen'])
+  ]);
+```
+To access the API using `aws-amplify`, you can use the following code in your function handler:
+```javascript
+const client = generateClient();
+export const handler = async (event) => {
+  const { errors: createErrors, data: newTodo } = await client.models.Todo.create({
+    name: "My new todo",
+    description: "Todo description",
+    isDone: false,
+  })
+
+  const { errors: listErrors, data: todos } = await client.models.Todo.list();
+
+  return event;
+};
+```
+Note that when configuring Amplify with `getAmplifyDataClientConfig`, your function consumes schema information from an S3 bucket created during backend deployment with grants for the access your function needs to use it. Any changes to this bucket outside of backend deployment may break your function.

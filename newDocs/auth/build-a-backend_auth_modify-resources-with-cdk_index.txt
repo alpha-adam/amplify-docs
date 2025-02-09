@@ -1,0 +1,49 @@
+Amplify Auth provides default settings for Amazon Cognito resource definitions. You can customize your authentication resource using AWS Cloud Development Kit (CDK) to make it behave exactly as needed for your use cases.
+
+To override the password policy, you can use the CDK construct and add a property override. For example, you can modify the password policy to require a minimum length of 10 characters, lowercase letters, numbers, symbols, and uppercase letters, and set the temporary password validity to 20 days.
+
+To override the Cognito UserPool multi-factor authentication options, you need to modify the underlying CDK construct. First, ensure your auth resource configuration includes a compatible account recovery option and a custom SES sender. Then, extend the underlying CDK construct by activating Amazon Cognito's Advanced Security Features (ASF) and add EMAIL_OTP to the enabled MFA options.
+
+You can also modify the Cognito UserPool to enable passwordless sign-in methods. This can be done by modifying the underlying Cognito user pool resource to allow sign in with passwordless methods, such as web authentication, email OTP, or SMS OTP.
+
+Here are some examples of how you can achieve this in your React code:
+
+To override the password policy:
+```typescript
+const cfnUserPool = backend.auth.resources.cfnResources.cfnUserPool;
+cfnUserPool.policies = {
+  passwordPolicy: {
+    minimumLength: 10,
+    requireLowercase: true,
+    requireNumbers: true,
+    requireSymbols: true,
+    requireUppercase: true,
+    temporaryPasswordValidityDays: 20,
+  },
+};
+```
+
+To override the Cognito UserPool multi-factor authentication options:
+```typescript
+const { cfnUserPool } = backend.auth.resources.cfnResources;
+cfnUserPool.userPoolAddOns = {
+  advancedSecurityMode: "AUDIT",
+};
+cfnUserPool.enabledMfas = [...(cfnUserPool.enabledMfas || []), "EMAIL_OTP"];
+```
+
+To override the Cognito UserPool to enable passwordless sign-in methods:
+```typescript
+const { cfnResources } = backend.auth.resources;
+const { cfnUserPool, cfnUserPoolClient } = cfnResources;
+cfnUserPool.addPropertyOverride(
+  'Policies.SignInPolicy.AllowedFirstAuthFactors',
+  ['PASSWORD', 'WEB_AUTHN', 'EMAIL_OTP', 'SMS_OTP']
+);
+cfnUserPoolClient.explicitAuthFlows = [
+  'ALLOW_REFRESH_TOKEN_AUTH',
+  'ALLOW_USER_AUTH'
+];
+cfnUserPool.addPropertyOverride('WebAuthnRelyingPartyID', '<RELYING_PARTY>');
+cfnUserPool.addPropertyOverride('WebAuthnUserVerification', 'preferred');
+```

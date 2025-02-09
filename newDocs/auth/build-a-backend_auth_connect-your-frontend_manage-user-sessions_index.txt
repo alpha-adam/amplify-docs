@@ -1,0 +1,36 @@
+Amplify Auth provides access to current user sessions and tokens to help you retrieve your user's information to determine if they are signed in with a valid session and control their access to your app.
+
+To get information about the currently authenticated user, including the username, user ID, and sign-in details, you can use the `getCurrentUser` API. 
+
+```javascript
+import { getCurrentUser } from 'aws-amplify/auth';
+
+const { username, userId, signInDetails } = await getCurrentUser();
+
+console.log("username", username);
+console.log("user id", userId);
+console.log("sign-in details", signInDetails);
+```
+
+This method can be used to check if a user is signed in. It throws an error if the user is not authenticated. However, note that the user's sign-in details are not supported when using the Hosted UI or the `signInWithRedirect` API.
+
+To get session details, you can use the `fetchAuthSession` API, which returns a tokens object containing the JSON Web Tokens (JWT).
+
+```javascript
+import { fetchAuthSession } from 'aws-amplify/auth';
+
+const session = await fetchAuthSession();
+
+console.log("id token", session.tokens.idToken)
+console.log("access token", session.tokens.accessToken)
+```
+
+The `fetchAuthSession` API automatically refreshes the user's session when the authentication tokens have expired and a valid refresh token is present. You can also refresh the session explicitly by calling the `fetchAuthSession` API with the `forceRefresh` flag enabled.
+
+```javascript
+import { fetchAuthSession } from 'aws-amplify/auth';
+
+await fetchAuthSession({ forceRefresh: true });
+```
+
+Note that by default, sessions from external identity providers cannot be refreshed.

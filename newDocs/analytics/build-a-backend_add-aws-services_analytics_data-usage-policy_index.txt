@@ -1,0 +1,28 @@
+When submitting an app to the App Store, Apple requires developers to provide a data usage policy. The Amplify Library gathers API usage metrics from AWS services accessed, which involves adding a user agent to the request made to the AWS service. This user-agent header includes information about the Amplify Library version, operating system name, and version. AWS collects this data to generate metrics related to library usage, but it is not linked to the user's identity and not used for tracking purposes.
+
+The Amplify Library collects various types of data, including name, email address, phone number, photos or videos, audio data, user ID, device ID, OS version, OS name, locale info, app version, and other device information. The purpose of collecting this data is for app functionality, analytics, or authentication. Some of this data is linked to the user's identity, but it is not used for tracking purposes.
+
+Some Amplify categories, such as Analytics and Auth, persist data to the local device. When a user uninstalls the app from the device, some of this data is automatically removed. However, Auth information is stored in the local system keychain, which does not guarantee that the data will be removed when the app is uninstalled.
+
+To clear Auth information, app developers should decide when to clear the data by signing out. One strategy for accomplishing this is to use a mechanism to detect whether the app is launching for the first time and invoke a sign-out function if the app has not been launched before. In a React app, this could be achieved by using a state management system or a local storage solution to store a flag indicating whether the app has been launched before, and then calling the `Auth.signOut()` function if the flag is not set.
+
+For example, in a React app, you could use the `useState` hook to store a flag indicating whether the app has been launched before, and then call the `Auth.signOut()` function if the flag is not set:
+```javascript
+import { useState, useEffect } from 'react';
+import { Auth } from 'aws-amplify';
+
+function App() {
+  const [hasLaunchedBefore, setHasLaunchedBefore] = useState(false);
+
+  useEffect(() => {
+    const hasLaunchedBeforeFlag = localStorage.getItem('hasLaunchedBefore');
+    if (!hasLaunchedBeforeFlag) {
+      Auth.signOut();
+    }
+    setHasLaunchedBefore(true);
+    localStorage.setItem('hasLaunchedBefore', 'true');
+  }, []);
+
+  return <div>App content</div>;
+}
+```

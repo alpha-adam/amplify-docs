@@ -1,0 +1,5 @@
+Amplify offers a UI Library that makes it easy to build web app user interfaces connected to the backend. The Amplify UI Library provides connected components designed to work seamlessly with AWS Amplify backend services. These components allow you to quickly add common user experience patterns, such as authentication and storage, without having to build them from scratch.
+
+The UI Library also includes tooling that can generate React forms from data and React components from Figma designs. This tooling is designed to work with React, JavaScript, and Next.js. 
+
+This page is for formatting only

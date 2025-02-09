@@ -1,0 +1,56 @@
+You can remotely configure the Amplify Logger, which allows you to make changes to your logging levels or user allow list in your deployed applications. The logging configurations you set remotely will overwrite the local log level and persist for future app sessions.
+
+To set up remote configuration, you need to create backend resources, including an Amazon CloudWatch log group, an AWS API Gateway, an AWS Lambda function, and an AWS S3 bucket. You can use the Amplify CDK to add custom resources.
+
+The CDK construct provisions the necessary resources and deploys a remote configuration file to the S3 bucket. You can update this file to change the configuration level or user allow list. The construct also creates IAM policies and assigns them to the Amplify authenticated and unauthenticated roles.
+
+To use the remote configuration, you need to replace the placeholder values with your own values, including the log group name, S3 bucket name, and Amplify role names. The CDK construct provides the location and lambda for reading from S3, as well as the location and file name of the log level configuration file.
+
+The API endpoint, CloudWatch log group, and region will be printed out in the terminal. You can use this information to set up the Amplify library.
+
+A sample lambda handler is provided that reads and returns the remote logging constraints from AWS S3. The handler caches the configuration by version using ETag, which allows it to be more efficient and save bandwidth.
+
+A sample remote configuration file is also provided, which overwrites the local file in the mobile application. This file can be deployed to S3 and updated to change the application log levels.
+
+To enable remote configuration in your app, you need to provide the API endpoint and refresh interval for updating the remote configuration locally on the user's device. You can do this by updating the amplify configuration file or using code.
+
+For example, in React, you can enable remote configuration by adding a new section to the amplify configuration file:
+```json
+{
+  "awsCloudWatchLoggingPlugin": {
+    "enable": true,
+    "logGroupName": "<log-group-name>",
+    "region": "<region>",
+    "localStoreMaxSizeInMB": 1,
+    "flushIntervalInSeconds": 60,
+    "loggingConstraints": {
+      "defaultLogLevel": "ERROR"
+    },
+    "defaultRemoteConfiguration": {
+      "endpoint": "<your-api-endpoint>",
+      "refreshIntervalInSeconds": 1200
+    }
+  }
+}
+```
+Alternatively, you can use code to enable remote configuration. For example:
+```javascript
+import Amplify from 'aws-amplify';
+
+Amplify.configure({
+  awsCloudWatchLoggingPlugin: {
+    enable: true,
+    logGroupName: '<log-group-name>',
+    region: '<region>',
+    localStoreMaxSizeInMB: 1,
+    flushIntervalInSeconds: 60,
+    loggingConstraints: {
+      defaultLogLevel: 'ERROR'
+    },
+    defaultRemoteConfiguration: {
+      endpoint: '<your-api-endpoint>',
+      refreshIntervalInSeconds: 1200
+    }
+  }
+});
+```

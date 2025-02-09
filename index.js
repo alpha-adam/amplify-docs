@@ -8,12 +8,12 @@ async function sleep(ms) {
   await new Promise(resolve => setTimeout(resolve, ms))
 }
 
-async function callCerebras(messages) {
+async function callDeepinfra(messages) {
   const config = {
-    hostname: 'api.cerebras.ai',
-    path: '/v1/chat/completions',
-    apiKey: process.env.CEREBRAS_API_KEY,
-    model: 'llama-3.3-70b'
+    hostname: 'api.deepinfra.com',
+    path: '/v1/openai/chat/completions',
+    apiKey: process.env.DEEPINFRA_API_KEY,
+    model: 'meta-llama/Llama-3.3-70B-Instruct-Turbo'
   }
   const options = {
     hostname: config.hostname,
@@ -54,7 +54,7 @@ async function processFile(oldFilePath, newFilePath) {
   const content = await fs.readFile(oldFilePath, 'utf8')
   const messages = JSON.parse(await fs.readFile('messages.json', 'utf8'))
   messages[1].content += content
-  const summary = await callCerebras(messages)
+  const summary = await callDeepinfra(messages)
   await fs.mkdir(path.dirname(newFilePath), { recursive: true })
   await fs.writeFile(newFilePath, summary)
 }
@@ -68,8 +68,12 @@ async function traverseDir(directory) {
     } else if (entry.isFile()) {
       const relativePath = path.relative('oldDocs', fullPath)
       const newFilePath = path.join('newDocs', relativePath)
-      await processFile(fullPath, newFilePath)
-      await sleep(1000)
+      try {
+        await fs.access(newFilePath)
+      } catch (e) {
+        await processFile(fullPath, newFilePath)
+        await sleep(1000)
+      }
     }
   }
 }

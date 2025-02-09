@@ -1,0 +1,17 @@
+To disable analytics in your app, you can use the disable function. By default, analytics are enabled when you configure it in your app. 
+
+To disable analytics in a React app, you can use the following code:
+```javascript
+import { disable } from 'aws-amplify/analytics';
+
+disable();
+```
+
+To enable analytics, you can use the enable function in your app. 
+
+To enable analytics in a React app, you can use the following code:
+```javascript
+import { enable } from 'aws-amplify/analytics';
+
+enable();
+```

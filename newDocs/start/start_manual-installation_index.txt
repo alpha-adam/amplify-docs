@@ -1,0 +1,61 @@
+To get started with AWS Amplify, it is recommended to use the quickstart starter template. However, for some use cases, it may be preferable to start from scratch. 
+
+You can create a new project with `npm create amplify@latest` and follow the prompts to set up the project. This will create a lightweight Amplify project in your current directory.
+
+If you prefer a manual setup, you can create your project's `package.json` with `npm init -y` and then install the Amplify dependencies with `npm add --save-dev @aws-amplify/backend@latest @aws-amplify/backend-cli@latest typescript`. TypeScript is not required but is recommended for an optimal experience.
+
+Next, create the entry point for your backend, `amplify/backend.ts`, with the following code:
+```
+import { defineBackend } from '@aws-amplify/backend';
+
+defineBackend({});
+```
+You can then run `npx ampx sandbox` to create your first backend. 
+
+It's worth noting that Amplify Gen 2 requires your backend to be configured for use with ECMAScript modules (ESM). If you encounter an error during `ampx sandbox`, you can modify your `package.json` with `"type": "module"` or create a local file in the Amplify backend directory, `amplify/package.json`, with the following content:
+```
+{
+  "type": "module"
+}
+```
+To define your resources, you can use the `define*` functions. For example, to define authentication, you can use the following code:
+```javascript
+import { defineAuth } from '@aws-amplify/backend';
+
+export const auth = defineAuth({
+  loginWith: {
+    email: true
+  }
+});
+```
+To define your data resource, you can use the following code:
+```javascript
+import { a, defineData, type ClientSchema } from '@aws-amplify/backend';
+
+const schema = a.schema({
+  Todo: a.model({
+      content: a.string(),
+      isDone: a.boolean()
+    })
+   .authorization(allow => [allow.publicApiKey()])
+});
+
+export type Schema = ClientSchema<typeof schema>;
+export const data = defineData({
+  schema
+});
+```
+Each of these newly defined resources are then imported and set in the backend definition:
+```javascript
+import { defineBackend } from '@aws-amplify/backend';
+import { auth } from './auth/resource';
+import { data } from './data/resource';
+
+defineBackend({
+  auth,
+  data
+});
+```
+If you have an existing project, you can update it by running `npm update @aws-amplify/backend @aws-amplify/backend-cli`. 
+
+The recommended next steps are to learn more about defining authentication, defining data, get started with cloud sandbox, and deploy and host your first app.

@@ -1,0 +1,194 @@
+Amazon OpenSearch Service is a managed platform for deploying search and analytics solutions with OpenSearch or Elasticsearch. It integrates with Amazon DynamoDB, allowing for seamless search on DynamoDB data by automatically replicating and transforming it without requiring custom code or infrastructure. This integration simplifies processes and reduces the operational workload of managing data pipelines.
+
+To connect to Amazon OpenSearch, follow these steps:
+
+## Step 1: Setup the project
+
+Begin by setting up your project. For this example, we'll sync a Todo table from DynamoDB to OpenSearch. Add the Todo model to your schema.
+
+```typescript
+const schema = {
+  Todo: {
+    content: 'string',
+    done: 'boolean',
+    priority: ['low', 'medium', 'high']
+  }
+}
+```
+
+Enable Point in Time Recovery (PITR) and DynamoDB streams to capture item changes that will be ingested into OpenSearch.
+
+## Step 2: Setting Up the OpenSearch Instance
+
+Create an OpenSearch instance with encryption. Define the OpenSearch domain and set the instance type, node count, and removal policy.
+
+```typescript
+const openSearchDomain = {
+  version: 'OPENSEARCH_2_11',
+  capacity: {
+    masterNodeInstanceType: 't3.small.search',
+    masterNodes: 0,
+    dataNodeInstanceType: 't3.small.search',
+    dataNodes: 1
+  },
+  nodeToNodeEncryption: true,
+  removalPolicy: 'DESTROY',
+  encryptionAtRest: {
+    enabled: true
+  }
+}
+```
+
+## Step 3: Setting Up Zero ETL from DynamoDB to OpenSearch
+
+### Step 3a: Setup Storage and IAM Role
+
+Establish storage to back up raw events consumed by the OpenSearch pipeline. Generate a file to set up a storage resource and tailor your storage configurations to regulate access.
+
+```typescript
+const storage = {
+  name: 'opensearch-backup-bucket',
+  access: {
+    'public/*': ['list', 'write', 'get']
+  }
+}
+```
+
+Create an IAM role for OpenSearch integration and assign the necessary permissions.
+
+```typescript
+const openSearchIntegrationPipelineRole = {
+  assumedBy: 'osis-pipelines.amazonaws.com',
+  inlinePolicies: {
+    openSearchPipelinePolicy: {
+      statements: [
+        {
+          actions: ['es:DescribeDomain'],
+          resources: [openSearchDomain.domainArn, openSearchDomain.domainArn + '/*']
+        }
+      ]
+    }
+  }
+}
+```
+
+### Step 3b: OpenSearch Service Pipeline
+
+Define the pipeline construct and its configuration. Customize the template content JSON-representation to define the data structure for the ingestion pipeline.
+
+```typescript
+const openSearchTemplate = `
+version: "2"
+dynamodb-pipeline:
+  source:
+    dynamodb:
+      acknowledgments: true
+      tables:
+        - table_arn: "${tableArn}"
+          stream:
+            start_position: "LATEST"
+          export:
+            s3_bucket: "${s3BucketName}"
+            s3_region: "${backend.storage.stack.region}"
+            s3_prefix: "${tableName}/"
+      aws:
+        sts_role_arn: "${openSearchIntegrationPipelineRole.roleArn}"
+        region: "${backend.data.stack.region}"
+  sink:
+    - opensearch:
+        hosts:
+          - "https://${openSearchDomain.domainEndpoint}"
+        index: "${indexName}"
+        index_type: "custom"
+        template_content: |
+          ${JSON.stringify(indexMapping)}
+        document_id: '${getMetadata("primary_key")}'
+        action: '${getMetadata("opensearch_action")}'
+        document_version: '${getMetadata("document_version")}'
+        document_version_type: "external"
+        bulk_size: 4
+        aws:
+          sts_role_arn: "${openSearchIntegrationPipelineRole.roleArn}"
+          region: "${backend.data.stack.region}"
+`
+```
+
+Create the OSIS pipeline resource and define the log group and pipeline configuration.
+
+```typescript
+const logGroup = {
+  logGroupName: '/aws/vendedlogs/OpenSearchService/pipelines/1',
+  removalPolicy: 'DESTROY'
+}
+
+const cfnPipeline = {
+  maxUnits: 4,
+  minUnits: 1,
+  pipelineConfigurationBody: openSearchTemplate,
+  pipelineName: 'dynamodb-integration-2',
+  logPublishingOptions: {
+    isLoggingEnabled: true,
+    cloudWatchLogDestination: {
+      logGroup: logGroup.logGroupName
+    }
+  }
+}
+```
+
+## Step 4: Expose new queries on OpenSearch
+
+### Step 4a: Add OpenSearch Datasource to backend
+
+Add the OpenSearch data source to the data backend.
+
+```typescript
+const osDataSource = backend.data.addOpenSearchDataSource('osDataSource', openSearchDomain)
+```
+
+### Step 4b: Create Resolver and attach to query
+
+Create a search resolver and attach it to the query. Define the request and response functions for the resolver.
+
+```typescript
+export function request(ctx) {
+  return {
+    operation: 'GET',
+    path: '/todo/_search'
+  }
+}
+
+export function response(ctx) {
+  if (ctx.error) {
+    util.error(ctx.error.message, ctx.error.type)
+  }
+  return ctx.result.hits.hits.map((hit) => hit._source)
+}
+```
+
+### Step 4c: Add the AppSync Resolver for the Search Query
+
+Update the schema and add a searchTodo query. Attach the resolver to the query.
+
+```typescript
+const schema = {
+  Todo: {
+    content: 'string',
+    done: 'boolean',
+    priority: ['low', 'medium', 'high']
+  },
+  searchTodos: {
+    type: 'Todo',
+    args: {
+      filter: {
+        type: 'TodoFilterInput'
+      }
+    },
+    resolve: async (source, args, context, info) => {
+      const result = await context.dataSources.osDataSource.searchTodo(args.filter)
+      return result.items
+    }
+  }
+}
+```
+
+Once you've deployed the resources, you can verify the changes by checking the AppSync console. Run the 'searchTodo' query and review the results to confirm their accuracy.

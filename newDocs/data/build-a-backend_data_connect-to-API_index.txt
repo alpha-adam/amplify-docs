@@ -1,0 +1,56 @@
+To connect your React application code to a backend API using the Amplify Libraries, you need to have a cloud sandbox with an Amplify Data resource up and running, a frontend application set up with the Amplify library installed, and npm installed.
+
+First, configure the Amplify Library by adding the following code to your app's entry point to initialize and configure the Amplify client library:
+```typescript
+import { Amplify } from 'aws-amplify';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure(outputs);
+```
+
+Next, generate a "Data client" for your frontend code to make fully-typed API requests to your backend. To do this, use the following code:
+```typescript
+import { generateClient } from 'aws-amplify/data';
+import type { Schema } from '../amplify/data/resource';
+
+const client = generateClient<Schema>();
+```
+
+You can now use the Data client to make CRUDL operations. For example, to fetch a list of todos, you can use the following code:
+```typescript
+const fetchTodos = async () => {
+  const { data: todos, errors } = await client.models.Todo.list();
+};
+```
+
+To configure authorization mode, you need to determine how a request should be authorized with the backend. Amplify Data uses the "userPool" authorization by default, which uses the signed-in user credentials to sign an API request. If you use a `allow.publicApiKey()` authorization rule for your data models, you need to use "apiKey" as an authorization mode.
+
+You can set the authorization mode on a per-client basis by specifying the `authMode` parameter on the `generateClient` function. For example:
+```typescript
+const client = generateClient<Schema>({
+  authMode: 'apiKey',
+});
+```
+
+Alternatively, you can set the authorization mode on each individual API request. For example:
+```typescript
+const { data: todos, errors } = await client.models.Todo.list({
+  authMode: 'apiKey',
+});
+```
+
+You can also set custom request headers for authorization purposes or to pass additional metadata from your frontend to the backend API. To do this, you can specify a `headers` parameter in the configuration. For example:
+```typescript
+const client = generateClient<Schema>({
+  headers: {
+    'My-Custom-Header': 'my value',
+  },
+});
+```
+
+If you have an additional Data endpoint that you're managing with a different Amplify project or through other means, you can utilize that endpoint in your frontend code by specifying the `endpoint` parameter on the `generateClient` function. For example:
+```typescript
+const client = generateClient({
+  endpoint: 'https://my-other-endpoint.com/graphql',
+});
+```

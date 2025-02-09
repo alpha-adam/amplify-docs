@@ -1,0 +1,134 @@
+Welcome to AWS Amplify. This quickstart guide will walk you through how to build a Todo application using various frameworks, including Vanilla JavaScript, React, Next.js, Angular, Vue, Flutter, React Native, and Swift. 
+
+To get started, you will need to deploy an Amplify backend database and authentication, then connect to the backend from your application, and finally make backend updates.
+
+You can choose your preferred framework to follow the quickstart guide, including:
+
+* Vanilla JavaScript
+* React
+* Next.js
+* Angular
+* Vue
+* Flutter
+* React Native
+* Swift
+* Android
+
+Each framework has its own set of instructions, but the overall process involves the following steps:
+
+1. Deploy an Amplify backend to AWS.
+2. Add authentication to the application.
+3. Add data to the application.
+4. Make backend updates.
+
+To deploy an Amplify backend, you will need to create a repository in your GitHub account using the Amplify Backend template, then deploy the repository to Amplify's CI/CD pipeline.
+
+To add authentication, you will need to install the necessary dependencies and import the Authenticator component. The Authenticator component auto-detects your auth backend settings and renders the correct UI state based on the auth backend's authentication flow.
+
+To add data, you will need to install the necessary dependencies, update the data schema, and implement the UI to create, list, and delete the to-do items.
+
+To make backend updates, you will need to update the data schema, commit the changes to your git repository, and let Amplify's CI/CD system automatically pick up the changes and build and deploy the updates.
+
+Once you have completed these steps, you will have a fully functional Todo application with authentication and data storage. You can then terminate the sandbox environment to clean up the project.
+
+For more information on how to work with Amplify, you can refer to the conceptual guide on [how Amplify works](https://docs.amplify.aws/cli/sdk/quickstart/).
+
+Here is an example of how to create a Todo application using React Native:
+```typescript
+import React, { useState, useEffect } from 'react';
+import { View, Button, Text, StyleSheet } from 'react-native';
+
+import { generateClient } from "aws-amplify/data";
+import type { Schema } from "../amplify/data/resource";
+import { GraphQLError } from "graphql";
+const client = generateClient<Schema>();
+
+const TodoList = () => {
+  const dateTimeNow = new Date();
+  const [todos, setTodos] = useState<Schema["Todo"]["type"][]>([]);
+  const [errors, setErrors] = useState<GraphQLError>();
+
+  useEffect(() => {
+    const sub = client.models.Todo.observeQuery().subscribe({
+      next: ({ items }) => {
+        setTodos([...items]);
+      },
+    });
+
+    return () => sub.unsubscribe();
+  }, []);
+
+  const createTodo = async () => {
+    try {
+      await client.models.Todo.create({
+        content: `${dateTimeNow.getUTCMilliseconds()}`,
+      });
+    } catch (error: unknown) {
+      if (error instanceof GraphQLError) {
+        setErrors(error);
+      } else {
+        throw error;
+      }
+    }
+  };
+
+  if (errors) {
+    return <Text>{errors.message}</Text>;
+  }
+
+  const renderItem = ({ item }: { item: Schema["Todo"]["type"] }) => (
+    <TodoItem {...item} />
+  );
+  return (
+    <View style={{ flex: 1 }}>
+      <FlatList
+        data={todos}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+        ItemSeparatorComponent={() => (
+          <View style={styles.listItemSeparator} />
+        )}
+        ListEmptyComponent={() => <Text>The todo list is empty.</Text>}
+        style={styles.listContainer}
+      ></FlatList>
+      <Button onPress={createTodo} title="Create Todo" />
+    </View>
+  );
+};
+
+const TodoItem = (todo: Schema["Todo"]["type"]) => (
+  <View style={styles.todoItemContainer} key={todo.id}>
+    <Text
+      style={{
+       ...styles.todoItemText,
+        textDecorationLine: todo.isDone? "line-through" : "none",
+        textDecorationColor: todo.isDone? "red" : "black",
+      }}
+    >
+      {todo.content}
+    </Text>
+    <Button
+      onPress={async () => {
+        await client.models.Todo.delete(todo);
+      }}
+      title="Delete"
+    />
+    <Button
+      onPress={() => {
+        client.models.Todo.update({
+          id: todo.id,
+          isDone:!todo.isDone,
+        });
+      }}
+      title={todo.isDone? "Undo" : "Done"}
+    />
+  </View>
+);
+
+const styles = StyleSheet.create({
+  todoItemContainer: { flexDirection: "row", alignItems: "center", padding: 8 },
+  todoItemText: { flex: 1, textAlign: "center" },
+  listContainer: { flex: 1, alignSelf: "stretch", padding:8 },
+  listItemSeparator: { backgroundColor: "lightgrey", height: 2 },
+});
+```

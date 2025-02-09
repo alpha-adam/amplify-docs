@@ -1,0 +1,17 @@
+Amplify provides a solution for using AI and ML cloud services to enhance your application. Some supported use cases include:
+
+- converting text to speech
+- transcribing audio to text
+- translating text from one language to another
+- identifying text from an image
+- identifying entities from an image
+- identifying real world objects from an image
+- interpreting text
+
+Predictions is broadly organized into 3 key use cases - Identify, Convert, and Interpret. 
+
+- Identify will find text, entities, or real world objects from images.
+- Convert allows you to translate text, generate speech audio from text input, or transcribe an audio input.
+- Interpret allows you to analyze text for language, entities, key phrases, sentiment, and syntax.
+
+Some common use cases are listed below. Predictions comes with built-in support for Amazon Translate, Amazon Polly, Amazon Transcribe, Amazon Rekognition, Amazon Textract, and Amazon Comprehend.

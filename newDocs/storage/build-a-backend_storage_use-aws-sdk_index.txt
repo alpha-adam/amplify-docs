@@ -1,0 +1,43 @@
+To access the S3Client instance for advanced use cases where Amplify does not provide the functionality, you can retrieve the escape hatch. 
+
+For Android, you would use the following Java or Kotlin code to get the escape hatch. 
+
+In Java:
+```java
+AWSS3StoragePlugin plugin = (AWSS3StoragePlugin) Amplify.Storage.getPlugin("awsS3StoragePlugin");
+S3Client client = plugin.getEscapeHatch();
+```
+In Kotlin:
+```kotlin
+val plugin = Amplify.Storage.getPlugin("awsS3StoragePlugin") as AWSS3StoragePlugin
+val client = plugin.escapeHatch
+```
+In React, you would use the following code to get the escape hatch:
+```javascript
+const plugin = Amplify.Storage.getPlugin('awsS3StoragePlugin');
+const client = plugin.getEscapeHatch();
+```
+For iOS, you would use the following Swift code to get the escape hatch:
+```swift
+do {
+    let plugin = try Amplify.Storage.getPlugin(for: "awsS3StoragePlugin")
+    guard let storagePlugin = plugin as? AWSS3StoragePlugin else {
+        return
+    }
+    let s3Client = storagePlugin.getEscapeHatch()
+    // Make requests using s3Client...
+} catch {
+    print("Get escape hatch failed with error - \(error)")
+}
+```
+In React, the equivalent code would be:
+```javascript
+try {
+  const plugin = await Amplify.Storage.getPlugin('awsS3StoragePlugin');
+  const s3Client = plugin.getEscapeHatch();
+  // Make requests using s3Client...
+} catch (error) {
+  console.log('Get escape hatch failed with error - ', error);
+}
+```
+For additional client documentation and S3Client code examples, see the AWS SDK documentation.

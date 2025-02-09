@@ -1,0 +1,143 @@
+You can easily display images in your app by using the cloud-connected Storage Image React UI component. This component fetches images securely from your storage resource and displays it on the web page.
+
+To get started, you need to install the required packages by running the command `npm add @aws-amplify/ui-react-storage aws-amplify` in your terminal.
+
+Here's an example of how to use the Storage Image component:
+```tsx
+import { StorageImage } from '@aws-amplify/ui-react-storage';
+
+export const DefaultStorageImageExample = () => {
+  return <StorageImage alt="cat" path="your-path/cat.jpg" />;
+};
+```
+You can further customize the UI component by referring to the [Storage Image documentation](https://ui.docs.amplify.aws/react/connected-components/storage/storageimage).
+
+To download files from your storage, you can use the `getUrl` API from the Amplify Library for Storage. This API generates a presigned URL that is valid for 900 seconds or 15 minutes by default. You can use this URL to create a download link for users to click on.
+
+Here's an example of how to use the `getUrl` API:
+```javascript
+import { getUrl } from 'aws-amplify/storage';
+
+const linkToStorageFile = await getUrl({
+  path: "album/2024/1.jpg",
+});
+console.log('signed URL: ', linkToStorageFile.url);
+console.log('URL expires at: ', linkToStorageFile.expiresAt);
+```
+You can then use the `url` property to create a link to the file:
+```tsx
+<a href={linkToStorageFile.url.toString()} target="_blank" rel="noreferrer">
+  {fileName} 
+</a>
+```
+Note that the `getUrl` API does not check if the file exists by default. As a result, the signed URL may fail if the file to be downloaded does not exist.
+
+You can also customize the behavior of the `getUrl` API by passing in options. For example, you can specify a target bucket using the `bucket` option, or ensure that the object exists before getting the URL using the `validateObjectExistence` option.
+
+Here's an example of how to use the `getUrl` API with options:
+```typescript
+import { getUrl } from 'aws-amplify/storage';
+
+const linkToStorageFile = await getUrl({
+  path: "album/2024/1.jpg",
+  options: {
+    bucket: 'assignedNameInAmplifyBackend',
+    validateObjectExistence: true,
+    expiresIn: 300,
+    useAccelerateEndpoint: true,
+    expectedBucketOwner: '123456789012',
+  }
+});
+```
+The available options for the `getUrl` API are:
+
+* `bucket`: A string representing the target bucket's assigned name in Amplify Backend or an object specifying the bucket name and region from the console.
+* `validateObjectExistence`: A boolean indicating whether to head object to make sure the object existence before downloading.
+* `expiresIn`: A number representing the number of seconds till the URL expires.
+* `useAccelerateEndpoint`: A boolean indicating whether to use accelerate endpoint.
+* `expectedBucketOwner`: A string representing the account ID that owns the requested bucket.
+
+To download a file locally, you can use the `downloadData` API from the Amplify Library for Storage. This API downloads the file content to memory.
+
+Here's an example of how to use the `downloadData` API:
+```javascript
+import { downloadData } from 'aws-amplify/storage';
+
+const { body, eTag } = await downloadData({
+  path: "album/2024/1.jpg"
+}).result;
+```
+You can then get the text value of the downloaded file using the `text()` method:
+```javascript
+const text = await body.text();
+console.log('Succeed: ', text);
+```
+You can also download a file from a specified bucket by providing the `bucket` option. You can pass in a string representing the target bucket's assigned name in Amplify Backend or an object specifying the bucket name and region from the console.
+
+Here's an example of how to use the `downloadData` API with a specified bucket:
+```typescript
+import { downloadData } from 'aws-amplify/storage';
+
+const result = await downloadData({
+  path: 'album/2024/1.jpg',
+  options: {
+    bucket: 'assignedNameInAmplifyBackend'
+  }
+}).result;
+```
+Alternatively, you can also pass in an object by specifying the bucket name and region from the console:
+```typescript
+import { downloadData } from 'aws-amplify/storage';
+
+const result = await downloadData({
+  path: 'album/2024/1.jpg',
+  options: {
+    bucket: {
+      bucketName: 'bucket-name-from-console',
+      region: 'us-east-2'
+    }
+  }
+}).result;
+```
+You can monitor the download progress by using the `onProgress` option:
+```javascript
+import { downloadData } from 'aws-amplify/storage';
+
+const { body, eTag } = await downloadData({
+  path: "album/2024/1.jpg",
+  options: {
+    onProgress: (progress) => {
+      console.log(`Download progress: ${(progress.transferredBytes/progress.totalBytes) * 100}%`);
+    }
+  }
+}).result;
+```
+You can also cancel the download operation using the `cancel` method:
+```javascript
+import { downloadData, isCancelError } from 'aws-amplify/storage';
+
+const downloadTask = downloadData({ path: 'album/2024/1.jpg' });
+downloadTask.cancel();
+try {
+  await downloadTask.result;
+} catch (error) {
+  if (isCancelError(error)) {
+    console.log('Download operation cancelled');
+  }
+}
+```
+The available options for the `downloadData` API are:
+
+* `bucket`: A string representing the target bucket's assigned name in Amplify Backend or an object specifying the bucket name and region from the console.
+* `onProgress`: A callback function tracking the upload/download progress.
+* `bytesRange`: An object specifying the bytes range to download.
+* `useAccelerateEndpoint`: A boolean indicating whether to use accelerate endpoint.
+* `expectedBucketOwner`: A string representing the account ID that owns the requested bucket.
+
+You can also frequently asked questions about the Storage API, such as:
+
+* `downloadData` is cached; if you have recently modified a file you may not get the latest version right away. You can pass in `cacheControl: 'no-cache'` to get the latest version.
+* `downloadData` only returns the latest cached version of the file; there is not yet an API to view prior versions.
+* Image compression or CloudFront CDN caching for your S3 buckets is not yet possible.
+* There is no API for Cognito Group-based access to files.
+* There is currently no API for getting the `identityId` of other users; you have to retrieve this from elsewhere before calling `Storage.get`.

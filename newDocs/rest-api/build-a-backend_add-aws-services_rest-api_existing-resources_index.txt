@@ -1,0 +1,30 @@
+To use existing AWS resources with the Amplify Libraries, you need to configure the libraries to reference the existing Amazon API Gateway resources. This can be done by calling `Amplify.configure()` with the API Gateway API name and options.
+
+You will need to provide the full resource configuration and library options objects when calling `Amplify.configure()`. Here is an example of how to do this in a React application:
+
+```javascript
+import Amplify from 'aws-amplify';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure(outputs);
+
+const existingConfig = Amplify.getConfig();
+
+Amplify.configure({
+ ...existingConfig,
+  API: {
+   ...existingConfig.API,
+    endpoints: [
+      {
+        name: 'YourAPIName',
+        endpoint: 'https://abcdefghij1234567890.execute-api.us-east-1.amazonaws.com/stageName',
+        region: 'us-east-1' // Optional
+      }
+    ]
+  }
+});
+```
+
+In this example, replace `YourAPIName` with a friendly name for your API, and `https://abcdefghij1234567890.execute-api.us-east-1.amazonaws.com/stageName` with the HTTPS endpoint of your API. The `region` field is optional, and if not specified, the region will be inferred from the endpoint.
+
+Note that before you can add an AWS resource to your application, you must have the Amplify libraries installed. If you need to install the Amplify libraries, you can find instructions on how to do so in the Amplify documentation.

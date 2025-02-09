@@ -1,0 +1,23 @@
+When a large language model generates a lot of text, typically over 100 words, it can take some time to produce the entire response. Instead of waiting for the complete response, the generated text can be sent back in chunks as it is created. 
+
+Model providers like Amazon Bedrock usually have an HTTP streaming API that sends responses back in pieces. 
+
+The Amplify AI kit handles streaming differently than other frameworks, it doesn't use HTTP streaming from the server to the client. Instead, it uses a WebSocket connection to AWS AppSync to send updates to the browser.
+
+Here's how it works: the Amplify AI kit provisions a Lambda function that calls Bedrock with a streaming API request. The Lambda function receives chunks from the HTTP streaming response and sends updates to AppSync. The client then subscribes to these updates.
+
+If you're using the `useAIConversation` React hook, you don't need to worry about the details, as it takes care of everything and provides conversation messages as React state that updates as chunks are received. 
+
+For example, you can use the hook in your React component like this:
+```javascript
+function Conversation() {
+  const { messages } = useAIConversation();
+  return (
+    <div>
+      {messages.map((message, index) => (
+        <p key={index}>{message}</p>
+      ))}
+    </div>
+  );
+}
+```

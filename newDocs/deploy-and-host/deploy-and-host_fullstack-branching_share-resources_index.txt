@@ -1,0 +1,15 @@
+You can share resources across branches in your app by updating the build settings. This is useful when you want to reuse seed data, users, and groups across different branches. For example, you can set up your feature branches to use the backend resources deployed by the dev branch.
+
+To do this, go to the App overview page in the Amplify console and select Build settings under Hosting. This will show you your app's build specification YAML file. Update the build settings for the backend phase to generate the amplify_outputs.json file for all branches other than main or dev. 
+
+You can achieve this by running the command `npx ampx generate outputs --branch dev app-id $AWS_APP_ID` for all branches other than main or dev. This will ensure that any new deployed branches will not deploy backend resources as part of the build and instead will use the deployed backend resources from the dev branch.
+
+Here is an example of how you can update your amplify.yml file to achieve this:
+
+you can use a case statement in your amplify.yml file to run different commands based on the current branch. 
+For the main and dev branches, you can deploy the backend resources as usual. 
+For other branches, you can generate the amplify_outputs.json file using the dev branch. 
+
+This approach allows you to share resources across branches and reuse seed data, users, and groups. 
+
+In react code, you don't need to do anything to share resources across branches, this is all handled in the amplify.yml file and in the amplify console.

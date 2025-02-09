@@ -1,0 +1,47 @@
+Is there a way to upgrade an existing Amplify project from Gen 1 to Gen 2?
+
+Amplify is still developing migration tooling to aid in transitioning projects from Gen 1 to Gen 2. Until then, it's recommended to continue working with Gen 1 Amplify projects. A feature support matrix comparing Gen 1 and Gen 2 is available. For new projects, it's recommended to adopt Gen 2 to take advantage of its enhanced capabilities. 
+
+If I have a Gen 1 app, can I use Gen 2 in it?
+
+Amplify Gen 1 and Gen 2 follow different architectural and tooling paradigms. Migration tooling is needed to move from a Gen 1 to Gen 2 app. It's not possible to use Amplify Gen 1 and Gen 2 in the same app.
+
+Should I use Amplify Gen 1 or Gen 2 in new apps?
+
+For new apps, it's recommended to use Amplify Gen 2.
+
+Does Amplify Gen 2 support DataStore?
+
+Amplify Gen 2 supports GraphQL APIs without DataStore. Migration support for moving DataStore Gen 1 apps to Gen 2 will be released.
+
+What programming languages does Amplify Gen 2 support?
+
+Amplify Gen 2 supports multiple programming languages, including JavaScript, TypeScript, Dart, Java, Kotlin, and Swift, for client-side development. For backend development, Amplify Gen 2 uses TypeScript.
+
+In Gen 1, Amplify offered a set of use case categories for building applications. Are those same categories available in Gen 2?
+
+Amplify Gen 2 offers built-in support for Auth, Data, Storage, and Functions. Other use cases can be implemented using AWS Cloud Development Kit constructs.
+
+Can I use Gen 2 with a JavaScript frontend that doesn't use TypeScript?
+
+Yes, Amplify Gen 2's TypeScript backend definition works with JavaScript frontends, providing a typed data fetching experience.
+
+What if we want to add a feature like AI/ML or Amazon Location Service to our application in Gen 2?
+
+Any AWS services supported by the AWS CDK can be added to an app using custom resources and L2/L1 AWS CDK constructs.
+
+What happens once my application grows too big and I want to do more configuration with my application?
+
+Amplify is layered on top of the AWS CDK and AWS CloudFormation, allowing the addition of any AWS services supported by CDK to an Amplify app. Configuration of resources can be overridden using the CDK, and any deployment pipeline can be used for more control over CI.
+
+How much does it cost to operate Amplify Gen2?
+
+Pricing information for Amplify is available on the Amplify pricing page.
+
+Which Amplify JavaScript version is compatible with Gen 2?
+
+Amplify JavaScript version 6.2.0 and above is compatible with backends created by Amplify Gen 2. 
+
+Can I use any other database storage other than Amazon DynamoDB? 
+
+Yes, it's possible to use an existing MySQL or PostgreSQL database in an Amplify app. With custom query and mutation support, it's possible to integrate with any existing data source through a Lambda function.

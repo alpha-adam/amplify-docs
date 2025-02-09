@@ -1,0 +1,19 @@
+To interpret sentiment, you need to determine key phrases, sentiment, language, syntax, and entities from text using Amplify. Before you start, make sure to complete the getting started section, where you will set up the IAM roles with the right policy actions.
+
+You can analyze text to find key phrases, sentiment (positive, negative, neutral), or the syntax (pronouns, verbs, etc.). You can also find entities in the text such as names or places, or perform language detection.
+
+To do this, you can use the `Predictions` class from `@aws-amplify/predictions`. Here is an example of how to use it in a React application:
+```javascript
+import { Predictions } from '@aws-amplify/predictions';
+
+const textToInterpret = 'Your text to interpret';
+const result = await Predictions.interpret({
+  text: {
+    source: {
+      text: textToInterpret,
+    },
+    type: 'ALL'
+  }
+})
+```
+This code will return an object with the interpretation results, including key phrases, sentiment, syntax, entities, and language detection.

@@ -1,0 +1,31 @@
+To generate React code directly from Figma, you can use the Amplify UI Figma file and the Amplify UI Builder plugin. 
+
+First, you need to duplicate the Amplify UI Figma file. This file contains several pages, including a README page that explains how to use the Figma file to create new components, theme primitives, and customize layout and styling. 
+
+The Theme page displays the theme values and design tokens used to style the primitives. If you want to make changes to the theme, you should use the Amplify UI Builder Figma plugin. 
+
+The Primitives page contains building-block components such as alerts, buttons, and badges. These primitives correspond to the Amplify UI primitives and can be exported to code with all their properties. 
+
+The My components page contains custom components built using the primitives. You can customize the provided components or build your own. 
+
+To generate React code, you need to run the Amplify UI Builder Figma plugin. You can do this in dev mode or non-dev mode. 
+
+In dev mode, you turn on Figma dev mode, select the AWS Amplify UI Builder plugin, and choose a layer in your file to get React code and a live preview of the generated code. 
+
+In non-dev mode, you select the AWS Amplify UI Builder plugin and choose Download component code to download the React code for your components. 
+
+For example, if you were to generate a button component, the React code might look like this:
+```jsx
+import React from 'react';
+
+const Button = () => {
+  return (
+    <button>
+      Click me
+    </button>
+  );
+};
+
+export default Button;
+```
+You should follow the instructions in the README page of the Figma file to learn how to create your components and optimize for code quality.

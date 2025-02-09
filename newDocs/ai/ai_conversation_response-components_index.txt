@@ -1,0 +1,60 @@
+Response components are custom UI components that can be defined to allow an AI assistant to respond with more than just text. These components enable the creation of rich conversational interfaces. 
+
+The AIConversation component takes response components and turns them into tool configurations to send to the LLM. When a user sends a message to the backend, the backend Lambda merges the tools coming from the client and any schema tools. The LLM sees that it can invoke a UI component tool with certain input/props. If the LLM chooses to use a response component tool, a message gets sent to the client with the response component name and props. The AIConversation component will then try to render the provided React component with the props the LLM sends.
+
+It's essential to know that the LLM is not writing raw code that gets sent to the browser and evaluated.
+
+A response component has a description, a React component to render, and props in JSONSchema format. For example, you can define a WeatherCard response component that displays the weather to the user. 
+
+To pass context back to the assistant, you can send aiContext with the message. aiContext is any information about the current state of the client application that might be useful for the AI assistant to know to help it respond better. You can use the aiContext to let the AI assistant know what was rendered in the response component so it can have more context to respond with.
+
+To share state across components, you can create a context using React.createContext. For instance, you can create a DataContext to share state across components and use it to set the data context when the WeatherCard component is rendered. 
+
+In some cases, there may be times when there is a message in the conversation history that has a response component you no longer have. To handle these situations, you can use the FallbackResponseComponent prop. This prop allows you to define a fallback component to render when a response component is not found. 
+
+For example, you can define a fallback component that displays the props of the missing response component. 
+
+To use response components, you need to define them in the responseComponents prop of the AIConversation component. You can define multiple response components and use them to create a rich conversational interface. 
+
+You can also use the aiContext prop to pass context back to the assistant and use the FallbackResponseComponent prop to handle situations where a response component is not found. 
+
+Here is an example of how to use response components:
+```typescript
+<AIConversation
+  responseComponents={{
+    WeatherCard: {
+      description: "Used to display the weather to the user",
+      component: ({ city }) => {
+        return (
+          <div>{city}</div>
+        )
+      },
+      props: {
+        city: {
+          type: "string",
+          required: true,
+          description: "The name of the city to display the weather for",
+        },
+      },
+    },
+  }}
+/>
+```
+And here is an example of how to use the aiContext prop:
+```typescript
+<AIConversation
+  aiContext={() => {
+    return {
+      // data to pass to the assistant
+    };
+  }}
+/>
+```
+And here is an example of how to use the FallbackResponseComponent prop:
+```typescript
+<AIConversation
+  FallBackResponseComponent={(props) => {
+    return <>{JSON.stringify(props)}</>
+  }}
+/>
+```

@@ -1,0 +1,48 @@
+To grant access to auth resources in Amplify Auth, you can define an `access` property that allows other resources to interact with auth by specifying actions. 
+
+This is typically done when defining and configuring your auth resource. 
+
+Here's an example of how to define and configure your auth resource in a React application:
+```javascript
+const auth = {
+  loginWith: {
+    email: true,
+  },
+  access: (allow) => [
+    allow.resource('addUserToGroup').to(['addUserToGroup'])
+  ],
+}
+```
+When you grant a function access to another resource in your Amplify backend, it will configure environment variables for that function to make SDK calls to the AWS services it has access to. 
+
+These environment variables are typed and available as part of the `env` object.
+
+Here's a list of available actions that can be used in the `access` property:
+
+* manageUsers: Grants CRUD access to users in the UserPool
+* manageGroupMembership: Grants permission to add and remove users from groups
+* manageGroups: Grants CRUD access to groups in the UserPool
+* manageUserDevices: Manages devices registered to users
+* managePasswordRecovery: Grants permission to reset user passwords
+* addUserToGroup: Grants permission to add any user to any group
+* createUser: Grants permission to create new users and send welcome messages via email or SMS
+* deleteUser: Grants permission to delete any user
+* deleteUserAttributes: Grants permission to delete attributes from any user
+* disableUser: Grants permission to deactivate any user
+* enableUser: Grants permission to activate any user
+* forgetDevice: Grants permission to deregister any user's devices
+* getDevice: Grants permission to get information about any user's devices
+* getUser: Grants permission to look up any user by user name
+* listUsers: Grants permission to list users and their basic details in the UserPool
+* listDevices: Grants permission to list any user's remembered devices
+* listGroupsForUser: Grants permission to list the groups that any user belongs to
+* listUsersInGroup: Grants permission to list users in the specified group
+* removeUserFromGroup: Grants permission to remove any user from any group
+* resetUserPassword: Grants permission to reset any user's password
+* setUserMfaPreference: Grants permission to set any user's preferred MFA method
+* setUserPassword: Grants permission to set any user's password
+* setUserSettings: Grants permission to set user settings for any user
+* updateDeviceStatus: Grants permission to update the status of any user's remembered devices
+* updateUserAttributes: Grants permission to updates any user's standard or custom attributes
+
+Each action corresponds to specific Cognito IAM actions that are granted when the action is allowed.

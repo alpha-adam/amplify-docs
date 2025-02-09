@@ -1,0 +1,88 @@
+To manage a form's lifecycle, you can hook into its lifecycle events to customize user input before submission, run validations, handle errors, or self-manage user input events. The form lifecycle consists of several stages, including initial state, onChange, onValidate, onSubmit, onSuccess, onError, and onCancel.
+
+The initial state is when the inputs are either empty or pre-populated based on a default value. If the user clicks the Clear or Reset button, they will be brought back to this state.
+
+The onChange event is triggered when the form data is changed by the user. This can be used to get the form data after every user input. For example, you can use the onChange event to get the form data in real-time as the user is filling the form.
+
+```jsx
+import { useState } from 'react'
+import { HomeCreateForm } from './ui-components'
+
+function App() {
+  const [formData, setFormData] = useState()
+
+  return (
+    <HomeCreateForm onChange={fields => setFormData(fields)}/>
+  )
+}
+```
+
+The onValidate event is used to extend validation rules in code. This event triggers after onChange and can be used to validate the form input against external APIs.
+
+The onSubmit event is triggered when the user clicks the Submit button. This can be used to customize the form data before it is saved to the cloud. For example, you can use the onSubmit event to trim all string data before saving it.
+
+```jsx
+<HomeCreateForm
+    onSubmit={(fields) => {
+        const updatedFields = {}
+        Object.keys(fields).forEach(key => {
+            if (typeof fields[key] === 'string') {
+                updatedFields[key] = fields[key].trim()
+            } else {
+                updatedFields[key] = fields[key]
+            }
+        })
+        return updatedFields
+    }}
+/>
+```
+
+The onSuccess event is triggered when the form data has been successfully submitted. This can be used to take an action after the form data has been successfully submitted, such as hiding the form.
+
+```jsx
+import { useState } from 'react'
+import { HomeCreateForm } from './ui-components'
+
+function App() {
+  const [showForm, setShowForm] = useState(true)
+
+  return (
+    {showForm &&
+      <HomeCreateForm onSuccess={() => {
+        setShowForm(false) // Hide the form
+      }}/>}
+  )
+}
+```
+
+The onError event is triggered when there is an error during the submit process. This can be used to log the error and present an alert to the user.
+
+```jsx
+import { HomeCreateForm } from './ui-components'
+
+function App() {
+  return (
+    <HomeCreateForm onError={(error) => {
+      console.log(error)
+    }}/>
+  )
+}
+```
+
+The onCancel event is triggered when the user clicks the Cancel button. This can be used to hide the form or route the user to another page.
+
+```jsx
+import { useState } from 'react'
+import { HomeCreateForm } from './ui-components'
+
+function App() {
+  const [showForm, setShowForm] = useState(true)
+
+  return (
+    {showForm &&
+      <HomeCreateForm onCancel={() => {
+        setShowForm(false) // Hide the form
+      }}/>}
+  )
+}
+```

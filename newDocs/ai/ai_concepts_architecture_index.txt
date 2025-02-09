@@ -1,0 +1,31 @@
+The Amplify AI Kit is built around the concept of routes, which are similar to API endpoints for interacting with backend AI functionality. These routes are configured in the Amplify backend, where you can define authorization rules, route type, AI model, and other settings. There are two types of AI routes: 
+
+Conversation routes are asynchronous and multi-turn, meaning they involve multiple interactions between the user and the AI. These conversations are automatically stored in a database. Examples of conversation routes include chat-based AI experiences or conversational user interfaces.
+
+Generation routes, on the other hand, are single, synchronous requests that generate structured data based on the route definition. These routes are often used for tasks such as generating structured data from unstructured input or summarization.
+
+When you create an AI route with the Amplify AI Kit, it uses several cloud infrastructure services, including:
+
+AWS AppSync, a serverless API layer that authorizes and routes requests from the browser to AWS services.
+Amazon DynamoDB, a serverless database that stores conversation history.
+AWS Lambda, a serverless execution environment for conversations.
+Amazon Bedrock, a serverless foundation model. 
+
+In a React application, you might interact with these AI routes using the Amplify AI Kit, which provides a simple and intuitive way to integrate AI functionality into your app. For example, you might use the `Amplify` library to send a request to a conversation route, like this:
+```
+import Amplify from 'aws-amplify';
+
+// Send a message to a conversation route
+Amplify.AI.converse(message, (response) => {
+  // Handle the response
+});
+```
+Or, you might use the `Amplify` library to send a request to a generation route, like this:
+```
+import Amplify from 'aws-amplify';
+
+// Send a request to a generation route
+Amplify.AI.generate(input, (response) => {
+  // Handle the response
+});
+```

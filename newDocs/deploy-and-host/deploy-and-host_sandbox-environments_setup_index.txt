@@ -1,0 +1,49 @@
+You can use a personal cloud sandbox environment that provides an isolated development space to rapidly build, test, and iterate on a full-stack app. Each developer on your team can use their own disposable sandbox environment connected to cloud resources. Cloud sandbox environments are not intended for production workloads.
+
+To create a new sandbox environment, you need to have an Amplify app set up. If you haven't created an Amplify Gen 2 app, you can start by visiting the Quickstart guide. 
+
+Once you have an Amplify app set up, you can create a new sandbox environment by running the command `npx ampx sandbox` in your terminal. This will deploy a cloud sandbox and create an AWS CloudFormation stack with the resources configured in your `amplify/` folder. The stack will be named according to the convention `amplify-<app-name>-<username>-sandbox`.
+
+After a successful deployment, the `sandbox` command will watch for file changes in your `amplify/` folder and perform real-time updates to the associated CloudFormation stack. This allows you to see the changes you make to your code reflected in your sandbox environment immediately.
+
+If you want to stop your sandbox environment, you can do so by pressing `Ctrl+C` in your terminal. If you want to delete all the resources in your sandbox environment, you can run the command `npx ampx sandbox delete`.
+
+You can also view and manage all the sandbox environments for your team in the Amplify console. This allows you to see the number, status, and last updates for sandbox environments across your team, and delete sandbox environments when they are no longer needed.
+
+When working with cloud sandbox environments, keep in mind the following best practices: 
+- Sandboxes are identical in fidelity to your production environments.
+- Code changes are continuously deployed to your sandbox on every save for fast iterations.
+- Use sandboxes for experimentation and testing, not for production workloads.
+- Deploy one sandbox per Amplify app per developer to prevent conflicts.
+- Reset sandboxes occasionally to clear out unused resources and save costs. 
+
+Here is an example of how you might create and delete a sandbox environment using React and Node:
+```javascript
+// Create a new sandbox environment
+const { exec } = require('child_process');
+exec('npx ampx sandbox', (error, stdout, stderr) => {
+  if (error) {
+    console.error(`exec error: ${error}`);
+    return;
+  }
+  if (stderr) {
+    console.error(`stderr: ${stderr}`);
+    return;
+  }
+  console.log(`stdout: ${stdout}`);
+});
+
+// Delete a sandbox environment
+const { exec } = require('child_process');
+exec('npx ampx sandbox delete', (error, stdout, stderr) => {
+  if (error) {
+    console.error(`exec error: ${error}`);
+    return;
+  }
+  if (stderr) {
+    console.error(`stderr: ${stderr}`);
+    return;
+  }
+  console.log(`stdout: ${stdout}`);
+});
+```

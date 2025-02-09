@@ -1,0 +1,106 @@
+To identify text from images and documents in your application using AWS Amplify, you first need to complete the getting started section where you set up the IAM roles with the right policy actions.
+
+You can detect text in an input image by sending the input directly from the browser or an Amazon S3 key from your project bucket. To do this, you can use the Predictions.identify function from the @aws-amplify/predictions library.
+
+```javascript
+const response = await Predictions.identify({
+  text: {
+    source: {
+      file
+    }
+  }
+});
+```
+
+You can also identify an image stored in Amazon S3 by providing the key of the image instead of the file.
+
+```javascript
+const response = await Predictions.identify({
+  text: {
+    source: {
+      key: pathToPhoto,
+    }
+  }
+})
+```
+
+When using the Predictions.identify function, you can specify the format of the text asPLAIN, TABLE, FORM, or ALL. For example, to detect plain text, you can use the following code:
+
+```javascript
+const response = await Predictions.identify({
+  text: {
+    source: {
+      file
+    },
+    format: 'PLAIN'
+  }
+});
+
+const {
+  text: {
+    fullText, 
+    lines, 
+    linesDetailed,
+    words
+  }
+} = response;
+```
+
+This will return the full text, lines, lines with detailed information, and words detected in the image.
+
+To detect structured forms, you can use the following code:
+
+```javascript
+const response = await Predictions.identify({
+  text: {
+    source: {
+      file
+    },
+    format: 'FORM'
+  }
+});
+
+const {
+  text: {
+    keyValues
+  }
+} = response;
+```
+
+This will return an array of key-value pairs detected in the image, along with metadata such as the location of the key-value pairs.
+
+To detect structured tables, you can use the following code:
+
+```javascript
+const response = await Predictions.identify({
+  text: {
+    source: {
+      file
+    },
+    format: 'TABLE'
+  }
+});
+
+const {
+  text: {
+    tables
+  }
+} = response;
+```
+
+This will return an array of tables detected in the image, along with metadata such as the size of the table and the text detected in each cell.
+
+To detect both tables and forms, you can use the following code:
+
+```javascript
+const { text } = await Predictions.identify({
+  text: {
+    source: {
+      file
+    },
+    format: 'ALL'
+  }
+});
+```
+
+This will return all the detected text, including plain text, tables, and forms.

@@ -1,0 +1,77 @@
+Analytics auto tracking helps you to automatically track user behaviors like sessions' start/stop, page view change and web events like clicking or mouseover.
+
+Session Tracking is available in both web and React Native apps using Analytics. A web session is active when the page is not hidden and inactive when the page is hidden. In a React Native app, a session is active when the app is in the foreground and inactive when the app is in the background.
+
+To track sessions in a React app, you can use the `configureAutoTrack` function from `aws-amplify/analytics`. This function takes an options object with the following properties: 
+- `enable`: a boolean to turn on or off the auto tracking
+- `type`: the event type, which can be 'event', 'pageView', or 'session'
+- `options`: additional options for the tracked event, including attributes and other settings
+
+For example, to track sessions in a React app, you can use the following code:
+```javascript
+import { configureAutoTrack } from 'aws-amplify/analytics';
+
+configureAutoTrack({
+  enable: true,
+  type: 'session',
+  options: {
+    attributes: {
+      customizableField: 'attr'
+    }
+  }
+});
+```
+
+By default, when the page or app transitions to the foreground, the Analytics module will send an event to the Amazon Pinpoint Service. This behavior can be disabled by calling `configureAutoTrack` with `enable` set to `false`.
+
+Page View Tracking is used to track the most frequently viewed pages or URLs in your web app. It automatically sends events containing URL information when a page is visited. This can be enabled or disabled using the `configureAutoTrack` function with `type` set to 'pageView'.
+
+For example:
+```javascript
+import { configureAutoTrack } from 'aws-amplify/analytics';
+
+configureAutoTrack({
+  enable: true,
+  type: 'pageView',
+  options: {
+    attributes: {
+      customizableField: 'attr'
+    },
+    eventName: 'pageView',
+    appType: 'singlePageApp',
+    urlProvider: () => {
+      return window.location.origin + window.location.pathname;
+    }
+  }
+});
+```
+
+Page Event Tracking is used to track user interactions with specific elements on a page. This can be enabled or disabled using the `configureAutoTrack` function with `type` set to 'event'.
+
+For example:
+```javascript
+import { configureAutoTrack } from 'aws-amplify/analytics';
+
+configureAutoTrack({
+  enable: true,
+  type: 'event',
+  options: {
+    attributes: {
+      customizableField: 'attr'
+    },
+    events: ['click'],
+    selectorPrefix: 'data-amplify-analytics-'
+  }
+});
+```
+
+You can then add attributes to your HTML elements using the `data-amplify-analytics-` prefix. For example:
+```html
+<button
+  data-amplify-analytics-on="click"
+  data-amplify-analytics-name="click"
+  data-amplify-analytics-attrs="attr1:attr1_value,attr2:attr2_value"
+/>
+```
+
+Note that Amplify does not capture location automatically. Instead, you can add location information in the default config when you configure Analytics or while updating the endpoint.

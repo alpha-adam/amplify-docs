@@ -1,0 +1,66 @@
+AWS Amplify Interactions enables AI-powered chatbots in your web or mobile apps. You can use Interactions to configure your backend chatbot provider and to integrate a chatbot UI into your app with just a single line of code.
+
+Interactions with AWS Amplify supports Amazon Lex as the default chatbots service. Amazon Lex supports creating conversational bots with the same deep learning technologies that power Amazon Alexa.
+
+To set up an Amazon Lex V2 bot, you can create it in the Amazon Lex console by following the steps shown in the Amazon Lex V2 Developer Guide.
+
+After creating your bot, you need to update your IAM policy to use the interactions APIs. The policy should include the following:
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["lex:RecognizeText", "lex:RecognizeUtterance"],
+      "Resource": "arn:aws:lex:<your-app-region>:<your-account-id>:bot-alias/<your-bot-id>/<your-bot-alias-id>"
+    }
+  ]
+}
+```
+
+To configure your frontend, you need to add the aws-amplify and interactions package to your project:
+```bash
+npm add --save @aws-amplify/interactions aws-amplify
+```
+
+For React Native, you need to install additional dependencies:
+```bash
+npm add aws-amplify \
+  @aws-amplify/react-native \
+  @aws-amplify/interactions \
+  @react-native-community/netinfo \
+  @react-native-async-storage/async-storage \
+  react-native-get-random-values
+```
+
+Make sure that the `@aws-amplify/interactions` package has the same version number as the `aws-amplify` package in your `package.json` file.
+
+To configure Amplify, import and load the configuration file in your app. It's recommended you add the Amplify configuration step to your app's root entry point. For example, **App.js** (Expo) or **index.js** (React Native CLI).
+```javascript
+import { Amplify } from 'aws-amplify';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure(outputs);
+Amplify.configure({
+  ...Amplify.getConfig(),
+  Interactions: {
+    LexV2: {
+      '<your-bot-name>': {
+        aliasId: '<your-bot-alias-id>',
+        botId: '<your-bot-id>',
+        localeId: '<your-bot-locale-id>',
+        region: '<your-bot-region>'
+      }
+    }
+  }
+});
+```
+
+For React Native, you need to add the `crypto.getRandomValues` polyfills to your application's entry point file:
+```javascript
+import 'react-native-get-random-values';
+```
+
+Make sure you call `Amplify.configure` as early as possible in your application’s life-cycle. A missing configuration or `NoCredentials` error is thrown if `Amplify.configure` has not been called before other Amplify JavaScript APIs. 
+
+Note: For React Native, you may encounter an error when starting the bundler. This is a known issue and can be resolved by following the steps outlined in the linked issue.

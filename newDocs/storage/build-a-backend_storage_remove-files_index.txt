@@ -1,0 +1,43 @@
+Files can be removed from a storage bucket using the remove API. If a file is protected by an identity Id, only the user who owns the file will be able to remove it.
+
+You can perform a remove operation from a specific bucket by providing the target bucket's assigned name from Amplify Backend in the bucket option. 
+
+```javascript
+import { remove } from 'aws-amplify/storage';
+
+try {
+  await remove({ 
+    path: 'album/2024/1.jpg',
+    bucket: 'assignedNameInAmplifyBackend', 
+  });
+} catch (error) {
+  console.log('Error ', error);
+}
+```
+
+Alternatively, you can also pass in an object by specifying the bucket name and region from the console.
+
+```javascript
+import { remove } from 'aws-amplify/storage';
+
+try {
+  await remove({ 
+    path: 'album/2024/1.jpg',
+    bucket: {
+      bucketName: 'bucket-name-from-console',
+      region: 'us-east-2'
+    }
+  });
+} catch (error) {
+  console.log('Error ', error);
+}
+```
+
+There are additional options that can be used with the remove API. 
+
+Option | Type | Default | Description 
+| -- | :--: | :--: | ----------- 
+| bucket | string or { bucketName: string; region: string; } | Default bucket and region from Amplify configuration | A string representing the target bucket's assigned name in Amplify Backend or an object specifying the bucket name and region from the console.
+| expectedBucketOwner | string | Optional | The account ID that owns requested bucket. 
+
+Note: The account ID of the owner of the bucket is required when removing objects from a bucket that is not owned by the account that is making the request.

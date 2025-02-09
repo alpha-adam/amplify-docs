@@ -1,0 +1,39 @@
+The File Uploader field in Amplify form builder allows users to upload files, which are stored in an Amazon S3 bucket connected to your Amplify app. After uploading, the file's S3 key is stored in your data model, allowing for systematic retrieval.
+
+To use the File Uploader field, your Amplify app must have Authentication and Storage enabled. The File Uploader input allows users to select files from their local device and upload them to an S3 bucket. Files are uploaded immediately upon selection, and an S3 key is generated. By default, File Uploader generates a unique S3 key based on the file uploaded.
+
+To add the File Uploader to your form, you need a data model with an attribute that is either a string or an array of strings. After updating your data model, run `npx ampx generate forms` to generate the form JSX file. Then, replace the existing component with the FileUploader component.
+
+For example, if your attribute is an array of strings, you can replace the ArrayField component with the FileUploader component like this:
+```
+<FileUploader
+  accessLevel="public"
+  maxFileCount={10}
+  acceptedFileTypes={['image/*']}
+  processFile={processFile}
+  onUploadSuccess={({key}) => {
+    setImages(prevImages => [...prevImages, key])
+  }}
+  onFileRemove={({key}) => {
+    setImages(prevImages => prevImages.filter(img => img!== key))
+  }}
+/>
+```
+If your data model has only one image instead of an array of images, you can replace the TextField component with the FileUploader component like this:
+```
+<FileUploader
+  accessLevel="public"
+  maxFileCount={1}
+  acceptedFileTypes={['image/*']}
+  processFile={processFile}
+  onUploadSuccess={({key}) => {
+    setImage(key)
+  }}
+  onFileRemove={({key}) => {
+    setImage(undefined)
+  }}
+/>
+```
+The FileUploader component has several configuration options, including accessLevel, maxFileCount, and acceptedFileTypes.
+
+File Uploader generates a unique S3 key by hashing the file contents to prevent accidental overwriting of files. However, if a form submitter uploads two identical files to the same path, even with different file names, File Uploader will prevent file duplication in your S3 bucket. If the File level access for your File Uploader is set to private or protected, identical files uploaded by separate users will be saved separately. If the File level access is set to public, identical files will overwrite each other.

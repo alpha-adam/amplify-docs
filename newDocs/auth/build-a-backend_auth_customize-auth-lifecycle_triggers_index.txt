@@ -1,0 +1,18 @@
+You can customize Amplify Auth's behavior using triggers. A trigger is a function that executes during the authentication flow. This allows you to add custom logic, such as validating email domains, adding users to groups, or creating user profiles upon account confirmation.
+
+Triggers are essentially Cognito user pool Lambda triggers. When a Lambda trigger is assigned to your user pool, Amazon Cognito interrupts its default flow and requests information from your function. It generates a JSON event containing user request information, such as creating a user account, signing in, resetting a password, or updating an attribute. Your function can then take action or send the event back unmodified.
+
+To get started with triggers in a React application, you would define a function and specify the triggers property on your auth resource. Here is an example of how to do this in React:
+
+```javascript
+import { defineAuth } from "@aws-amplify/backend";
+
+const auth = defineAuth({
+  loginWith: {
+    email: true,
+  },
+  triggers: {}
+});
+```
+
+You can learn more about use cases for triggers by visiting the Functions examples. This will provide you with more information on how to implement triggers in your React application.

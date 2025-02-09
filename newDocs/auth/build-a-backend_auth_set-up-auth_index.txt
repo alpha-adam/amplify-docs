@@ -1,0 +1,37 @@
+Amplify Auth is powered by Amazon Cognito, a robust user directory service that handles user registration, authentication, account recovery, and other operations. To get started with defining your authentication resource, you need to open or create the auth resource file. 
+
+By default, your auth resource is scaffolded using email as the default login mechanism. You can also configure your auth resource to allow signing in with phone numbers or an external provider such as Google, Facebook, Amazon, or Sign in with Apple. At a minimum, you will need to pass a loginWith value to set up how your users sign in to your app. Signing in with email and password is configured by default if you do not provide any value.
+
+To deploy your auth resource, run the command `npx ampx sandbox` in your terminal. This command creates your resource in your personal cloud sandbox and generates an outputs file (amplify_outputs.json) to enable your frontend app to connect to your backend resources.
+
+After a successful deployment, you can connect your application code to your auth resource. Amplify's Authenticator UI component streamlines this process by enabling you to rapidly build the entire authentication flow for your app. The component works seamlessly with the configuration in your auth resource file to automatically connect with your backend resources.
+
+To use the Authenticator component, you need to install the required library for your platform. For React, you can install the @aws-amplify/ui-react library using the command `npm add @aws-amplify/ui-react`. Then, you can add the Authenticator component to your app and configure it to use your auth resource.
+
+Here is an example of how to use the Authenticator component in a React app:
+```typescript
+import { Authenticator } from '@aws-amplify/ui-react';
+import Amplify from 'aws-amplify';
+import outputs from '@/amplify_outputs.json';
+import '@aws-amplify/ui-react/styles.css';
+
+Amplify.configure(outputs);
+
+export default function App() {
+  return (
+    <Authenticator>
+      {({ signOut, user }) => (
+        <main>
+          <h1>Hello {user?.username}</h1>
+          <button onClick={signOut}>Sign out</button>
+        </main>
+      )}
+    </Authenticator>
+  );
+};
+```
+You can also customize the Authenticator component to adjust colors and styling as needed. Once you add the Authenticator component to your app, you can test the sign-up, sign-in, and sign-out functionality.
+
+In addition to React, Amplify provides Authenticator components for other platforms, including Vue, Angular, React Native, Flutter, Android, and Swift. You can follow the same process to install and configure the Authenticator component for your platform.
+
+After setting up authentication in your Amplify app, you may also want to add some additional features, such as learning more about authentication concepts or moving to production.

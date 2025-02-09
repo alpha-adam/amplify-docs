@@ -1,0 +1,67 @@
+Amazon Polly is a text-to-speech service offered by Amazon Web Services. It uses advanced deep learning technologies to convert written text into lifelike speech, enabling you to create applications with speech capabilities in various languages and voices.
+
+With Amazon Polly, you can easily add voice interactions and accessibility features to your applications. The service supports a wide range of use cases, such as providing audio content for the visually impaired, enhancing e-learning experiences, creating interactive voice response systems, and more.
+
+Key features of Amazon Polly include multiple voices and languages, high-quality speech, speech marks and speech synthesis markup language, and scalable and cost-effective pricing.
+
+To integrate Amazon Polly into your React application using AWS Amplify, follow these steps:
+
+1. Set up your project by following the instructions in the Quickstart guide.
+2. Install the Amazon Polly SDK by running the command `npm add @aws-sdk/client-polly` in your project's root folder.
+3. Create a file named `amplify/storage/resource.ts` and add the necessary content to configure a storage resource.
+4. Configure IAM roles by updating the `amplify/backend.ts` file with the necessary permissions to access Amazon Polly.
+5. Define the function handler by creating a new file, `amplify/data/convertTextToSpeech.ts`, which converts text into speech using Amazon Polly and stores the synthesized speech as an MP3 file in an S3 bucket.
+6. Define the custom mutation and function in your `amplify/data/resource.ts` file.
+7. Update storage permissions by modifying the `amplify/storage/resource.ts` file to provide access to the `convertTextToSpeech` resource.
+8. Configure the frontend by importing and loading the configuration file in your app.
+
+To invoke the API, use the following example frontend code to create an audio buffer for playback using a text input:
+```typescript
+import "./App.css";
+import { generateClient } from "aws-amplify/api";
+import type { Schema } from "../amplify/data/resource";
+import { getUrl } from "aws-amplify/storage";
+import { useState } from "react";
+
+const client = generateClient<Schema>();
+
+type PollyReturnType = Schema["convertTextToSpeech"]["returnType"];
+
+function App() {
+  const [src, setSrc] = useState("");
+  const [file, setFile] = useState<PollyReturnType>("");
+  return (
+    <div className="flex flex-col">
+      <button
+        onClick={async () => {
+          const { data, errors } = await client.mutations.convertTextToSpeech({
+            text: "Hello World!",
+          });
+
+          if (!errors && data) {
+            setFile(data);
+          } else {
+            console.log(errors);
+          }
+        }}
+      >
+        Synth
+      </button>
+      <button
+        onClick={async () => {
+          const res = await getUrl({
+            path: "public/" + file,
+          });
+
+          setSrc(res.url.toString());
+        }}
+      >
+        Fetch audio
+      </button>
+      <a href={src}>Get audio file</a>
+    </div>
+  );
+}
+
+export default App;
+```

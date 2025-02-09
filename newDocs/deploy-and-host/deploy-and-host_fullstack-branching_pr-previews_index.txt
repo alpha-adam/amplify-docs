@@ -1,0 +1,67 @@
+Fullstack previews allow you to set up ephemeral fullstack environments on every pull request. This enables you to test features in isolation from production. 
+
+The workflow for using fullstack previews would be as follows:
+1. Your main production branch and feature branch are deployed on Amplify.
+2. You and your team work on the feature branch until it's ready.
+3. The feature branch is updated to the main branch head and then a pull request to the main branch is opened.
+4. The pull request preview is deployed on Amplify and available at a unique URL.
+5. Once the pull request is merged into the main branch, the request is closed and the fullstack environment is also automatically torn down.
+
+To use fullstack previews, you need to have the following prerequisites:
+- A fullstack Amplify app deployed
+- A private git repository, as fullstack previews are disabled for public repositories with Amplify backend templates.
+
+To enable fullstack web previews for your Amplify app, follow these steps:
+1. Log in to the Amplify console and select your app.
+2. Navigate to Hosting > Previews, select the main branch, and click on Edit settings.
+3. Click on the Pull request previews toggle button and choose Confirm to enable previews.
+4. Once enabled, ship updates to the dev branch. When you create a pull request for the main branch, Amplify will build and deploy your fullstack PR and provide you with a preview URL.
+
+For GitHub repositories, you can access your preview URL directly on the pull request from the Amplify Hosting's bot comment. After the pull request is merged or closed, the preview URL is deleted and any ephemeral fullstack environment is also deleted.
+
+If you want to share backend resources across preview branches, you can update your app build settings to reuse backend resources across your preview branches. This can be done by updating the build settings for the backend phase to generate the amplify_outputs.json file for all preview branches using the dev branch. 
+
+For example, you can update the amplify.yml file as follows:
+```yml
+version: 1
+backend:
+    phases:
+        build:
+            commands:
+                - 'npm ci --cache.npm --prefer-offline'
+                - 'echo $AWS_BRANCH'
+                - |
+                  case "${AWS_BRANCH}" in
+                      main)
+                          echo "Deploying main branch..."
+                          npx ampx pipeline-deploy --branch $AWS_BRANCH --app-id $AWS_APP_ID
+                          ;;
+                      dev)
+                          echo "Deploying dev branch..."
+                          npx ampx pipeline-deploy --branch $AWS_BRANCH --app-id $AWS_APP_ID
+                          ;;
+                      pr-*)
+                          echo "Deploying pull request branch..."
+                          npx ampx generate outputs --branch dev --app-id $AWS_APP_ID 
+                          ;;
+                      *)
+                          echo "Deploying to staging branch..."
+                          npx ampx generate outputs --branch staging --app-id $AWS_APP_ID 
+                          ;;
+                  esac
+frontend:
+    phases:
+        build:
+            commands:
+                - 'npm run build'
+    artifacts:
+        baseDirectory:.amplify-hosting
+        files:
+            - '**/*'
+    cache:
+        paths:
+            -.next/cache/**/*
+            -.npm/**/*
+            - node_modules/**/*
+```
+After this update, any new deployed preview branches will not deploy backend resources as part of the build and instead will use the deployed backend resources from the dev branch.

@@ -1,0 +1,75 @@
+To build a task list application with TypeScript, Next.js, and React using AWS Amplify Gen 2, follow these steps:
+
+First, ensure you have the necessary prerequisites installed, including Node.js, npm, and git. If you're new to these technologies, consider going through the official React, Next.js, and TypeScript tutorials.
+
+To deploy a full-stack app to AWS, start by creating a repository in your GitHub account using the provided Next.js template. This template scaffolds a create-next-app with Amplify backend capabilities. Once the repository is created, deploy it to AWS using the Amplify console.
+
+After deployment, view your deployed app by selecting the "View deployed URL" option. You can then interact with your app, creating new to-do items and viewing them in real-time.
+
+To make frontend updates, set up your local development environment by cloning the repository and installing the necessary dependencies. Download the amplify_outputs.json file from the Amplify console and move it to the root of your project. This file contains backend endpoint information and is used by the Amplify client library to connect to your Amplify backend.
+
+Implement the delete functionality by adding a new function to your pages/index.tsx file and passing it to the onClick handler of the li element. Try out the deletion functionality by starting the local dev server.
+
+Next, implement the login UI by importing the Authenticator UI component and wrapping your app component with it. Add a button to enable users to sign out of the application using the useAuthenticator hook.
+
+To make backend updates, set up local AWS credentials and deploy a cloud sandbox using the ampx sandbox command. This provides a separate backend environment for local development and testing. Implement per-user authorization by applying an owner-based authorization rule to your to-do items and rendering the username to distinguish different users.
+
+Finally, commit and push your changes to get them to the cloud. Once your build completes in the Amplify Console, the main backend will update to support the changes made within the cloud sandbox.
+
+Here is some example code to illustrate these steps:
+
+To implement the delete functionality, add the following code to your pages/index.tsx file:
+```tsx
+function deleteTodo(id: string) {
+  client.models.Todo.delete({ id })
+}
+
+return (
+  <main>
+    <h1>My todos</h1>
+    <button onClick={createTodo}>+ new</button>
+    <ul>
+      {todos.map(todo => <li
+        onClick={() => deleteTodo(todo.id)}
+        key={todo.id}>
+        {todo.content}
+      </li>)}
+    </ul> 
+  </main>
+)
+```
+
+To implement the login UI, add the following code to your pages/_app.tsx file:
+```tsx
+import { Authenticator } from '@aws-amplify/ui-react'
+import '@aws-amplify/ui-react/styles.css'
+
+export default function App({ Component, pageProps }: AppProps) {
+  return(
+    <Authenticator>
+      <Component {...pageProps} />;
+    </Authenticator>
+  ) 
+}
+```
+
+To implement per-user authorization, update your amplify/data/resource.ts file with the following code:
+```ts
+const schema = a.schema({
+  Todo: a.model({
+    content: a.string(),
+  }).authorization(allow => [allow.owner()]),
+});
+```
+
+And update your pages/index.tsx file with the following code:
+```tsx
+const { user, signOut } = useAuthenticator();
+
+return (
+  <main>
+    <h1>{user?.signInDetails?.loginId}'s todos</h1>
+    {/*... */}
+  </main>
+)
+```

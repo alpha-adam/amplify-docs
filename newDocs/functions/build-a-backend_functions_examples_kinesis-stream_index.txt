@@ -1,0 +1,96 @@
+With AWS Lambda, you can integrate various event sources, such as Amazon Kinesis, Amazon SQS, and others, to trigger Lambda functions in response to real-time events. This feature enables you to build responsive, event-driven applications that react to changes in data or system state without the need for polling services.
+
+To configure a Lambda function with a Kinesis data stream as an event source, you need to follow these steps. 
+
+First, install the AWS Lambda Powertools Logger and the `aws-lambda` package. 
+
+```bash
+npm add @aws-lambda-powertools/logger @types/aws-lambda
+```
+
+Next, create a new directory and a resource file for your Lambda function, and define the function using the AWS Amplify `defineFunction` method.
+
+In a React application, you would define the function in a separate file, for example `amplify/functions/kinesis-function/resource.js`.
+
+```javascript
+import { defineFunction } from "@aws-amplify/backend";
+
+export const myKinesisFunction = defineFunction({
+  name: "kinesis-function",
+});
+```
+
+Then, create the corresponding handler file for your Lambda function, and import the necessary types and handlers from `aws-lambda`. 
+
+In a React application, you would define the handler in a separate file, for example `amplify/functions/kinesis-function/handler.js`.
+
+```javascript
+import type {
+  KinesisStreamBatchResponse,
+  KinesisStreamHandler,
+  KinesisStreamRecordPayload,
+} from "aws-lambda";
+import { Buffer } from "buffer";
+import { Logger } from "@aws-lambda-powertools/logger";
+
+const logger = new Logger({
+  logLevel: "INFO",
+  serviceName: "kinesis-stream-handler",
+});
+
+export const handler = async (event, context) => {
+  for (const record of event.Records) {
+    try {
+      logger.info(`Processed Kinesis Event - EventID: ${record.eventID}`);
+      const recordData = await getRecordDataAsync(record.kinesis);
+      logger.info(`Record Data: ${recordData}`);
+    } catch (err) {
+      logger.error(`An error occurred ${err}`);
+      return {
+        batchItemFailures: [{ itemIdentifier: record.kinesis.sequenceNumber }],
+      };
+    }
+  }
+  logger.info(`Successfully processed ${event.Records.length} records.`);
+  return { batchItemFailures: [] };
+};
+
+async function getRecordDataAsync(payload) {
+  const data = Buffer.from(payload.data, "base64").toString("utf-8");
+  return data;
+}
+```
+
+Finally, create the Kinesis stream and add it as an event source in your backend configuration file, for example `amplify/backend.js`.
+
+```javascript
+import { defineBackend } from "@aws-amplify/backend";
+import { Stream } from "aws-cdk-lib/aws-kinesis";
+import { StartingPosition } from "aws-cdk-lib/aws-lambda";
+import { KinesisEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
+import { auth } from "./auth/resource";
+import { data } from "./data/resource";
+import { myKinesisFunction } from "./functions/kinesis-function/resource";
+
+const backend = defineBackend({
+  auth,
+  data,
+  myKinesisFunction,
+});
+
+const kinesisStack = backend.createStack("kinesis-stack");
+
+const kinesisStream = new Stream(kinesisStack, "KinesisStream", {
+  streamName: "myKinesisStream",
+  shardCount: 1,
+});
+
+const eventSource = new KinesisEventSource(kinesisStream, {
+  startingPosition: StartingPosition.LATEST,
+  reportBatchItemFailures: true,
+});
+
+backend.myKinesisFunction.resources.lambda.addEventSource(eventSource);
+```
+
+For examples on streaming analytics data to the Kinesis stream from your frontend, see the relevant documentation.

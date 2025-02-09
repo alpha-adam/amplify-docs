@@ -1,0 +1,81 @@
+To validate form data in Amplify generated forms, you can add and customize validation rules. By default, Amplify infers a range of validation rules based on the data model. For example, if you have a field with an `AWSEmail` type, the generated form input will automatically run an email validation rule.
+
+You can configure validation rules for different input types, such as `String`, `Int`, `Float`, `AWSDate`, `AWSTime`, and `AWSDateTime`. The available validation rules for each type include:
+
+* `String`: Start With, End With, Contain, Does not contain, Be less than N characters long, Be at least N characters long
+* `Int`, `Float`: Be greater than, Be less than, Be equal to
+* `AWSDate`, `AWSTime`, `AWSDateTime`: Be before, Be after
+
+Some types have automatically configured validation rules, such as:
+* `AWSIPAddress`: must be a valid IPv4 or IPv6 address
+* `AWSURL`: must consist of a schema and a path part
+* `AWSEmail`: must be an email address in the format `<local-part>@<domain-part>`
+* `AWSJSON`: must be a valid JSON
+* `AWSPhone`: must be a phone number that can contain spaces or hyphens to separate digit groups
+
+To add custom validation rules, you can use the `onValidate` event handler. This handler takes an object with validation functions for the fields you want to validate. The validation function must return a validation response with a shape of `{ hasError: boolean, errorMessage?: string }`.
+
+For example, to validate that an `address` field starts with a number:
+```jsx
+<HomeCreateForm
+  onValidate={{
+    address: (value, validationResponse) => {
+      const firstWord = value.split('')[0];
+      if (!isNaN(firstWord)) {
+        return {
+          hasError: true,
+          errorMessage: 'Address must start with a number'
+        };
+      }
+      return validationResponse;
+    }
+  }}
+/>
+```
+
+You can also add validation rules for nested JSON data by passing in validation functions in the same nested structure as the data. For example:
+```js
+<ProductForm
+  onValidate={{
+    price: {
+      currency: (value, validationResponse) => {
+        const allowedCurrencies = ['$', '€', '￥', '₹'];
+        if (!allowedCurrencies.includes(value)) {
+          return {
+            hasError: true,
+            errorMessage: 'Currency must be either "$", "€", "￥", or "₹".'
+          };
+        }
+        return validationResponse;
+      }
+    }
+  }}
+  onSubmit={(fields) => {
+    /* handle form data submission */
+  }}
+/>
+```
+
+Additionally, you can call external APIs for asynchronous form validation by returning a Promise in the `onValidate` prop. For example:
+```jsx
+<AgentContactForm
+  onValidate={{
+    licenseNumber: (value, validationResponse) => {
+      return fetch(`http://localhost:3000/api/agent/${value}`).then(
+        (response) => {
+          if (response.status!== 200) {
+            return {
+              hasError: true,
+              errorMessage: 'No agent was not found with that license number.'
+            };
+          }
+          return validationResponse;
+        }
+      );
+    }
+  }}
+  onSubmit={(fields) => {
+    /* Handle form submission */
+  }}
+/>
+```

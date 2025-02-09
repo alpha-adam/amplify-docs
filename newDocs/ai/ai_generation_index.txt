@@ -1,0 +1,112 @@
+AI generation routes are a request-response API used to generate structured output from AI models. These routes can be used for various tasks such as generating structured data from unstructured input, summarization, and more.
+
+To use AI generation routes, you need to define a schema that includes a generation route. A generation route is an AWS AppSync query that ensures the AI model responds with the response type defined for the route.
+
+### Generating Typed Objects
+
+To generate typed objects, you can define a schema with a generation route that returns a custom type. For example, you can define a schema that generates a recipe based on a description. 
+
+In React, you can use the `useAIGeneration` hook from `@aws-amplify/ui-react-ai` to generate a recipe. Here's an example:
+```tsx
+import { generateClient } from "aws-amplify/api";
+import { createAIHooks } from "@aws-amplify/ui-react-ai";
+
+const client = generateClient({ authMode: "userPool" });
+const { useAIGeneration } = createAIHooks(client);
+
+export default function Example() {
+  const [{ data, isLoading }, generateRecipe] = useAIGeneration("generateRecipe");
+
+  const generateSummary = async () => {
+    generateRecipe({
+      description: 'I would like to bake a birthday cake for my friend. She has celiac disease and loves chocolate.',
+    });
+  };
+}
+```
+
+### Generating Scalar Types
+
+To generate scalar types, you can define a schema with a generation route that returns a scalar type. For example, you can define a schema that summarizes a piece of text. 
+
+In React, you can use the `useAIGeneration` hook to generate a summary. Here's an example:
+```tsx
+import { generateClient } from "aws-amplify/api";
+import { createAIHooks } from "@aws-amplify/ui-react-ai";
+
+const client = generateClient({ authMode: "userPool" });
+const { useAIGeneration } = createAIHooks(client);
+
+export default function Example() {
+  const [{ data, isLoading }, summarize] = useAIGeneration("summarize");
+
+  const generateSummary = async () => {
+    summarize({
+      input: 'This is a piece of text that needs to be summarized.',
+    });
+  };
+}
+```
+
+### Setting Inference Parameters
+
+You can influence response generation by setting inference parameters for the AI model. Inference parameters allow you to control the randomness and diversity of responses, which is useful for generating responses tailored to your needs.
+
+For example, you can define a schema that generates a haiku with specific inference parameters. 
+```tsx
+import { generateClient } from "aws-amplify/api";
+import { createAIHooks } from "@aws-amplify/ui-react-ai";
+
+const client = generateClient({ authMode: "userPool" });
+const { useAIGeneration } = createAIHooks(client);
+
+export default function Example() {
+  const [{ data, isLoading }, generateHaiku] = useAIGeneration("generateHaiku");
+
+  const generateHaikuExample = async () => {
+    generateHaiku({
+      description: 'Generate a haiku about nature.',
+      inferenceConfiguration: {
+        maxTokens: 1000,
+        temperature: 0.5,
+        topP: 0.9,
+      }
+    });
+  };
+}
+```
+
+### Limitations
+
+There are some limitations to using AI generation routes. 
+
+1. Generation routes do not support referencing models. However, you can reference custom types. 
+
+2. Generation routes do not support some required types. The following AppSync scalar types are not supported as required fields in response types:
+- `AWSEmail`
+- `AWSDate`
+- `AWSTime`
+- `AWSDateTime`
+- `AWSTimestamp`
+- `AWSPhone`
+- `AWSURL`
+- `AWSIPAddress`
+
+For example, the following schema defines a custom type that can be used as the return type of a generation route:
+```tsx
+import { generateClient } from "aws-amplify/api";
+import { createAIHooks } from "@aws-amplify/ui-react-ai";
+
+const client = generateClient({ authMode: "userPool" });
+const { useAIGeneration } = createAIHooks(client);
+
+export default function Example() {
+  const [{ data, isLoading }, generateRecipe] = useAIGeneration("generateRecipe");
+
+  const generateRecipeExample = async () => {
+    generateRecipe({
+      description: 'I would like to bake a birthday cake for my friend. She has celiac disease and loves chocolate.',
+    });
+  };
+}
+```

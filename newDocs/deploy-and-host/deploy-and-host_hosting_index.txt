@@ -1,0 +1,5 @@
+AWS Amplify Hosting is a fully managed service that handles continuous integration and deployment, as well as hosting, for static and server-side rendered applications. It supports a range of modern web frameworks, including React, Angular, and Vue. 
+
+This service provides fast, secure, and reliable scaling for applications, and because it is fully managed, its documentation is located on the AWS Documentation site. There, you can learn more about features such as custom domains and redirects. 
+
+For more information on getting started with AWS Amplify Hosting, you can visit the official documentation.

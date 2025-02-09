@@ -1,0 +1,54 @@
+To set up an Amplify REST API, you can use the AWS Cloud Development Kit (AWS CDK) to configure Amplify Functions as resolvers for routes of a REST API powered by Amazon API Gateway. 
+
+To set up a REST API with a Lambda function, create a new directory and a resource file, then define the function with the defineFunction method. Create a corresponding handler file with the APIGatewayProxyHandler. 
+
+Use the AWS CDK to create a REST API resource powered by Amazon API Gateway. Define the backend, create a new API stack, and a new REST API. Create a new Lambda integration and a new resource path with IAM authorization. Add methods to the resource path and create a new Cognito User Pools authorizer. Create a new resource path with Cognito authorization and add a new IAM policy to allow Invoke access to the API. Attach the policy to the authenticated and unauthenticated IAM roles.
+
+To install Amplify libraries, use the package manager of your choice to install the Amplify JavaScript library. For example, with npm: 
+```bash
+npm add aws-amplify
+```
+
+To initialize the Amplify API, configure Amplify with Amplify.configure(). Import and load the configuration file in your app, and add the Amplify configuration step to your app's root entry point. For example, in React: 
+```javascript
+import { Amplify } from 'aws-amplify';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure(outputs);
+const existingConfig = Amplify.getConfig();
+Amplify.configure({
+ ...existingConfig,
+  API: {
+   ...existingConfig.API,
+    REST: outputs.custom.API,
+  },
+});
+``` 
+
+Make sure to call Amplify.configure as early as possible in your application’s life-cycle to avoid missing configuration or NoCredentials errors. 
+
+Here's an example of calling Amplify.configure in a React app: 
+```javascript
+import React from 'react';
+import ReactDOM from 'react-dom';
+import { Amplify } from 'aws-amplify';
+import outputs from '../amplify_outputs.json';
+import App from './App';
+
+Amplify.configure(outputs);
+const existingConfig = Amplify.getConfig();
+Amplify.configure({
+ ...existingConfig,
+  API: {
+   ...existingConfig.API,
+    REST: outputs.custom.API,
+  },
+});
+
+ReactDOM.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+  document.getElementById('root')
+);
+```

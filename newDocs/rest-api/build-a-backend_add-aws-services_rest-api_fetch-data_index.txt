@@ -1,0 +1,56 @@
+To invoke an endpoint, you need to set an input object with the required apiName option and optional headers, queryParams, and body options. API status code responses greater than 299 are thrown as an ApiError instance. The error instance provides name and message properties parsed from the response.
+
+For GET requests, you can use the get function from aws-amplify/api. Here is an example of how to use it in a React application:
+```javascript
+import { get } from 'aws-amplify/api';
+
+async function getItem() {
+  try {
+    const restOperation = get({ 
+      apiName: 'myRestApi',
+      path: 'items' 
+    });
+    const response = await restOperation.response;
+    console.log('GET call succeeded: ', response);
+  } catch (error) {
+    console.log('GET call failed: ', JSON.parse(error.response.body));
+  }
+}
+```
+You can consume the response payload by accessing the body property of the response object. Depending on the use case and the content type of the body, you can consume the payload as a string, blob, or JSON:
+```javascript
+const { body } = await restOperation.response;
+// consume as a string:
+const str = await body.text();
+// OR consume as a blob:
+const blob = await body.blob();
+// OR consume as a JSON:
+const json = await body.json();
+```
+Note that you cannot consume the response payload more than once.
+
+If the REST API handler throws an ApiError error instance, you can access the HTTP response from the error instance. The error instance will provide a response property if the error is caused by an HTTP response with a non-2xx status code:
+```javascript
+import { ApiError, get } from 'aws-amplify/api';
+
+try {
+  const restOperation = get({ 
+    apiName: 'myRestApi',
+    path: 'items' 
+  });
+  await restOperation.response;
+} catch (error) {
+  if (error instanceof ApiError) {
+    if (error.response) {
+      const { 
+        statusCode, 
+        headers, 
+        body 
+      } = error.response;
+      console.error(`Received ${statusCode} error response with payload: ${body}`);
+    }
+    // Handle API errors not caused by HTTP response.
+  }
+  // Handle other errors.
+}
+```

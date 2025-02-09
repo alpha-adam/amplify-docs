@@ -1,0 +1,18 @@
+By default, Amplify Auth allows users to sign in using their email address. However, you can change or extend this to also allow users to sign in using their phone number. 
+
+To do this, you need to configure the phone sign-in method in your authentication settings. Here is an example of how to do this in your Amplify Auth configuration:
+```javascript
+const auth = {
+  loginWith: {
+    phone: true,
+  },
+}
+```
+This configuration will require users to provide a phone number when signing up, and this attribute cannot be changed. 
+
+After setting up phone sign-in, you can use the `signIn` API to allow users to sign in with their phone number. You can also customize the SMS messages sent to users during the sign-in process. 
+
+To learn more about using the `signIn` API and configuring your account for production SMS workloads, see the next steps below:
+ 
+- Learn how to use the `signIn` API
+- Learn how to configure your account for production SMS workloads

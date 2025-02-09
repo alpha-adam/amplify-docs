@@ -1,0 +1,65 @@
+The Amazon Data Firehose analytics provider allows you to send analytics data to an Amazon Data Firehose stream for reliably storing data. 
+
+To set up a Firehose stream, you need to create a storage bucket to store the data from the Firehose stream and then create the Firehose resource. 
+
+You can use the AWS Cloud Development Kit (AWS CDK) to create the Analytics resource powered by Amazon Data Firehose. 
+
+First, create a storage bucket to store the data from the Firehose stream. 
+
+Then, create the Firehose resource. You need to create a new IAM role for the Firehose, grant the Firehose role read/write permissions to the S3 bucket, and create a new Firehose delivery stream. 
+
+You also need to create a new IAM policy to allow users to write to the Firehose and attach the policy to the authenticated and unauthenticated IAM roles. 
+
+To install and configure the Firehose, ensure you have set up IAM permissions for firehose:PutRecordBatch. 
+
+Here is an example IAM policy for Amazon Data Firehose:
+
+```javascript
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": "firehose:PutRecordBatch",
+    "Resource": "arn:aws:firehose:<your-aws-region>:<your-aws-account-id>:deliverystream/<your-stream-name>"
+  }]
+}
+```
+
+Configure Firehose by importing Amplify from 'aws-amplify' and calling Amplify.configure with the Analytics configuration:
+
+```javascript
+import { Amplify } from 'aws-amplify';
+
+Amplify.configure({
+  Analytics: {
+    KinesisFirehose: {
+      region: 'us-east-1',
+      bufferSize: 1000,
+      flushSize: 100,
+      flushInterval: 5000,
+      resendLimit: 5
+    }
+  }
+});
+```
+
+To store data, you can send data to a Firehose stream with the standard record method:
+
+```javascript
+import { record } from 'aws-amplify/analytics/kinesis-firehose';
+
+record({
+  data: {
+    // The data blob to put into the record
+  },
+  streamName: 'myFirehose'
+});
+```
+
+You can also manually clear all the events from the buffer by using the 'flushEvents' API:
+
+```javascript
+import { flushEvents } from 'aws-amplify/analytics/kinesis-firehose';
+
+flushEvents();
+```

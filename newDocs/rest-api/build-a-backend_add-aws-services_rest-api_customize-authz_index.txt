@@ -1,0 +1,71 @@
+When determining the authorization mode for your REST endpoint, you can customize it in a few ways.
+
+By default, the API uses IAM authorization, which has two modes: unauthenticated and authenticated. When the user is not signed in, the unauthenticated role is used, but once the user signs in, the authenticated role is used instead.
+
+You can also configure a public REST API by setting an API key in Amazon API Gateway. To do this, you would set the API key header in the API configuration, which will be applied to all requests. This can be done by configuring Amplify, for example:
+```
+Amplify.configure({
+  API: {
+    REST: {
+      headers: async () => {
+        return { 'X-Api-Key': 'your-api-key' };
+      }
+    }
+  }
+});
+```
+Another option is to use the access token from a configured Cognito User Pool to authenticate against the REST endpoint. You can retrieve the JWT token from the Auth category, like this:
+```
+import { Auth } from 'aws-amplify';
+const session = await Auth.currentSession();
+const token = session.getAccessToken().getJwtToken();
+```
+Then, you can set the Authorization header in the API category configuration, like this:
+```
+Amplify.configure({
+  API: {
+    REST: {
+      headers: async () => {
+        return { Authorization: token };
+      }
+    }
+  }
+});
+```
+For more information on configuring API Gateway with custom authorization, you can refer to the AWS documentation.
+
+It's also worth noting that you can use either the ID Token or the Access Token for authentication. The ID Token contains claims about the user's identity, while the Access Token contains scopes and groups. You can retrieve the ID Token like this:
+```
+import { Auth } from 'aws-amplify';
+const session = await Auth.currentSession();
+const token = session.getIdToken().getJwtToken();
+```
+And you can retrieve the Access Token like this:
+```
+import { Auth } from 'aws-amplify';
+const session = await Auth.currentSession();
+const token = session.getAccessToken().getJwtToken();
+```
+If you want to use a custom authorization token, you can set it in the API category configuration, like this:
+```
+Amplify.configure({
+  API: {
+    REST: {
+      headers: async () => {
+        return { Authorization: 'your-custom-token' };
+      }
+    }
+  }
+});
+```
+Finally, you can also set the authorization headers per request, rather than globally. For example, you could set a custom header named `Authorization` for a specific REST request, like this:
+```javascript
+import { API } from 'aws-amplify';
+async function updateItem() {
+  await API.del('myRestApi', 'items/1', {
+    headers: {
+      Authorization: 'your-token'
+    }
+  });
+}
+```

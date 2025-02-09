@@ -1,0 +1,100 @@
+Amplify's geo category allows you to search by places, addresses, and coordinates in your app with place index resources. 
+
+To set up a new location search index, you need to create a location services map and a place index. The map is used to store the geospatial data, and the place index is used to search for places in your application.
+
+In a React application, you can use the Amplify Location library to interact with the location services map and place index. 
+
+Here's an example of how to create a location services map and place index using Amplify Location in a React application:
+
+First, you need to set up the Amplify Location library in your React application. 
+
+Next, you can use the Amplify Location library to create a location services map and place index. 
+
+To create a location services map, you can use the following code:
+```javascript
+import Amplify from 'aws-amplify';
+import { Location } from 'aws-amplify';
+
+// Create a location services map
+const map = await Location.createMap({
+  mapName: 'myMap',
+  description: 'Map',
+  configuration: {
+    style: 'VectorEsriNavigation',
+  },
+  pricingPlan: 'RequestBasedUsage',
+  tags: [
+    {
+      key: 'name',
+      value: 'myMap',
+    },
+  ],
+});
+```
+
+To create a location services place index, you can use the following code:
+```javascript
+// Create a location services place index
+const placeIndex = await Location.createPlaceIndex({
+  indexName: 'myPlaceIndex',
+  dataSource: 'Here',
+  dataSourceConfiguration: {
+    intendedUse: 'SingleUse',
+  },
+  pricingPlan: 'RequestBasedUsage',
+  tags: [
+    {
+      key: 'name',
+      value: 'myPlaceIndex',
+    },
+  ],
+});
+```
+
+The pricing plan for the search index will be set to RequestBasedUsage. It's recommended to review the location service pricing and terms to learn more about the pricing plan.
+
+You can also configure the data provider and result storage location for your location search index. The available data providers for geospatial data are Here and Esri. 
+
+To use Here as the data provider, you can specify the dataSource as 'Here' when creating the place index:
+```javascript
+const placeIndex = await Location.createPlaceIndex({
+  indexName: 'myPlaceIndex',
+  dataSource: 'Here',
+  //...
+});
+```
+
+To use Esri as the data provider, you can specify the dataSource as 'Esri' when creating the place index:
+```javascript
+const placeIndex = await Location.createPlaceIndex({
+  indexName: 'myPlaceIndex',
+  dataSource: 'Esri',
+  //...
+});
+```
+
+Note that if your application is tracking or routing assets you use in your business, you may only use Here as your geolocation provider.
+
+You can also specify the result storage location for the search operation. You can choose to store the results in a database or cache them. 
+
+To specify the result storage location, you can use the intendedUse property when creating the place index:
+```javascript
+const placeIndex = await Location.createPlaceIndex({
+  indexName: 'myPlaceIndex',
+  dataSourceConfiguration: {
+    intendedUse: 'SingleUse',
+  },
+  //...
+});
+```
+
+You can also specify the result storage location as 'Storage' to store the results in a database or cache:
+```javascript
+const placeIndex = await Location.createPlaceIndex({
+  indexName: 'myPlaceIndex',
+  dataSourceConfiguration: {
+    intendedUse: 'Storage',
+  },
+  //...
+});
+```

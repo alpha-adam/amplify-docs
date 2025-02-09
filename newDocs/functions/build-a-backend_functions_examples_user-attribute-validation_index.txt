@@ -1,0 +1,48 @@
+To validate user attributes with an Auth trigger in AWS Amplify Gen 2, you can create a Cognito pre sign-up Lambda trigger. This trigger extends the sign-up behavior to validate attribute values. 
+
+To get started, create a new function that will act as the pre sign-up trigger. In a React application, you can define this function using `defineFunction` from `@aws-amplify/backend`. 
+
+For example, you can create a file called `preSignUp.js` with the following contents:
+```javascript
+import { defineFunction } from '@aws-amplify/backend';
+
+export const preSignUp = defineFunction({
+  name: "pre-sign-up",
+  resourceGroupName: 'auth'
+});
+```
+
+Next, create a corresponding handler file called `handler.js` with the following contents:
+```javascript
+function isOlderThan(date, age) {
+  const comparison = new Date()
+  comparison.setFullYear(comparison.getFullYear() - age)
+  return date.getTime() > comparison.getTime()
+}
+
+export const handler = async (event) => {
+  const birthdate = new Date(event.request.userAttributes["birthdate"])
+
+  // you must be 13 years or older
+  if (!isOlderThan(birthdate, 13)) {
+    throw new Error("You must be 13 years or older to use this site")
+  }
+
+  return event
+}
+```
+
+Lastly, set the newly created function resource on your auth resource. In a React application, you can do this by importing `defineAuth` from `@aws-amplify/backend` and setting the `triggers` property. For example:
+```javascript
+import { defineAuth } from '@aws-amplify/backend';
+import { preSignUp } from './preSignUp';
+
+export const auth = defineAuth({
+  //...
+  triggers: {
+    preSignUp
+  }
+});
+```
+
+After deploying the changes, whenever a user attempts to sign up, this handler will verify that the submitter's age is above 13 years.

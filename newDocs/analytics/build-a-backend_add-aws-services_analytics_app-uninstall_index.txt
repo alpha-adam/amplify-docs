@@ -1,0 +1,19 @@
+When a user uninstalls an application that uses AWS Amplify, some data may persist on the device. This is because certain Amplify categories, such as Analytics and Auth, store data locally on the device.
+
+For Android devices, if the Android Auto Backup for Apps service is enabled, it may attempt to restore application data when the app is reinstalled. However, Amplify Auth uses EncryptedSharedPreferences to store auth data, which is encrypted using keys stored in the Android Keystore. When an app is uninstalled, these keys are deleted, making it impossible to restore the auth data when the app is reinstalled. As a result, users will have to re-authenticate after reinstalling the app.
+
+For iOS devices, Amplify stores auth information in the local system keychain, but it does not guarantee that this data will be removed when an app is uninstalled. Instead, app developers should decide when to clear this auth information by signing out. One way to do this is to use the UserDefaults API to detect whether the app is launching for the first time, and if so, invoke the Auth.signOut() method. 
+
+For example, in React, you could use the following code to detect whether the app is launching for the first time and sign out if necessary:
+```
+import { Auth } from 'aws-amplify';
+
+useEffect(() => {
+  const isFirstLaunch = localStorage.getItem('isFirstLaunch');
+  if (!isFirstLaunch) {
+    Auth.signOut();
+    localStorage.setItem('isFirstLaunch', 'true');
+  }
+}, []);
+```
+This code checks whether the 'isFirstLaunch' key exists in local storage, and if not, signs out the user and sets the key to 'true'. This ensures that the user is signed out when the app is launched for the first time after installation.

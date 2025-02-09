@@ -1,0 +1,196 @@
+Before you configure external sign-in with Amplify Auth, you need to set up your developer account with each provider you are using. 
+
+To do this, follow these steps for each provider:
+
+### Facebook Login
+
+1. Create a developer account with Facebook.
+2. Sign in with your Facebook credentials.
+3. Choose "My Apps" from the top navigation bar and create a new app.
+4. Set up Facebook Login for your app.
+5. Note the App ID and App Secret, which you will use later.
+
+### Google Sign-In
+
+1. Go to the Google Developer Console.
+2. Create a new project.
+3. Select "APIs & Services" and then "Credentials".
+4. Create a new OAuth client ID for a web application.
+5. Note the Client ID and Client Secret, which you will use later.
+
+### Login with Amazon
+
+1. Create a developer account with Amazon.
+2. Sign in with your Amazon credentials.
+3. Create a new security profile to receive the Amazon Client ID and Client Secret.
+4. Note the Client ID and Client Secret, which you will use later.
+
+### Sign in with Apple
+
+1. Sign in to the Apple Developer portal.
+2. Create a new App ID and enable Sign in with Apple.
+3. Create a new Service ID and enable Sign in with Apple.
+4. Note the Client ID, Key ID, Private Key, and Team ID, which you will use later.
+
+After setting up your developer accounts, you need to configure the external sign-in backend. In your `amplify/auth/resource.ts` file, add the external providers:
+
+```typescript
+import { defineAuth, secret } from '@aws-amplify/backend';
+
+export const auth = defineAuth({
+  loginWith: {
+    email: true,
+    externalProviders: {
+      google: {
+        clientId: secret('GOOGLE_CLIENT_ID'),
+        clientSecret: secret('GOOGLE_CLIENT_SECRET')
+      },
+      signInWithApple: {
+        clientId: secret('SIWA_CLIENT_ID'),
+        keyId: secret('SIWA_KEY_ID'),
+        privateKey: secret('SIWA_PRIVATE_KEY'),
+        teamId: secret('SIWA_TEAM_ID')
+      },
+      loginWithAmazon: {
+        clientId: secret('LOGINWITHAMAZON_CLIENT_ID'),
+        clientSecret: secret('LOGINWITHAMAZON_CLIENT_SECRET')
+      },
+      facebook: {
+        clientId: secret('FACEBOOK_CLIENT_ID'),
+        clientSecret: secret('FACEBOOK_CLIENT_SECRET')
+      },
+      callbackUrls: [
+        'http://localhost:3000/profile',
+        'https://mywebsite.com/profile'
+      ],
+      logoutUrls: ['http://localhost:3000/', 'https://mywebsite.com']
+    }
+  }
+});
+```
+
+You also need to inform your external provider of the newly configured authentication resource and its OAuth redirect URI.
+
+For Facebook, go to your Facebook developer account, select your app, and add the OAuth redirect URI to the "Valid OAuth Redirect URIs" field.
+
+For Google, go to the Google Developer Console, select your project, and add the OAuth redirect URI to the "Authorized Redirect URIs" field.
+
+For Login with Amazon, go to the Amazon Developer Console, select your security profile, and add the OAuth redirect URI to the "Allowed Return URLs" field.
+
+For Sign in with Apple, go to the Apple Developer portal, select your App ID, and add the OAuth redirect URI to the "Return URLs" field.
+
+You can customize the scopes for retrieving user data from external providers by adding a `scopes` property to the external provider configuration. For example:
+
+```typescript
+import { defineAuth } from '@aws-amplify/backend';
+
+export const auth = defineAuth({
+  loginWith: {
+    email: true,
+    externalProviders: {
+      loginWithAmazon: {
+        clientId: secret('LOGINWITHAMAZON_CLIENT_ID'),
+        clientSecret: secret('LOGINWITHAMAZON_CLIENT_SECRET'),
+        scopes: ['profile']
+      }
+    }
+  }
+});
+```
+
+You can also map attributes between your external identity provider and your users created in Cognito by adding an `attributeMapping` property to the external provider configuration. For example:
+
+```typescript
+import { defineAuth } from '@aws-amplify/backend';
+
+export const auth = defineAuth({
+  loginWith: {
+    email: true,
+    externalProviders: {
+      loginWithAmazon: {
+        clientId: secret('LOGINWITHAMAZON_CLIENT_ID'),
+        clientSecret: secret('LOGINWITHAMAZON_CLIENT_SECRET'),
+        attributeMapping: {
+          email: 'email'
+        }
+      }
+    }
+  }
+});
+```
+
+To configure an OIDC provider, you can add an `oidc` property to the external provider configuration. For example:
+
+```typescript
+import { defineAuth, secret } from '@aws-amplify/backend';
+
+export const auth = defineAuth({
+  loginWith: {
+    email: true,
+    externalProviders: {
+      oidc: [
+        {
+          name: 'MicrosoftEntraID',
+          clientId: secret('MICROSOFT_ENTRA_ID_CLIENT_ID'),
+          clientSecret: secret('MICROSOFT_ENTRA_ID_CLIENT_SECRET'),
+          issuerUrl: '<your-issuer-url>'
+        }
+      ]
+    }
+  }
+});
+```
+
+To configure a SAML provider, you can add a `saml` property to the external provider configuration. For example:
+
+```typescript
+import { defineAuth } from '@aws-amplify/backend';
+
+export const auth = defineAuth({
+  loginWith: {
+    email: true,
+    externalProviders: {
+      saml: {
+        name: 'MicrosoftEntraIDSAML',
+        metadata: {
+          metadataContent: '<your-url-hosting-saml-metadata>',
+          metadataType: 'URL'
+        }
+      }
+    }
+  }
+});
+```
+
+To initiate sign-in with an external identity provider, use the `signInWithRedirect` API:
+
+```typescript
+import { signInWithRedirect } from 'aws-amplify/auth';
+
+signInWithRedirect({
+  provider: 'Apple'
+});
+```
+
+To complete external sign-in after redirect, use the `getCurrentUser` and `fetchUserAttributes` APIs:
+
+```typescript
+import { getCurrentUser, fetchUserAttributes } from 'aws-amplify/auth';
+
+const user = await getCurrentUser();
+const userAttributes = await fetchUserAttributes();
+console.log({ user, userAttributes });
+```
+
+You can also specify a redirect URL on sign out by using the `signOut` API with the `oauth` option:
+
+```typescript
+import { signOut } from 'aws-amplify/auth';
+
+signOut({
+  global: false,
+  oauth: {
+    redirectUrl: 'https://authProvider/logout?logout_uri=https://mywebsite.com/'
+  }
+});
+```

@@ -1,0 +1,95 @@
+AWS Amplify Gen 2 functions are AWS Lambda functions used to perform tasks and customize workflows in your Amplify app. These functions can be written in Node.js, Python, Go, or any other language supported by AWS Lambda.
+
+To create a custom function, you can use languages like Python or Go. When creating a function, you should define it using the `defineFunction` method. This method allows you to specify the function's handler, runtime, timeout, and code.
+
+For Python functions, you'll need to create a handler file, typically named `index.py`, which exports a function named `handler`. This is the entry point to your function. You can also include Python packages by adding them to a `requirements.txt` file in the same directory as your handler file.
+
+For Go functions, you'll need to create a handler file, typically named `main.go`, which contains the function code. You'll also need to run the `go mod init` and `go mod tidy` commands to build the Go function.
+
+Once you've defined your function, you'll need to add it to your backend by importing it into your `amplify/backend.ts` file and including it in the `defineBackend` method.
+
+To invoke your function, you can add it as a handler for a custom query with your Amplify Data resource. This involves specifying a new query in your schema and using the `a.handler.function` method to link it to your custom function.
+
+It's also important to note that custom functions may require Docker to build and bundle the function's code. If you're using a Fullstack Git-based environment, you'll need to provide your own image that meets Amplify requirements and includes a Docker installation.
+
+Here's an example of how you might define a Python function in React:
+```javascript
+import { defineFunction } from '@aws-amplify/backend';
+
+const functionDir = './amplify/functions/say-hello';
+
+export const sayHelloFunctionHandler = defineFunction(
+  (scope) => 
+    new Function(scope, 'say-hello', {
+      handler: 'index.handler',
+      runtime: 'python3.9',
+      timeout: 20,
+      code: Code.fromAsset(functionDir, {
+        bundling: {
+          local: {
+            tryBundle(outputDir) {
+              // install Python packages
+              return true;
+            },
+          },
+        },
+      }),
+    }),
+  {
+    resourceGroupName: 'auth',
+  }
+);
+```
+
+And here's an example of how you might define a Go function in React:
+```javascript
+import { defineFunction } from '@aws-amplify/backend';
+
+const functionDir = './amplify/functions/say-hello';
+
+export const sayHelloFunctionHandler = defineFunction(
+  (scope) => 
+    new Function(scope, 'say-hello', {
+      handler: 'bootstrap',
+      runtime: 'provided.al2',
+      timeout: 3,
+      code: Code.fromAsset(functionDir, {
+        bundling: {
+          local: {
+            tryBundle(outputDir) {
+              // build Go function
+              return true;
+            },
+          },
+        },
+      }),
+    }),
+  {
+    resourceGroupName: 'auth',
+  }
+);
+```
+
+To add the function to your backend, you would import it into your `amplify/backend.ts` file:
+```javascript
+import { sayHelloFunctionHandler } from './functions/say-hello/resource';
+
+defineBackend({
+  sayHelloFunctionHandler,
+});
+```
+
+And to invoke the function, you would add it as a handler for a custom query in your `amplify/data/resource.ts` file:
+```javascript
+import { sayHelloFunctionHandler } from '../functions/say-hello/resource';
+
+const schema = a.schema({
+  sayHello: a
+   .query()
+   .arguments({
+      name: a.string(),
+    })
+   .returns(a.string())
+   .handler(a.handler.function(sayHelloFunctionHandler)),
+});
+```

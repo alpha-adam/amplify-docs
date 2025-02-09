@@ -1,0 +1,51 @@
+To enable Predictions in your application, you need to set up the appropriate IAM policy for Roles in your Cognito Identity Pool. This policy should include the necessary actions and resources to use the desired machine learning capabilities.
+
+The IAM policy should be configured to enable all supported ML capabilities, but you should only include the actions and resources relevant to your specific use cases. You can learn more about the available ML capabilities in the documentation for Amazon Translate, Amazon Polly, Amazon Transcribe, Amazon Rekognition, Amazon Textract, and Amazon Comprehend.
+
+To configure the policy, you can use the following example as a starting point:
+```javascript
+const policy = new PolicyStatement({
+  actions: [
+    "translate:TranslateText",
+    "polly:SynthesizeSpeech",
+    "transcribe:StartStreamTranscriptionWebSocket",
+    "comprehend:DetectSentiment",
+    "comprehend:DetectEntities",
+    "comprehend:DetectDominantLanguage",
+    "comprehend:DetectSyntax",
+    "comprehend:DetectKeyPhrases",
+    "rekognition:DetectFaces",
+    "rekognition:RecognizeCelebrities",
+    "rekognition:DetectLabels",
+    "rekognition:DetectModerationLabels",
+    "rekognition:DetectText",
+    "rekognition:DetectLabel",
+    "rekognition:SearchFacesByImage",
+    "textract:AnalyzeDocument",
+    "textract:DetectDocumentText",
+    "textract:GetDocumentAnalysis",
+    "textract:StartDocumentAnalysis",
+    "textract:StartDocumentTextDetection",
+  ],
+  resources: ["*"],
+});
+```
+You will also need to add the `addOutput` method to patch the custom Predictions resource to the expected output configuration. This configuration should include the settings for the convert, identify, and interpret features.
+
+To use the Predictions features in your application, you need to install the Amplify library. You can do this by running the following command in your project's root folder:
+```
+npm add aws-amplify @aws-amplify/predictions
+```
+After installing the library, you need to configure the frontend by importing and loading the configuration file in your app. You can do this by adding the following code to your app's root entry point:
+```javascript
+import Amplify from "aws-amplify";
+import outputs from "./amplify_outputs.json";
+
+Amplify.configure(outputs);
+
+Amplify.configure({
+ ...Amplify.getConfig(),
+  Predictions: outputs.custom.Predictions,
+});
+```
+Note that you should replace `./amplify_outputs.json` with the actual path to your configuration file.

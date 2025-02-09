@@ -1,0 +1,28 @@
+The File storage page in the Amplify console provides a user-friendly interface for managing your application's backend file storage, allowing for efficient testing and management of your files.
+
+If you haven't created a storage resource, you can visit the Storage setup guide to get started.
+
+To access the File storage manager, follow these steps:
+1. Log in to the Amplify console and choose your app.
+2. Select the branch you want to access.
+3. Select Storage from the left navigation bar.
+
+To upload a file, you can either:
+- Select the Upload button, choose the file you want to upload, and then select Done
+- Drag and drop a file onto the Storage page
+
+To delete a file:
+1. Select the file you want to delete on the Storage page.
+2. Select the Actions dropdown and then select Delete.
+
+To copy a file:
+1. Select the file you want to copy on the Storage page.
+2. Select the Actions dropdown and then select Copy to.
+3. Choose or create the folder where you want to save a copy of your file.
+4. Select Copy to copy your file to the selected folder.
+
+To move a file:
+1. Select the file you want to move on the Storage page.
+2. Select the Actions dropdown and then select Move to.
+3. Choose or create the folder where you want to move your file.
+4. Select Move to move your file to the selected folder.

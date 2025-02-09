@@ -1,0 +1,147 @@
+To protect against spam, you can use Google reCAPTCHA in your AWS Amplify Gen 2 application. This involves creating an authentication flow that includes a custom challenge. 
+
+You will need to set up three triggers: 
+1. Create auth challenge: This trigger creates the reCAPTCHA challenge after a password is verified.
+2. Define auth challenge: This trigger defines the authentication flow, which includes the custom challenge.
+3. Verify auth challenge response: This trigger verifies the reCAPTCHA token.
+
+To set up the create auth challenge trigger, create a function that sends a request to Amazon Cognito to create the challenge. The function will include a condition to check if the session has two steps (SRP and password verification) and if the challenge name is CUSTOM_CHALLENGE. If the condition is met, the function will set the public challenge parameters, private challenge parameters, and optionally, the challenge metadata.
+
+```javascript
+// Create auth challenge trigger
+export const createAuthChallenge = async (event) => {
+  const { request, response } = event;
+
+  if (
+    request.session.length === 2 &&
+    request.challengeName === "CUSTOM_CHALLENGE"
+  ) {
+    response.publicChallengeParameters = { trigger: "true" };
+    response.privateChallengeParameters = { answer: "" };
+    // optionally set challenge metadata
+    response.challengeMetadata = "CAPTCHA_CHALLENGE";
+  }
+
+  return event;
+};
+```
+
+To set up the define auth challenge trigger, create a function that defines the authentication flow. The function will check the session and challenge name, and update the response accordingly.
+
+```javascript
+// Define auth challenge trigger
+export const defineAuthChallenge = async (event) => {
+  const { response } = event;
+  const [srp, password, captcha] = event.request.session;
+
+  // deny by default
+  response.issueTokens = false;
+  response.failAuthentication = true;
+
+  if (srp?.challengeName === "SRP_A") {
+    response.failAuthentication = false;
+    response.challengeName = "PASSWORD_VERIFIER";
+  }
+
+  if (
+    password?.challengeName === "PASSWORD_VERIFIER" &&
+    password.challengeResult === true
+  ) {
+    response.failAuthentication = false;
+    response.challengeName = "CUSTOM_CHALLENGE";
+  }
+
+  if (
+    captcha?.challengeName === "CUSTOM_CHALLENGE" &&
+    // check for the challenge metadata set in "create-auth-challenge"
+    captcha?.challengeMetadata === "CAPTCHA_CHALLENGE" &&
+    captcha.challengeResult === true
+  ) {
+    response.issueTokens = true;
+    response.failAuthentication = false;
+  }
+
+  return event;
+};
+```
+
+To set up the verify auth challenge response trigger, create a function that verifies the reCAPTCHA token. You will need to register your application and retrieve a reCAPTCHA secret key. Then, create a function that sends a request to Google reCAPTCHA to verify the token.
+
+```javascript
+// Verify auth challenge response trigger
+export const verifyAuthChallengeResponse = async (event) => {
+  if (!event.request.challengeAnswer) {
+    throw new Error("Missing challenge answer");
+  }
+
+  // https://developers.google.com/recaptcha/docs/verify#api_request
+  const url = new URL("https://www.google.com/recaptcha/api/siteverify");
+  const params = new URLSearchParams({
+    secret: process.env.GOOGLE_RECAPTCHA_SECRET_KEY,
+    response: event.request.challengeAnswer,
+  });
+  url.search = params.toString();
+
+  const request = new Request(url, {
+    method: "POST",
+  });
+
+  const response = await fetch(request);
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error("Verification failed", { cause: result["error-codes"] });
+  }
+
+  // indicate whether the answer is correct
+  event.response.answerCorrect = result.success;
+
+  return event;
+};
+```
+
+Finally, you will need to configure your auth resource to include the three triggers.
+
+```javascript
+// Configure auth resource
+import { createAuthChallenge } from "./create-auth-challenge/resource";
+import { defineAuthChallenge } from "./define-auth-challenge/resource";
+import { verifyAuthChallengeResponse } from "./verify-auth-challenge-response/resource";
+
+export const auth = {
+  loginWith: {
+    email: true,
+  },
+  triggers: {
+    createAuthChallenge,
+    defineAuthChallenge,
+    verifyAuthChallengeResponse,
+  },
+};
+```
+
+To use the reCAPTCHA in your React application, you can use the `useGoogleReCaptcha` hook to get the reCAPTCHA token.
+
+```javascript
+import React, { useState, useEffect } from "react";
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
+
+function Example() {
+  const [token, setToken] = useState(null);
+  const { executeRecaptcha } = useGoogleReCaptcha();
+
+  useEffect(() => {
+    if (executeRecaptcha) {
+      executeRecaptcha("your_action").then((token) => setToken(token));
+    }
+  }, [executeRecaptcha]);
+
+  return (
+    <div>
+      <p>reCAPTCHA token: {token}</p>
+    </div>
+  );
+}
+
+export default Example;
+```

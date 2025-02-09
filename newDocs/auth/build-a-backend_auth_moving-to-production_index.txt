@@ -1,0 +1,45 @@
+To move your Amplify Auth resources to production, you need to configure them to handle production workloads. By default, Amplify Auth provisions Amazon Cognito resources with limited capabilities for sending email and SMS messages, which is sufficient for developing your application but not for production. 
+
+For email, Cognito has a default email functionality that limits the number of emails that can be sent in one day. To handle production workloads, you can configure Cognito to send emails using Amazon Simple Email Service (Amazon SES). However, new AWS accounts default to a "sandbox" status with Amazon SES, which means you can only send emails to verified email addresses and domains. 
+
+To get started with Amazon SES in production, you need to request production access, which can take up to 24 hours to process. After your account is configured for production access and you have verified your sender email, you can configure your Cognito user pool to send emails using the verified sender. 
+
+Here is an example of how to configure your auth resource to send emails using Amazon SES in a React application:
+```javascript
+import Amplify from 'aws-amplify';
+
+Amplify.configure({
+  Auth: {
+    loginWith: {
+      email: true,
+    },
+    senders: {
+      email: {
+        fromEmail: "registrations@example.com",
+      },
+    },
+  },
+});
+```
+You can also customize the display name of the sender and optionally apply a custom address for your users to reply. 
+```javascript
+import Amplify from 'aws-amplify';
+
+Amplify.configure({
+  Auth: {
+    loginWith: {
+      email: true,
+    },
+    senders: {
+      email: {
+        fromEmail: "registrations@example.com",
+        fromName: "MyApp",
+        replyTo: "inquiries@example.com"
+      },
+    },
+  },
+});
+```
+For SMS authentication codes, you need to request an origination number, which will be used to send authentication codes. If your AWS account is in the SMS sandbox, you also need to add a destination phone number. You can check if your AWS account is in the SMS sandbox by going to the Amazon SNS console and checking the status under the Account information section. 
+
+Note that this process is specific to AWS Amplify and Amazon Cognito, and the code examples provided are for a React application.

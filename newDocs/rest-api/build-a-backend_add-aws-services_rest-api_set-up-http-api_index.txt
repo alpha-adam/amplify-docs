@@ -1,0 +1,46 @@
+To set up an Amplify HTTP API, you can use the AWS Cloud Development Kit (AWS CDK) to configure Amplify Functions as resolvers for routes of an HTTP API powered by Amazon API Gateway.
+
+First, create a new directory and a resource file, `amplify/functions/api-function/resource.ts`. Define the function with `defineFunction`. Then, create the corresponding handler file, `amplify/functions/api-function/handler.ts`, with the following contents:
+
+```typescript
+import type { APIGatewayProxyHandlerV2 } from "aws-lambda";
+
+export const handler: APIGatewayProxyHandlerV2 = async (event) => {
+  console.log("event", event);
+  return {
+    statusCode: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*", 
+      "Access-Control-Allow-Headers": "*", 
+    },
+    body: JSON.stringify("Hello from api-function!"),
+  };
+};
+```
+
+Next, using the AWS CDK, create an HTTP API in your backend file. Create a new API stack, IAM authorizer, User Pool authorizer, and HTTP Lambda integration. Create a new HTTP API with IAM as the default authorizer and add routes to the API with a IAM authorizer and different methods.
+
+To install the Amplify library for a React application, use npm to install the Amplify JavaScript library:
+
+```bash
+npm add aws-amplify
+```
+
+To initialize the Amplify API category, configure Amplify with `Amplify.configure()`. Import and load the configuration file in your app. Add the Amplify configuration step to your app's root entry point. For example:
+
+```typescript
+import { Amplify } from 'aws-amplify';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure(outputs);
+const existingConfig = Amplify.getConfig();
+Amplify.configure({
+ ...existingConfig,
+  API: {
+   ...existingConfig.API,
+    REST: outputs.custom.API,
+  },
+});
+```
+
+Make sure to call `Amplify.configure` as early as possible in your application’s life-cycle to avoid a missing configuration or `NoCredentials` error.

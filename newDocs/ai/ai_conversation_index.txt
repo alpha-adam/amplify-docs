@@ -1,0 +1,63 @@
+The conversation feature in AWS Amplify simplifies the creation of AI-powered conversation interfaces in your application. It automatically sets up the necessary components, including an AppSync API and Lambda functions, to handle streaming multi-turn interactions with Amazon Bedrock foundation models.
+
+The key components of this feature are:
+1. AppSync API - this is the gateway to the conversation feature, allowing you to create new conversation instances, send messages, and subscribe to real-time updates for assistant responses.
+2. Lambda Function - this acts as a bridge between AppSync and Amazon Bedrock, retrieving conversation history, invoking Bedrock's converse endpoint, and handling tool use responses.
+3. DynamoDB - this stores conversation and message data, with conversations scoped to a specific application user.
+
+The authentication flow for this feature involves the following steps:
+1. The user's OIDC access token is passed from the client to AppSync.
+2. AppSync forwards this token to the Lambda function.
+3. The Lambda function uses the token to authenticate requests back to AppSync.
+
+This feature can be used in various scenarios, with safeguards in place to mitigate risks, including:
+- Redacting OIDC access tokens from logs.
+- Limiting the Lambda function's ability to access other resources through IAM policies.
+
+The data flow for this feature is as follows:
+1. The user sends a message via the AppSync mutation.
+2. AppSync triggers the Lambda function.
+3. The Lambda function processes the message and invokes Bedrock's converse endpoint.
+4. If the response is a tool use, the Lambda function invokes the applicable AppSync query.
+5. The Lambda function sends the assistant response back to AppSync.
+6. AppSync sends the response to subscribed clients.
+
+This design allows for real-time, scalable conversations while ensuring that the Lambda function's data access matches that of the application user. 
+
+Here is an example of how you might use this feature in a React application:
+```javascript
+import { API } from '@aws-amplify/api';
+
+// Create a new conversation instance
+const conversationInstance = await API.graphql({
+  query: 'createConversation',
+  variables: {
+    input: {
+      // Conversation input data
+    }
+  }
+});
+
+// Send a message to the conversation instance
+const message = await API.graphql({
+  query: 'sendMessage',
+  variables: {
+    input: {
+      conversationId: conversationInstance.id,
+      message: 'Hello, world!'
+    }
+  }
+});
+
+// Subscribe to real-time updates for assistant responses
+API.graphql({
+  query: 'subscribeToConversation',
+  variables: {
+    conversationId: conversationInstance.id
+  }
+}).subscribe({
+  next: (response) => {
+    // Handle assistant response
+  }
+});
+```

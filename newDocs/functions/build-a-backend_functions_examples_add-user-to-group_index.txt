@@ -1,0 +1,93 @@
+To add a user to a group in AWS Amplify, you can use a Post Authentication trigger, also known as a Cognito post confirmation Lambda trigger. This trigger extends the behavior of your application to perform an action when a user is confirmed, such as adding them to a group.
+
+A user is considered confirmed when they verify their account, typically through email verification. However, this trigger will not be triggered for federated sign-ins, such as social sign-ins.
+
+To get started, you will need to install the AWS SDK v3 package and the `@types/aws-lambda` package. You can install these packages using npm by running the command:
+```bash
+npm add --save-dev @aws-sdk/client-cognito-identity-provider @types/aws-lambda
+```
+Next, create a new directory and a resource file, `amplify/auth/post-confirmation/resource.ts`. Then, define the Function with `defineFunction`:
+```javascript
+// amplify/auth/post-confirmation/resource.ts
+import { defineFunction } from '@aws-amplify/backend';
+
+export const postConfirmation = defineFunction({
+  name: 'post-confirmation',
+  environment: {
+    GROUP_NAME: 'EVERYONE'
+  },
+  resourceGroupName: 'auth'
+});
+```
+After creating the Function definition, you will need to create the `EVERYONE` group, grant access to your auth resource to ensure it can perform the `addUserToGroup` action, and set the Function as the post confirmation trigger:
+```javascript
+// amplify/auth/resource.ts
+import { defineAuth } from "@aws-amplify/backend";
+import { postConfirmation } from "./post-confirmation/resource"
+
+export const auth = defineAuth({
+  loginWith: {
+    email: true,
+  },
+  groups: ["EVERYONE"],
+  triggers: {
+    postConfirmation,
+  },
+  access: (allow) => [
+    allow.resource(postConfirmation).to(["addUserToGroup"]),
+  ],
+})
+```
+Then, create the Function's corresponding handler file, `amplify/auth/post-confirmation/handler.ts`, with the following contents:
+```javascript
+// amplify/auth/post-confirmation/handler.ts
+import type { PostConfirmationTriggerHandler } from 'aws-lambda';
+import {
+  CognitoIdentityProviderClient,
+  AdminAddUserToGroupCommand
+} from '@aws-sdk/client-cognito-identity-provider';
+
+const client = new CognitoIdentityProviderClient();
+
+export const handler = async (event) => {
+  const command = new AdminAddUserToGroupCommand({
+    GroupName: 'EVERYONE',
+    Username: event.userName,
+    UserPoolId: event.userPoolId
+  });
+  const response = await client.send(command);
+  console.log('processed', response.$metadata.requestId);
+  return event;
+};
+```
+After deploying the changes, whenever a user signs up and verifies their account, they will be automatically added to the group named "EVERYONE". 
+
+In a react application this would be used in conjunction with Amplify's Auth library to manage user authentication and group membership. 
+
+To use this in a react application, you would set up your Amplify Auth configuration and then define the Post Confirmation trigger in your Amplify Backend configuration. 
+
+For example, in your react application you might have an Amplify Auth configuration like this:
+```javascript
+import Amplify from 'aws-amplify';
+import awsconfig from './aws-exports';
+
+Amplify.configure(awsconfig);
+```
+And then in your Amplify Backend configuration you would define the Post Confirmation trigger:
+```javascript
+import { defineAuth } from "@aws-amplify/backend";
+import { postConfirmation } from "./post-confirmation/resource"
+
+export const auth = defineAuth({
+  loginWith: {
+    email: true,
+  },
+  groups: ["EVERYONE"],
+  triggers: {
+    postConfirmation,
+  },
+  access: (allow) => [
+    allow.resource(postConfirmation).to(["addUserToGroup"]),
+  ],
+})
+```

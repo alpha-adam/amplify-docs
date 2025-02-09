@@ -1,0 +1,22 @@
+To integrate translation capabilities into your application using AWS Amplify, you need to start by setting up the necessary IAM roles with the right policy actions, as described in the getting started section. 
+
+Once you have completed the setup, you can use the Amplify Predictions API to translate text from one language to another. This is done by calling the convert method on the Predictions object, passing in an object with the text to translate, its source language, and the target language. 
+
+For example, to translate text from Spanish to English in a React application, you can use the following code:
+```javascript
+import { Predictions } from '@aws-amplify/predictions';
+
+const textToTranslate = 'Hola, ¿cómo estás?';
+const result = await Predictions.convert({
+  translateText: {
+    source: {
+      text: textToTranslate,
+      language: 'es'
+    },
+    targetLanguage: 'en'
+  }
+})
+```
+The result will contain the translated text. You can find the complete list of supported languages and their corresponding language codes in the AWS documentation. 
+
+This page is describing how to set up language translation in your react application. Make sure you complete the setup steps before attempting to use this api.

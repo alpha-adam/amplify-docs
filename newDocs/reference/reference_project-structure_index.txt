@@ -1,0 +1,51 @@
+Amplify Gen 2 backends are defined using TypeScript and allow you to group resources based on their functionality. For example, you can create a post confirmation trigger for Amazon Cognito that generates a user profile record in the same file as your authentication resource.
+
+When you create a new Amplify project, the scaffolding for data and authentication resources is automatically set up. The project structure will have an `amplify` folder with subfolders for `auth` and `data`, as well as a `backend.ts` file and a `package.json` file.
+
+As your project grows, your project structure may become more complex, with additional subfolders and files for custom messages, resolvers, jobs, and storage. Backend resources are defined in `resource` files using helpers like `defineAuth`.
+
+For instance, you can define an authentication resource like this:
+```typescript
+import { defineAuth } from '@aws-amplify/backend';
+
+export const auth = defineAuth({
+  loginWith: {
+    email: true
+  }
+});
+```
+Then, you can set up the backend by importing the authentication resource and defining the backend:
+```typescript
+import { defineBackend } from '@aws-amplify/backend';
+import { auth } from './auth/resource';
+import { data } from './data/resource';
+
+defineBackend({
+  auth,
+  data
+});
+```
+You can also extend your backend using the AWS Cloud Development Kit (AWS CDK), which allows you to use any AWS service. To get started with the CDK, you can add it to your backend and create an Amazon S3 bucket that authenticated users have read and write access to:
+```typescript
+import * as s3 from 'aws-cdk-lib/aws-s3';
+import { defineBackend } from '@aws-amplify/backend';
+import { auth } from './auth/resource';
+import { data } from './data/resource';
+
+const backend = defineBackend({
+  auth,
+  data
+});
+
+const bucketStack = backend.getStack('BucketStack');
+const bucket = new s3.Bucket(bucketStack, 'Bucket', {
+  blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL
+});
+
+const authRole = backend.auth.resources.authenticatedUserIamRole;
+bucket.grantReadWrite(authRole);
+
+const unauthRole = backend.auth.resources.unauthenticatedUserIamRole;
+bucket.grantRead(unauthRole);
+```
+To learn more, you can explore the concepts of Amplify and how to add AWS services to your backend.

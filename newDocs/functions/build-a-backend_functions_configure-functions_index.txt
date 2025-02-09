@@ -1,0 +1,53 @@
+To configure functions, you can use the `defineFunction` option with various settings. 
+
+The `name` option allows you to explicitly set the name of the function. By default, the function name is based on the directory where `defineFunction` is called. For example, you can set the name like this:
+```javascript
+export const myDemoFunction = defineFunction({
+  entry: './demo-function-handler.ts',
+  name: 'overrideName'
+});
+```
+
+The `timeoutSeconds` option allows you to set the timeout for the function, which defaults to 3 seconds. You can set it to any whole number of seconds up to 15 minutes. For example:
+```javascript
+export const myDemoFunction = defineFunction({
+  timeoutSeconds: 60
+});
+```
+
+The `memoryMB` option allows you to set the amount of memory allocated to the function, which defaults to 512 MB. You can set it to any value from 128 MB to 10240 MB. For example:
+```javascript
+export const myDemoFunction = defineFunction({
+  memoryMB: 256
+});
+```
+
+The `ephemeralStorageSizeMB` option allows you to set the amount of ephemeral storage allocated to the function, which defaults to 512 MB. You can set it to any value from 512 MB to 10240 MB. For example:
+```javascript
+export const myDemoFunction = defineFunction({
+  ephemeralStorageSizeMB: 1024
+});
+```
+
+The `runtime` option allows you to set the Node version used by the function, which defaults to Node 18. For example:
+```javascript
+export const myDemoFunction = defineFunction({
+  runtime: 20
+});
+```
+
+The `entry` option allows you to specify the location of the function handler, which defaults to a file called `handler.ts` in the same directory as the file where `defineFunction` is called. For example:
+```javascript
+export const myDemoFunction = defineFunction({
+  entry: './path/to/handler.ts'
+});
+```
+
+The `resourceGroupName` option allows you to group related functions with other Amplify resources, which defaults to `function`. For example:
+```javascript
+export const myDemoFunction = defineFunction({
+  resourceGroupName: 'data'
+});
+```
+
+Note that some options, such as `name`, `timeoutSeconds`, `memoryMB`, `ephemeralStorageSizeMB`, `runtime`, and `entry`, are not supported for custom functions, except for `resourceGroupName`.

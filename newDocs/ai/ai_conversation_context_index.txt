@@ -1,0 +1,86 @@
+To provide high-quality answers to users' questions, large language models (LLMs) need the right information. This information can be contextual, based on the user or the state of the application. You can send client-side context to the LLM with any user message, which can be any unstructured or structured data that might be useful.
+
+In React, you can pass this context using the `aiContext` property when sending a message to the LLM. For example, you can pass a simple object with a username:
+```tsx
+conversation.sendMessage({
+  content: [{ text: "hello" }],
+  aiContext: {
+    username: "danny"
+  }
+})
+```
+
+In a React application, you can use the `useAIConversation` hook to send messages to the LLM. You can pass the `aiContext` property when calling the `sendMessage` function:
+```tsx
+function handleSendMessage(message) {
+  sendMessage({
+    ...message,
+    aiContext: {
+      currentTime: new Date().toLocaleTimeString()
+    }
+  })
+}
+```
+
+Alternatively, you can pass a function to the `aiContext` property that returns the context data. This function will be run immediately before the request is sent, ensuring that the LLM receives the most up-to-date information:
+```tsx
+<AIConversation
+  messages={messages}
+  isLoading={isLoading}
+  handleSendMessage={sendMessage}
+  aiContext={() => {
+    return {
+      currentTime: new Date().toLocaleTimeString(),
+    };
+  }}
+/>
+```
+
+You can use React context or other state management systems to update the data passed to `aiContext`. For example, you can create a context to share state across components:
+```tsx
+const DataContext = React.createContext<{
+  data: any;
+  setData: (value: React.SetStateAction<any>) => void;
+}>({ data: {}, setData: () => {} });
+```
+
+Then, you can create a component that updates the shared state:
+```tsx
+function Counter() {
+  const { data, setData } = React.useContext(DataContext);
+  const count = data.count ?? 0;
+  return (
+    <Button onClick={() => setData({ ...data, count: count + 1 })}>
+      {count}
+    </Button>
+  );
+}
+```
+
+Finally, you can reference the shared data in the `aiContext` property:
+```tsx
+function Chat() {
+  const { data } = React.useContext(DataContext);
+  const [
+    {
+      data: { messages },
+      isLoading,
+    },
+    sendMessage,
+  ] = useAIConversation('pirateChat');
+
+  return (
+    <AIConversation
+      messages={messages}
+      isLoading={isLoading}
+      handleSendMessage={sendMessage}
+      aiContext={() => {
+        return {
+          ...data,
+          currentTime: new Date().toLocaleTimeString(),
+        };
+      }}
+    />
+  );
+}
+```

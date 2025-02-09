@@ -1,0 +1,84 @@
+To record events in Amplify, you can use the `recordEvent` API. This API allows you to record custom events within your app, and it handles retry logic in case the device loses network connectivity. It also automatically batches requests to reduce network bandwidth.
+
+Here is an example of how to record a custom event in React:
+```javascript
+import Amplify from 'aws-amplify';
+import Analytics from '@aws-amplify/analytics';
+
+const recordEvent = async () => {
+  const event = {
+    name: 'PasswordReset',
+    attributes: {
+      Channel: 'SMS',
+      Successful: true,
+    },
+    metrics: {
+      ProcessDuration: 792,
+      UserAge: 120.3,
+    },
+  };
+
+  await Analytics.record(event);
+};
+```
+
+You can also record authentication events, such as sign-ins, sign-ups, and authentication failures. To do this, you can use the following event types:
+- `_userauth.sign_in`
+- `_userauth.sign_up`
+- `_userauth.auth_fail`
+
+Here is an example of how to record an authentication event in React:
+```javascript
+import Amplify from 'aws-amplify';
+import Analytics from '@aws-amplify/analytics';
+
+const recordAuthenticationEvent = async () => {
+  const event = {
+    name: '_userauth.sign_in',
+  };
+
+  await Analytics.record(event);
+};
+```
+
+You can also register global properties that will be sent along with all recorded events. To do this, you can use the `registerGlobalProperties` API.
+
+Here is an example of how to register global properties in React:
+```javascript
+import Amplify from 'aws-amplify';
+import Analytics from '@aws-amplify/analytics';
+
+const registerGlobalProperties = async () => {
+  const properties = {
+    AppStyle: 'DarkMode',
+  };
+
+  await Analytics.registerGlobalProperties(properties);
+};
+```
+
+To unregister global properties, you can use the `unregisterGlobalProperties` API.
+
+Here is an example of how to unregister global properties in React:
+```javascript
+import Amplify from 'aws-amplify';
+import Analytics from '@aws-amplify/analytics';
+
+const unregisterGlobalProperties = async () => {
+  await Analytics.unregisterGlobalProperties(['AppStyle', 'OtherProperty']);
+};
+```
+
+Note that the Amazon Pinpoint event count updates in minutes after recording your event. However, it can take upwards of 30 minutes for the event to display in the Filter section, and for its custom attributes to appear in Pinpoint.
+
+You can also manually flush events using the `flushEvents` API.
+
+Here is an example of how to flush events in React:
+```javascript
+import Amplify from 'aws-amplify';
+import Analytics from '@aws-amplify/analytics';
+
+const flushEvents = async () => {
+  await Analytics.flushEvents();
+};
+```

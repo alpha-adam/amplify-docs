@@ -1,0 +1,50 @@
+The ownersDefinedIn rule grants a set of users access to a record by automatically creating an owners field to store the allowed record owners. You can override the default owners field name by specifying inField with the desired field name to store the owner information. You can dynamically manage which users can access a record by updating the owner field.
+
+To grant a set of users access to a record, you use the ownersDefinedIn rule. This automatically creates an owners field to store the allowed owners. 
+
+For example, in a React application, you can define a schema with the ownersDefinedIn rule like this:
+```javascript
+const schema = {
+  Todo: {
+    content: 'string',
+    owners: ['string']
+  },
+  authorization: (allow) => [allow.ownersDefinedIn('owners')]
+}
+```
+In your React application, you can perform CRUD operations against the model using the Amplify API with the userPool auth mode. To create a record with the current user as the first owner:
+```javascript
+const { errors, data: newTodo } = await Amplify.API.graphql({
+  query: 'createTodo',
+  variables: {
+    input: {
+      content: 'My new todo'
+    },
+    authMode: 'userPool'
+  }
+});
+```
+To add another user as an owner, you can update the owners field:
+```javascript
+await Amplify.API.graphql({
+  query: 'updateTodo',
+  variables: {
+    input: {
+      id: newTodo.id,
+      owners: [...(newTodo.owners), otherUserId]
+    },
+    authMode: 'userPool'
+  }
+});
+```
+You can override the default owners field name by specifying inField with the desired field name to store the owner information. For example:
+```javascript
+const schema = {
+  Todo: {
+    content: 'string',
+    authors: ['string']
+  },
+  authorization: (allow) => [allow.ownersDefinedIn('authors')]
+}
+```
+This way, the authors field will store the owner information instead of the default owners field. Any user listed in the authors field can access the record.

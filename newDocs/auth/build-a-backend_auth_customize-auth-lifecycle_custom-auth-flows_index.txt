@@ -1,0 +1,88 @@
+The Auth category can be configured to perform a custom authentication flow defined by you. The following guide shows how to setup a simple passwordless authentication flow in a React application.
+
+## Prerequisites
+An application with Amplify libraries integrated.
+
+## Configure Auth
+The custom auth flow can be configured manually.
+
+## Sign in a user
+Implement a UI to get the username from the user. After the user enters the username you can start the sign in flow by calling the following method:
+```javascript
+import Amplify from 'aws-amplify';
+import Auth from '@aws-amplify/auth';
+
+async function signIn(username) {
+  try {
+    const result = await Auth.signIn(username);
+    if (result.nextStep === 'confirmSignInWithCustomChallenge') {
+      // Ask the user to enter the custom challenge.
+    } else {
+      console.log('Sign in succeeded');
+    }
+  } catch (error) {
+    console.log('Sign in failed', error);
+  }
+}
+```
+
+## Confirm sign in with custom challenge
+To get a custom challenge from the user, create an appropriate UI for the user to submit the required value, and pass that value into the `confirmSignIn()` API.
+```javascript
+async function confirmSignIn(response) {
+  try {
+    const result = await Auth.confirmSignIn(response);
+    console.log('Confirm sign in succeeded');
+  } catch (error) {
+    console.log('Confirm sign in failed', error);
+  }
+}
+```
+
+## Lambda Trigger Setup
+AWS Amplify now supports creating functions as part of its new backend experience. For more information on the Functions and how to start with them check out the Amplify Functions documentation. In addition, more information on available triggers can be found in the Cognito documentation.
+
+## Custom Auth Flow with Secure Remote Password (SRP)
+Cognito User Pool allows to start the custom authentication flow with SRP as the first step. If you would like to use this flow, setup Define Auth Lambda trigger to handle SRP_A as the first challenge.
+```javascript
+exports.handler = (event, context) => {
+  if (event.request.session.length == 1 && 
+      event.request.session[0].challengeName == 'SRP_A') {
+        event.response.issueTokens = false;
+        event.response.failAuthentication = false;
+        event.response.challengeName = 'PASSWORD_VERIFIER';
+  } else if (event.request.session.length == 2 && 
+      event.request.session[1].challengeName == 'PASSWORD_VERIFIER' && 
+      event.request.session[1].challengeResult == true) {
+        event.response.issueTokens = false;
+        event.response.failAuthentication = false;
+        event.response.challengeName = 'CUSTOM_CHALLENGE';
+  } else if (event.request.session.length == 3 && 
+      event.request.session[2].challengeName == 'CUSTOM_CHALLENGE' && 
+      event.request.session[2].challengeResult == true) {
+        event.response.issueTokens = true;
+        event.response.failAuthentication = false;
+  } else {
+      event.response.issueTokens = false;
+      event.response.failAuthentication = true;
+  }
+  context.done(null, event);
+};
+```
+If your lambda is setup to start with `SRP` as the first step, make sure to initiate the signIn process with `customWithSRP` as the authentication flow:
+```javascript
+import Amplify from 'aws-amplify';
+import Auth from '@aws-amplify/auth';
+
+async function signInWithSRP(username, password) {
+  try {
+    const options = {
+      authFlowType: 'CUSTOM_AUTH_WITH_SRP',
+    };
+    const result = await Auth.signIn(username, password, options);
+    console.log('Sign in result', result);
+  } catch (error) {
+    console.log('Sign in failed', error);
+  }
+}
+```

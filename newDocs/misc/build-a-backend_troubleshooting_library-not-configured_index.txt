@@ -1,0 +1,83 @@
+If you're experiencing missing configuration or `NoCredentials` error messages in your React application, even after calling `Amplify.configure`, it's likely that your Amplify API is being called before `Amplify.configure`. This can happen in several ways, and here are three possible checks to troubleshoot the issue.
+
+First, ensure that `Amplify.configure` is called in the root file of your project. The root file varies depending on your frontend framework. For React, it's usually `src/main.tsx`. Make sure you're calling `Amplify.configure` in this file.
+
+If you're using Next.js App Router, follow the suggestions in the Next.js documentation for root-level configuration. Be aware that if you're calling any APIs at the module-level (i.e., at the top of your file) in any child components, you may still run into this issue.
+
+Second, move any module-level Amplify API invocations. When Amplify APIs are used outside of your application lifecycle, there's a risk that the JavaScript bundler may place that API call before `Amplify.configure`. This can happen when you have code like this:
+
+```tsx
+import { Amplify } from 'aws-amplify';
+import ComponentX from 'module-fetch-auth';
+
+Amplify.configure();
+
+export default function App() {
+  return (
+    <div>
+        <ComponentX />
+    </div>
+  );
+}
+```
+
+```tsx
+import { fetchAuthSession } from 'aws-amplify/auth';
+
+fetchAuthSession(); // Will throw "AuthUserPoolException: Auth UserPool not configured."
+
+export default function ComponentX() {
+  return (
+    <div className="box">
+     ...
+    </div>
+  );
+}
+```
+
+To fix this, move the Amplify API calls to within the application lifecycle. For instance, you can use the `useEffect` hook in React:
+
+```tsx
+import { Amplify } from 'aws-amplify';
+import ComponentX from 'module-fetch-auth';
+
+Amplify.configure();
+
+export default function App() {
+  return (
+    <div>
+        <ComponentX />
+    </div>
+  );
+}
+```
+
+```tsx
+import { type AuthSession, fetchAuthSession } from 'aws-amplify/auth';
+import { useEffect, useState } from 'react';
+
+export default function ComponentX() {
+  const [session, setSession] = useState<AuthSession|undefined>();
+
+  const getSession = async () => {
+    try {
+      const currentSession = await fetchAuthSession();
+      setSession(currentSession);
+    } catch (error: unknown) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    getSession();
+  }, []);
+
+  return (
+    <div className="box">
+     ...
+    </div>
+  );
+}
+```
+
+Lastly, if you're working in a multi-page app, you need to call `Amplify.configure()` for each page/route of your application. You can do this by calling `Amplify.configure` in a common source file and importing it into each page. This ensures that Amplify is properly configured for each page in your application.

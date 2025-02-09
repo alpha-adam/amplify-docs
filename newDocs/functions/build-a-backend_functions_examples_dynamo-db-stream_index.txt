@@ -1,0 +1,42 @@
+To integrate AWS Lambda with Amazon DynamoDB Streams, you can trigger a Lambda function in response to real-time events, enabling you to build responsive, event-driven applications. This feature allows you to react to changes in data or system state without the need for polling services.
+
+In this example, we will configure a Lambda function with an Amazon DynamoDB stream as an event source, using a `Todo` table created by a data model on the GraphQL API. 
+
+First, install the required packages, including the AWS Lambda Powertools Logger for structured logging capabilities and the `aws-lambda` package to define the handler type, by running `npm add --save-dev @aws-lambda-powertools/logger @types/aws-lambda` in your terminal.
+
+Next, create a new directory and a resource file, and define the Lambda function using `defineFunction`. 
+
+Then, create a corresponding handler file and define the function handler, which will be triggered whenever an item is added, updated, or deleted from the table. The handler function will process the event records and log information about the event.
+
+Lastly, create a DynamoDB table as an event source in the `amplify/backend` file and attach the necessary policy to the Lambda function's role.
+
+Here's how you could write the handler function in React, although note that the handler function itself is typically written in a serverless environment and not directly in a React application:
+
+```javascript
+import { DynamoDBStreamHandler } from "aws-lambda";
+import { Logger } from "@aws-lambda-powertools/logger";
+
+const logger = new Logger({
+  logLevel: "INFO",
+  serviceName: "dynamodb-stream-handler",
+});
+
+export const handler: DynamoDBStreamHandler = async (event) => {
+  for (const record of event.Records) {
+    logger.info(`Processing record: ${record.eventID}`);
+    logger.info(`Event Type: ${record.eventName}`);
+
+    if (record.eventName === "INSERT") {
+      // business logic to process new records
+      logger.info(`New Image: ${JSON.stringify(record.dynamodb?.NewImage)}`);
+    }
+  }
+  logger.info(`Successfully processed ${event.Records.length} records.`);
+
+  return {
+    batchItemFailures: [],
+  };
+};
+```
+
+In a React application, you would typically interact with the Lambda function through an API Gateway or other serverless API. However, the actual handling of the DynamoDB stream event would occur in the Lambda function, not in the React application itself.

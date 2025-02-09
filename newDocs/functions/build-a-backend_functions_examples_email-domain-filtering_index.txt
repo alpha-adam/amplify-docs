@@ -1,0 +1,37 @@
+You can use defineAuth and defineFunction to create a Cognito pre sign-up Lambda trigger that performs filtering based on the user's email address. This can allow or deny user signups based on their email address.
+
+To get started, you need to install the aws-lambda package. 
+
+Next, create a new directory and a resource file, then define the Function with defineFunction. For example, you can define the Function like this:
+```javascript
+const preSignUp = defineFunction({
+  name: 'pre-sign-up',
+  environment: {
+    ALLOW_DOMAIN: 'amazon.com'
+  }
+});
+```
+
+Then, create the corresponding handler file with the following contents:
+```javascript
+const handler = async (event) => {
+  const email = event.request.userAttributes['email'];
+
+  if (!email.endsWith(process.env.ALLOW_DOMAIN)) {
+    throw new Error('Invalid email domain');
+  }
+
+  return event;
+};
+```
+
+Lastly, set the newly created Function resource on your auth resource. For example:
+```javascript
+const auth = defineAuth({
+  triggers: {
+    preSignUp
+  }
+});
+```
+
+After deploying the changes, whenever a user attempts to sign up without an amazon.com email address they will receive an error.

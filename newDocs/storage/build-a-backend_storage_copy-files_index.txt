@@ -1,0 +1,64 @@
+You can copy a file in Amplify Storage using the `copy` method. This method duplicates an existing file to a designated path and returns an object with the path of the copied file upon successful completion.
+
+```javascript
+import { copy } from 'aws-amplify/storage';
+
+const copyFile = async () => {
+  try {
+    const response = await copy({
+      source: {
+        path: `album/2024/${encodeURIComponent('#1.jpg')}`,
+      },
+      destination: {
+        path: 'shared/2024/#1.jpg',
+      },
+    });
+  } catch (error) {
+    console.error('Error', error);
+  }
+};
+```
+
+Note that you can only copy files up to 5GB in a single operation. Also, if there's a special character in the source path, you should URI encode the source path.
+
+You can also specify a bucket or copy across buckets/regions by providing the `bucket` option. This option can be a string representing the target bucket's assigned name in Amplify Backend or an object specifying the bucket name and region from the console.
+
+```javascript
+import { copy } from 'aws-amplify/storage';
+
+const copyFile = async () => {
+  try {
+    const response = await copy({
+      source: {
+        path: 'album/2024/1.jpg',
+        bucket: 'assignedNameInAmplifyBackend',
+        expectedBucketOwner: '123456789012'
+      },
+      destination: {
+        path: 'shared/2024/1.jpg',
+        bucket: {
+          bucketName: 'generated-second-bucket-name',
+          region: 'us-east-2'
+        },
+        expectedBucketOwner: '123456789013'
+      }
+    });
+  } catch (error) {
+    console.error('Error', error);
+  }
+};
+```
+
+To copy to or from a bucket other than your default, both source and destination must have `bucket` explicitly defined.
+
+The `copy` method takes several options, including:
+
+* `path`: a string or callback that represents the path in the source and destination bucket to copy the object to or from
+* `bucket`: a string representing the target bucket's assigned name in Amplify Backend or an object specifying the bucket name and region from the console
+* `eTag`: the copy source object entity tag (ETag) value
+* `notModifiedSince`: copies the source object if it hasn't been modified since the specified time
+* `expectedBucketOwner`: the account ID that owns the source or destination bucket
+
+Cross-identity ID copying is only allowed if the destination path has the right access rules to allow other authenticated users writing to it.
+
+In React, you can use the `copy` method as shown above to copy files in Amplify Storage. Make sure to handle errors and exceptions properly, and use the `bucket` option to specify the target bucket if necessary.

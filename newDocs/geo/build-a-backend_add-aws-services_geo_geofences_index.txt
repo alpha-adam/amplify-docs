@@ -1,0 +1,142 @@
+To work with geofences in your application using Amplify Geo, you need to provision a geofence collection resource and configure your app. You can do this by following the instructions in either Configure a geofence collection or Use existing Amazon Location Service resources, and also set up displaying a map in your application.
+
+To manage geofences in your application, you can use the amplify-geofence-control component. First, install the necessary dependencies with the command npm add aws-amplify @aws-amplify/geo @aws-amplify/ui-react @aws-amplify/ui-react-geo. Make sure that aws-amplify @aws-amplify/geo version 6.0.0 or above are installed.
+
+To add the geofence management component to your map, create a map and then import AmplifyGeofenceControl from maplibre-gl-js-amplify, create a new instance of this control, and add it to your MapLibre map instance. The user will need to be authenticated with the administrative Cognito user associated with the Geofence Collection you created. 
+
+Here is an example of how to use AmplifyGeofenceControl in a React application:
+```javascript
+import { useEffect, useRef } from "react";
+import { createMap, AmplifyGeofenceControl } from "maplibre-gl-js-amplify";
+import { withAuthenticator } from "@aws-amplify/ui-react";
+import "@aws-amplify/ui-react/styles.css";
+import "maplibre-gl-js-amplify/dist/public/amplify-ctrl-geofence.css";
+import "maplibre-gl/dist/maplibre-gl.css";
+
+function Map() {
+  const mapRef = useRef(null); 
+
+  useEffect(() => {
+    let map;
+    async function initializeMap() {
+      if (mapRef.current!= null) {
+        map = await createMap({
+          container: mapRef.current,
+          center: [-122.431297, 37.773972],
+          zoom: 11,
+        });
+      }
+
+      const control = new AmplifyGeofenceControl()
+      map.addControl(control);
+    }
+    initializeMap();
+
+    return function cleanup() {
+      if (map!= null) map.remove();
+    };
+  }, []);
+
+ return (
+   <div className="App">
+     <div ref={mapRef} id="map" />
+   </div>
+ );
+}
+
+export default withAuthenticator(Map);
+```
+
+Alternatively, you can use the Amplify React MapView component and the useControl hook from react-map-gl to render the Geofence control component.
+```javascript
+import React from 'react';
+import { Amplify } from 'aws-amplify';
+import { withAuthenticator } from '@aws-amplify/ui-react';
+import { MapView } from '@aws-amplify/ui-react-geo';
+import { useControl } from 'react-map-gl';
+import { AmplifyGeofenceControl } from 'maplibre-gl-js-amplify';
+
+function Geofence() {
+  useControl(() => new AmplifyGeofenceControl());
+
+  return null;
+}
+
+function App({ signOut }) {
+  return (
+    <div className="App">
+      <MapView
+        initialViewState={{
+          latitude: 37.8,
+          longitude: -122.4,
+          zoom: 14
+        }}
+      >
+        <Geofence />
+      </MapView>
+    </div>
+  );
+}
+
+export default withAuthenticator(App);
+```
+
+If you are using a different mapping library or need a programmatic approach to managing geofences, you can use the @aws-amplify/geo package. This package provides methods for managing geofences, including saveGeofences, getGeofence, listGeofences, and deleteGeofences.
+
+The saveGeofences method is used to save geofences to your collection. It can take a single geofence or an array of geofences.
+```javascript
+let saveGeofenceResults;
+try {
+  saveGeofenceResults = await Geo.saveGeofences({
+    geofenceId: 'my-geofence',
+    geometry: {
+      polygon: [
+        [-123.14695358276366, 49.290090146520434],
+        [-123.1358814239502, 49.294960279811974],
+        [-123.15021514892577, 49.29300108863353],
+        [-123.14909934997559, 49.29132171993048],
+        [-123.14695358276366, 49.290090146520434]
+      ]
+    }
+  });
+} catch (error) {
+  throw error;
+}
+```
+
+The getGeofence method is used to get a single geofence from a collection.
+```javascript
+let response;
+try {
+  response = await Geo.getGeofence('geofenceId');
+} catch (error) {
+  throw error;
+}
+```
+
+The listGeofences method is used to get a list of geofences from a collection. It has pagination built in and will return 100 geofences per page.
+```javascript
+let response;
+try {
+  response = await Geo.listGeofences();
+  response.entries.forEach((geofence) => console.log(geofence.geofenceId));
+} catch (error) {
+  throw error;
+}
+```
+
+The deleteGeofences method is used to delete a geofences from a collection. It can delete a single or multiple geofences at once.
+```javascript
+let response;
+try {
+  response = await Geo.deleteGeofences(
+    [
+      "geofence1",
+      "geofence2",
+      "geofence3",
+    ]
+  )
+} catch (error) {
+  throw error;
+}
+```

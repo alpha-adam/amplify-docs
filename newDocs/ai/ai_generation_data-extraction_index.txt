@@ -1,0 +1,45 @@
+Data extraction allows you to parse unstructured text and extract structured data using artificial intelligence. This is useful for converting free-form text into typed objects that can be used in your application.
+
+The following example shows how to extract product details from an unstructured product description in a React application. The AI model will analyze the text and return a structured object containing the product name, summary, price, and category.
+
+To achieve this, you need to define a schema that includes a custom type for the product details and a generation that uses the AI model to extract the details. 
+
+In your React component, you can use the `useAIGeneration` hook from `@aws-amplify/ui-react-ai` to generate the product details. This hook returns a function to extract the product details and a state object with the generated data and a loading indicator.
+
+Here is an example of how to use it:
+```javascript
+import { generateClient } from "aws-amplify/api";
+import { createAIHooks } from "@aws-amplify/ui-react-ai";
+
+const client = generateClient({ authMode: "userPool" });
+const { useAIGeneration } = createAIHooks(client);
+
+function Example() {
+  const productDescription = `The NBA Official Game Basketball is a premium
+  regulation-size basketball crafted with genuine leather and featuring
+  official NBA specifications. This professional-grade ball offers superior grip
+  and durability, with deep channels and a moisture-wicking surface that ensures
+  consistent performance during intense game play. Priced at $159.99, this high-end
+  basketball belongs in our Professional Sports Equipment category and is the same model
+  used in NBA games.`
+
+  const [{ data, isLoading }, extractProductDetails] =
+    useAIGeneration("extractProductDetails");
+
+  const productDetails = async () => {
+    extractProductDetails({
+      productDescription
+    });
+  };
+}
+```
+
+When you call the `extractProductDetails` function, it will generate the product details and update the `data` state with the result. The response will be a structured object containing the product name, summary, price, and category, like this:
+```json
+{
+  "name": "NBA Official Game Basketball",
+  "summary": "Premium regulation-size NBA basketball made with genuine leather. Features official NBA specifications, superior grip, deep channels, and moisture-wicking surface for consistent game play performance.",
+  "price": 159.99,
+  "category": "Professional Sports Equipment"
+}
+```

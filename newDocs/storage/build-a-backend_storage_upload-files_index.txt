@@ -1,0 +1,128 @@
+You can implement upload functionality in your app by either using the File Uploader UI component or further customizing the upload experience using the upload API.
+
+To use the File Uploader UI component, you need to install the required packages by running the command `npm add @aws-amplify/ui-react-storage aws-amplify` in your terminal. Then, you can use the component in your app like this:
+
+```tsx
+import { FileUploader } from '@aws-amplify/ui-react-storage';
+import '@aws-amplify/ui-react/styles.css';
+
+export const DefaultFileUploaderExample = () => {
+  return (
+    <FileUploader
+      acceptedFileTypes={['image/*']}
+      path="public/"
+      maxFileCount={1}
+      isResumable
+    />
+  );
+};
+```
+
+To implement upload functionality using the upload API, you can use the `uploadData` function from the `aws-amplify/storage` module. Here's an example of how to upload a file from a file object:
+
+```jsx
+import React from 'react';
+import { uploadData } from 'aws-amplify/storage';
+
+function App() {
+  const [file, setFile] = React.useState();
+
+  const handleChange = (event) => {
+    setFile(event.target.files?.[0]);
+  };
+
+  const handleClick = () => {
+    if (!file) {
+      return;
+    }
+    uploadData({
+      path: `photos/${file.name}`,
+      data: file,
+    });
+  };
+
+  return (
+    <div>
+      <input type="file" onChange={handleChange} />
+      <button onClick={handleClick}>Upload</button>
+    </div>
+  );
+}
+```
+
+You can also upload data from a data object. Here's an example:
+
+```javascript
+import { uploadData } from 'aws-amplify/storage';
+
+try {
+  const result = await uploadData({
+    path: "album/2024/1.jpg",
+    data: file,
+  }).result;
+  console.log('Succeeded: ', result);
+} catch (error) {
+  console.log('Error : ', error);
+}
+```
+
+Additionally, you can monitor the progress of an upload by using the `onProgress` option. Here's an example:
+
+```javascript
+import { uploadData } from 'aws-amplify/storage';
+
+const monitorUpload = async () => {
+  try {
+    const result = await uploadData({
+      path: "album/2024/1.jpg",
+      data: file,
+      options: {
+        onProgress: ({ transferredBytes, totalBytes }) => {
+          if (totalBytes) {
+            console.log(
+              `Upload progress ${Math.round(
+                (transferredBytes / totalBytes) * 100
+              )} %`
+            );
+          }
+        },
+      },
+    }).result;
+    console.log("Path from Response: ", result.path);
+  } catch (error) {
+    console.log("Error : ", error);
+  }
+}
+```
+
+You can also pause, resume, and cancel uploads using the `pause`, `resume`, and `cancel` methods.
+
+```javascript
+import { uploadData, isCancelError } from 'aws-amplify/storage';
+
+const uploadTask = uploadData({ path, data: file });
+uploadTask.pause();
+uploadTask.resume();
+uploadTask.cancel();
+try {
+  await uploadTask.result;
+} catch (error) {
+  if (isCancelError(error)) {
+    console.log("Upload was cancelled");
+  }
+}
+```
+
+You can customize the behavior of `uploadData` and the properties of the uploaded object by passing in additional options. Here are some of the available options:
+
+* `bucket`: a string representing the target bucket's assigned name in Amplify Backend or an object specifying the bucket name and region from the console.
+* `contentType`: the default content-type header value of the file when downloading it.
+* `contentEncoding`: the default content-encoding header value of the file when downloading it.
+* `contentDisposition`: specifies presentational information for the object.
+* `metadata`: a map of metadata to store with the object in S3.
+* `useAccelerateEndpoint`: whether to use accelerate endpoint.
+* `expectedBucketOwner`: the account ID that owns the requested bucket.
+* `preventOverwrite`: whether to check if an object with the same key already exists before completing the upload.
+* `checksumAlgorithm`: whether to compute the checksum for the data to be uploaded, so the S3 can verify the data integrity.
+
+Note that uploads that were initiated over one hour ago will be cancelled automatically. It is recommended to setup a S3 lifecycle rule to automatically cleanup incomplete upload requests.

@@ -1,0 +1,47 @@
+Amplify allows you to add layers to your functions, which contain your library dependencies. This makes it easier to manage shared components across multiple functions and reduces deployment package sizes. 
+
+To add a Lambda layer to your function, first create and set up your Lambda layer in AWS through the AWS Console or using the AWS CLI. Then, reference it in your Amplify project by specifying the layers property in defineFunction. 
+
+For example, if you're using React, you can specify the layers property like this:
+```javascript
+import { defineFunction } from "@aws-amplify/backend";
+
+export const myFunction = defineFunction({
+  name: "my-function",
+  layers: {
+    "@aws-lambda-powertools/logger": 
+      "arn:aws:lambda:us-east-1:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:12",
+  },
+});
+```
+The Lambda layer is represented by an object of key/value pairs where the key is the module name that is exported from your layer and the value is the ARN of the layer. You can also specify the layer as myLayer:1 where myLayer is the name of the layer and 1 is the version of the layer. 
+
+For example:
+```javascript
+import { defineFunction } from "@aws-amplify/backend";
+
+export const myFunction = defineFunction({
+  name: "my-function",
+  layers: {
+    "some-module": "myLayer:1"
+  },
+});
+```
+Amplify will automatically convert this to the full layer ARN format using your existing account ID and region. 
+
+When using layers, be mindful of versioning and ensure you're using the appropriate version and have a strategy for updating layers when new versions are released. 
+
+To use the locally installed module in the function handler, you can do something like this:
+```javascript
+import { Logger } from "@aws-lambda-powertools/logger";
+import type { Handler } from "aws-lambda";
+
+const logger = new Logger({ serviceName: "serverlessAirline" });
+
+export const handler = async (event, context) => {
+  logger.info("Hello World");
+};
+```
+For more information on creating and managing layers, refer to the AWS documentation for Lambda layers. 
+
+Note that configuring or adding layers in defineFunction is not supported for Custom Functions.

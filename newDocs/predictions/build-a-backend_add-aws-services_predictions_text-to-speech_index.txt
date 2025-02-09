@@ -1,0 +1,19 @@
+To integrate text-to-speech capabilities into your React application using AWS Amplify, start by setting up the necessary IAM roles with the right policy actions as described in the getting started section. 
+
+Once set up, you can use the Predictions API to generate an audio buffer for playback from a text input. You do this by calling the convert method on the Predictions object, passing in an object with the textToSpeech property. This property should contain a source object with the text you want to generate speech from, and a voiceId which specifies the voice to use. 
+
+For example, you can use the following code to generate speech from a text input:
+```javascript
+import { Predictions } from '@aws-amplify/predictions';
+
+const textToGenerateSpeech = 'Hello, world!';
+const result = await Predictions.convert({
+  textToSpeech: {
+    source: {
+      text: textToGenerateSpeech
+    },
+    voiceId: "Amy" 
+  }
+})
+```
+The voiceId should be one of the voices supported by Amazon Polly, such as "Amy". You can find the complete list of voiceId options in the Amazon Polly documentation.

@@ -1,0 +1,42 @@
+To connect to an external Amazon DynamoDB data source, you can follow these steps:
+
+First, you need to set up your Amazon DynamoDB table. This involves defining a custom type in your schema and creating an external DynamoDB table to store records for it. 
+
+Next, you need to add your Amazon DynamoDB table as a data source for your API. This can be done in your `amplify/backend.ts` file by creating a new stack and adding the external DynamoDB table as a data source.
+
+After that, you can define custom queries and mutations using the `a.handler.custom()` modifier, which accepts the name of the data source and an entry point for your resolvers. 
+
+You will then need to configure custom business logic handler code for your resolvers. This involves creating JavaScript files that define the custom resolvers for the custom queries and mutations added to your schema.
+
+Finally, you can invoke custom queries or mutations from your generated Data client. The client will have APIs for all your custom queries and mutations under the client.queries and client.mutations properties respectively.
+
+The available DynamoDB operations include GetItem, PutItem, UpdateItem, DeleteItem, Query, Scan, Sync, BatchGetItem, BatchDeleteItem, BatchPutItem, TransactGetItems, and TransactWriteItems. Each operation has its own set of parameters and configurations that can be specified in the request object.
+
+Here's an example of how you might define a custom query in your schema:
+```javascript
+addPost: a
+ .mutation()
+ .arguments({
+    id: a.id(),
+    author: a.string().required(),
+    title: a.string(),
+    content: a.string(),
+    url: a.string(),
+  })
+ .returns(a.ref("Post"))
+ .authorization(allow => [allow.publicApiKey()])
+ .handler(
+    a.handler.custom({
+      dataSource: "ExternalPostTableDataSource",
+      entry: "./addPost.js",
+    })
+  ),
+```
+And here's an example of how you might invoke this custom query from your Data client:
+```javascript
+const { data, errors } = await client.mutations.addPost({
+  title: "My Post",
+  content: "My Content",
+  author: "Chris",
+});
+```

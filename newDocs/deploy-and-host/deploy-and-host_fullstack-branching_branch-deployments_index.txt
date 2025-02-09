@@ -1,0 +1,33 @@
+Amplify code-first DX (Gen 2) offers fullstack branch deployments that allow you to automatically deploy infrastructure and application code changes from feature branches. This enables testing changes in an isolated environment before merging to the main branch.
+
+To set up feature branch deployments, start by logging in to the Amplify console and choosing your app. Navigate to App settings > Branch settings, select Edit, and enable Branch auto-detection and Branch auto-disconnection. This will connect any branch in your repository automatically and ensure that deleted branches are also disconnected.
+
+You can define a pattern to connect only certain branches, such as setting dev, staging, and feature/* to connect all three branch types. Once you've enabled auto-detection, push a commit to your feature/A and staging branches that match the pattern, and you should start seeing deployments on the console page.
+
+To promote changes to production, follow the normal Git-based workflow. Make a change in your feature/A branch, commit and push the changes, and then submit a pull request to your main branch. Once your team has validated the changes, merge the pull request to main, which will initiate a build on your main branch and update any frontend or backend resources that you changed.
+
+To generate the config for a branch environment, you can run the following command in your terminal:
+```bash
+npx ampx generate outputs --app-id <your-amplify-app-id> --branch <your-git-branch-name> --out-dir <path/to/config>
+```
+However, for Android and Flutter, you may need to specify a different output directory. For Android, add a "raw" folder under app/src/main/res directory if it doesn't exist, and run:
+```bash
+npx ampx generate outputs --app-id <your-amplify-app-id> --branch <your-git-branch-name> --out-dir app/src/main/res/raw
+```
+For Flutter, run:
+```bash
+npx ampx generate outputs --app-id <your-amplify-app-id> --branch <your-git-branch-name> --format dart --out-dir lib
+```
+For Swift, simply run:
+```bash
+npx ampx generate outputs --app-id <your-amplify-app-id> --branch <your-git-branch-name>
+```
+Then, drag and drop the generated configuration file to your Xcode project. 
+
+For example in a React application, after running the command to generate the config, you would import and use the config in your React app like this:
+```javascript
+import Amplify from 'aws-amplify';
+import awsconfig from './aws-exports';
+
+Amplify.configure(awsconfig);
+```

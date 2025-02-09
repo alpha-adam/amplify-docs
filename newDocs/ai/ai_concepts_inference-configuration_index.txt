@@ -1,0 +1,36 @@
+Inference configuration refers to the parameters that can be adjusted to change how a Large Language Model (LLM) behaves. These models predict text based on the input they receive, and this prediction is probabilistic. By tweaking the inference configuration, you can influence the model to produce more creative or deterministic outputs. The optimal configuration will depend on your specific use case.
+
+Inference refers to the process of using a trained model to generate or predict output based on input data. This is a crucial step in using generative AI models.
+
+In Amplify, you can set inference configuration as optional parameters for all generative AI routes. If you don't provide any configuration options, the model will use its default settings. To set the inference configuration, you can pass an options object with the desired parameters. For example, in a React application, you might use the following code:
+```
+const inferenceConfiguration = {
+  temperature: 0.2,
+  topP: 0.2,
+  maxTokens: 1000,
+}
+```
+Then, you can pass this configuration to the generative AI route:
+```
+a.generation({
+  aiModel: a.ai.model("Claude 3.5 Haiku"),
+  systemPrompt: `You are a helpful assistant`,
+  inferenceConfiguration: inferenceConfiguration
+})
+```
+There are several parameters that can be adjusted in the inference configuration:
+
+* Temperature: This affects the shape of the probability distribution for the predicted output and influences the likelihood of the model selecting lower-probability outputs. A lower value will result in more deterministic responses, while a higher value will allow for more creative outputs.
+* Top P: This refers to the percentage of token candidates the model can choose from for the next token in the response. A lower value will decrease the size of the pool and limit the options to more likely outputs, while a higher value will increase the size of the pool and allow for lower-probability tokens.
+* Max Tokens: This parameter is used to limit the maximum response a model can give.
+
+Each model has its own default inference configuration settings. These settings can be found in the Bedrock documentation for each model. For example:
+
+* AI21 Labs Jamba: temperature = 1.0, top P = 0.5, max tokens = 4096
+* Meta Llama: temperature = 0.5, top P = 0.9, max tokens = 512
+* Amazon Titan: temperature = 0.7, top P = 0.9, max tokens = 512
+* Anthropic Claude: temperature = 1, top P = 0.999, max tokens = 512
+* Cohere Command R: temperature = 0.3, top P = 0.75, max tokens = 512
+* Mistral Large: temperature = 0.7, top P = 1, max tokens = 8192
+
+Note that some models, such as AI21 Labs Jamba, use a different temperature range (0-2.0) than the standard range (0-1).

@@ -1,0 +1,15 @@
+When an event is sent and meets the criteria for multiple in-app messages, a conflict arises and the library must decide which message to return. To resolve this conflict, In-App Messaging sorts the messages by campaign expiration and returns the message closest to expiry. 
+
+However, you can set a custom conflict handler to resolve conflicts according to your own strategy. Your custom handler must accept an array of in-app messages and return a single in-app message.
+
+For example, you can create a custom conflict handler that returns a random message from the array of conflicting messages. Here's how you can set a custom conflict handler in a React application:
+```
+import { setConflictHandler } from 'aws-amplify/in-app-messaging';
+
+const myConflictHandler = (messages) => {
+  const randomIndex = Math.floor(Math.random() * messages.length);
+  return messages[randomIndex];
+};
+
+setConflictHandler(myConflictHandler);
+```

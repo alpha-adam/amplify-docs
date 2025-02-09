@@ -1,0 +1,20 @@
+By default, Amplify Auth uses email as the default method for user sign-in. This is set up when you scaffold Amplify Auth. 
+
+To set this up, you define the auth configuration with the `defineAuth` function from `@aws-amplify/backend` and specify that you want to use email for login. 
+
+Here is an example in JavaScript:
+```javascript
+import { defineAuth } from "@aws-amplify/backend";
+
+const auth = defineAuth({
+  loginWith: {
+    email: true,
+  },
+});
+```
+
+This sets up an `email` attribute that is required for sign-up and cannot be changed. 
+
+To use this auth configuration in your React application, you can then call the `signIn` API to sign in users. You can also customize the emails that are sent to users during the sign-in process. 
+
+For more information, you can learn how to use the `signIn` API, customize emails, or configure your auth resource for production workloads.

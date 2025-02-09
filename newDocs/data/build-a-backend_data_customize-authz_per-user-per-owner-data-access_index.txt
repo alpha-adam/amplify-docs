@@ -1,0 +1,72 @@
+The owner authorization strategy restricts operations on a record to only the record's owner. When configured, the owner field will automatically be added and populated with the identity of the created user. The API will authorize against the owner field to allow or deny operations.
+
+To add per-user/per-owner authorization rule, you can use the owner authorization strategy to restrict a record's access to a specific user. When owner authorization is configured, only the record's owner is allowed the specified operations.
+
+For example, in a React application, you can define a schema with the following code:
+```javascript
+const schema = {
+  Todo: {
+    content: 'string',
+    authorization: {
+      allow: ['owner'],
+    },
+  },
+};
+```
+This will allow the owner of a Todo record to create, read, update, and delete their own todos.
+
+You can also specify the operations that the owner is allowed to perform:
+```javascript
+const schema = {
+  Todo: {
+    content: 'string',
+    authorization: {
+      allow: ['owner'].to(['create', 'read', 'update']),
+    },
+  },
+};
+```
+This will allow the owner of a Todo record to create, read, and update their own todos, but not delete them.
+
+In your React application, you can perform CRUD operations against the model using the `API.graphql` method with the `userPool` auth mode:
+```javascript
+import { API } from 'aws-amplify';
+
+const todo = {
+  content: 'My new todo',
+};
+
+API.graphql({
+  query: 'createTodo',
+  variables: { input: todo },
+  authMode: 'AMAZON_COGNITO_USER_POOLS',
+})
+ .then((result) => console.log(result))
+ .catch((error) => console.error(error));
+```
+Behind the scenes, Amplify will automatically add a `owner` field to each record which contains the record owner's identity information upon record creation. By default, the Cognito user pool's user information is populated into the `owner` field.
+
+To prevent an owner from reassigning their record to another user, you can protect the owner field with a field-level authorization rule. For example:
+```javascript
+const schema = {
+  Todo: {
+    content: 'string',
+    owner: 'string',
+    authorization: {
+      allow: ['owner'].to(['read', 'delete']),
+    },
+  },
+};
+```
+You can also customize the owner field by specifying a custom `ownerField` in the authorization rule:
+```javascript
+const schema = {
+  Todo: {
+    content: 'string',
+    author: 'string',
+    authorization: {
+      allow: ['ownerDefinedIn'].to(['author']),
+    },
+  },
+};
+```

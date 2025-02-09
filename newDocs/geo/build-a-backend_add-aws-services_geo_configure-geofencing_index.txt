@@ -1,0 +1,66 @@
+A Geofence is a virtual perimeter for a real-world geographic area, formed by points or vertices that create a closed boundary, defining an area of interest. Geofence collections store one or multiple Geofences. 
+
+To set up a new Geofence Collection, you start by creating a location services geofence collection. This involves defining a collection name, pricing plan, and tags. For example, in a React application using AWS Amplify, you would use the AWS Location service to create a geofence collection.
+
+To create a new geofence collection, you would use the AWS SDK for JavaScript, specifically the AWS Location service. Here is an example of how you might create a geofence collection in a React application:
+```javascript
+import { LocationClient, CreateGeofenceCollectionCommand } from "@aws-sdk/client-location";
+
+const locationClient = new LocationClient({ region: "your-region" });
+const createGeofenceCollectionCommand = new CreateGeofenceCollectionCommand({
+  CollectionName: "myGeofenceCollection",
+  PricingPlan: "RequestBasedUsage",
+  Tags: [
+    {
+      Key: "name",
+      Value: "myGeofenceCollection",
+    },
+  ],
+});
+
+locationClient.send(createGeofenceCollectionCommand).then((data) => {
+  console.log(data);
+}).catch((error) => {
+  console.error(error);
+});
+```
+
+The pricing plan for the Geofence Collection will be set to `RequestBasedUsage`. It's recommended to review the AWS Location service pricing and terms to learn more about the pricing plan.
+
+To scope access permissions based on Cognito User Groups, you would create a Cognito User Pool Group and add permissions to the group role. For example:
+```javascript
+import { CognitoIdentityServiceProviderClient, AdminAddUserToGroupCommand } from "@aws-sdk/client-cognito-identity-service-provider";
+
+const cognitoClient = new CognitoIdentityServiceProviderClient({ region: "your-region" });
+const adminAddUserToGroupCommand = new AdminAddUserToGroupCommand({
+  GroupName: "User",
+  UserPoolId: "your-user-pool-id",
+  Username: "username",
+});
+
+cognitoClient.send(adminAddUserToGroupCommand).then((data) => {
+  console.log(data);
+}).catch((error) => {
+  console.error(error);
+});
+```
+
+Note that if you combine `Auth/Guest user access` and `Individual Group access`, users who are members of a group will only be granted the permissions of the group, and not the authenticated user permissions. The permissions apply to ALL Geofences in a collection.
+
+After provisioning the Geofence Collection, you can add Geofences to the collection programmatically using the AWS SDK for JavaScript. Refer to the API documentation for more information. For example:
+```javascript
+import { LocationClient, CreateGeofenceCommand } from "@aws-sdk/client-location";
+
+const locationClient = new LocationClient({ region: "your-region" });
+const createGeofenceCommand = new CreateGeofenceCommand({
+  CollectionName: "myGeofenceCollection",
+  GeofenceId: "geofence-id",
+  // geofence details
+});
+
+locationClient.send(createGeofenceCommand).then((data) => {
+  console.log(data);
+}).catch((error) => {
+  console.error(error);
+});
+```

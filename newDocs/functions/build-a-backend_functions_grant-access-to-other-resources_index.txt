@@ -1,0 +1,47 @@
+To grant Amplify Functions access to other resources, you must give them permission to do so. There are two ways to grant this access: 
+
+1. Using the `access` property: This property is found in each of the `define*` functions for defining Amplify resources. It allows you to specify the necessary actions using common language. When you grant a function access to another resource in your Amplify backend, it will configure environment variables for that function to make SDK calls to the AWS services it has access to. These environment variables are typed and available as part of the `env` object.
+
+For example, if you have a function that generates reports each month from your Data resource and needs to store the generated reports in Storage, you can use the `access` property as follows: 
+
+```javascript
+const storage = {
+  name: 'myReports',
+  access: (allow) => ({
+    'reports/*': [
+      allow.resource(generateMonthlyReports).to(['read', 'write', 'delete'])
+    ]
+  })
+};
+```
+
+This will add the environment variable `myReports_BUCKET_NAME` to the function. You can then use this environment variable to upload content to S3.
+
+```javascript
+const s3Client = new S3Client();
+const command = new PutObjectCommand({
+  Bucket: env.MY_REPORTS_BUCKET_NAME,
+  Key: `reports/${new Date().toISOString()}.csv`,
+  Body: new Blob([''], { type: 'text/csv;charset=utf-8;' })
+});
+await s3Client.send(command);
+```
+
+2. Using the AWS Cloud Development Kit (CDK): When permissions are needed to access resources beyond the capabilities of the `access` property, you must use CDK. Functions are created with an execution role, which is an IAM role that contains policies that dictate what resources your Function can interact with when it executes. This role can be extended using the `addToRolePolicy()` method.
+
+For example, to grant a function access to an SNS topic, you can add a policy statement to the function's role.
+
+```javascript
+const statement = new iam.PolicyStatement({
+  sid: "AllowPublishToDigest",
+  actions: ["sns:Publish"],
+  resources: [topic.topicArn],
+});
+weeklyDigestLambda.addToRolePolicy(statement);
+```
+
+Alternatively, some constructs provide a `grant*` method to grant access to common policy actions. For example, you can use the `grantPublish` method to grant a function access to an SNS topic.
+
+```javascript
+topic.grantPublish(weeklyDigestLambda);
+```

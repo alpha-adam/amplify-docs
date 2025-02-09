@@ -1,0 +1,89 @@
+Secure Remote Password (SRP) is a cryptographic protocol that allows password-based authentication without transmitting the password over the network. Amazon Cognito custom authentication flows use two types of custom authentication, CUSTOM_WITH_SRP and CUSTOM_WITHOUT_SRP. CUSTOM_WITH_SRP incorporates SRP steps for enhanced security, while CUSTOM_WITHOUT_SRP bypasses these steps for a simpler process.
+
+To implement custom authentication flows using AWS Amplify with Lambda triggers, you can use the defineAuth and defineFunction functions to create an authentication experience that uses CUSTOM_WITH_SRP and CUSTOM_WITHOUT_SRP. This is done by leveraging Amazon Cognito's feature to define a custom authentication flow and three triggers: create auth challenge, define auth challenge, and verify auth challenge response.
+
+To get started, install the aws-lambda package, which is used to define the handler type. Then, create the three triggers: create-auth-challenge, define-auth-challenge, and verify-auth-challenge-response.
+
+The create-auth-challenge trigger is responsible for creating the reCAPTCHA challenge after a password is verified. The define-auth-challenge trigger defines the authentication flow, and the verify-auth-challenge-response trigger verifies the challenge response.
+
+For CUSTOM_WITHOUT_SRP, the define-auth-challenge trigger checks if it's the first authentication attempt and starts with the custom challenge. If it's the second attempt and the custom challenge was successful, it issues tokens and completes the authentication.
+
+For CUSTOM_WITH_SRP, the define-auth-challenge trigger starts with SRP_A (Secure Remote Password protocol, step A) on the first attempt. On the second attempt, if SRP_A was successful, it moves to PASSWORD_VERIFIER. On the third attempt, if PASSWORD_VERIFIER was successful, it moves to CUSTOM_CHALLENGE. On the fourth attempt, if CUSTOM_CHALLENGE was successful, it issues tokens and completes the authentication.
+
+The verify-auth-challenge-response trigger verifies the challenge response and always returns true for the purpose of this example.
+
+Finally, import and set the three triggers on your auth resource using the defineAuth function. After deploying the changes, whenever a user attempts to sign in with CUSTOM_WITH_SRP or CUSTOM_WITHOUT_SRP, the Lambda challenges will be triggered.
+
+Here is an example of how you can implement this in React:
+```javascript
+import Amplify from 'aws-amplify';
+import { withAuthenticator } from '@aws-amplify/ui-react';
+
+// Define the auth resource
+const auth = {
+  // Configure your auth resource
+  loginWith: {
+    email: true,
+  },
+  triggers: {
+    createAuthChallenge: (event) => {
+      // Generate a random code for the custom challenge
+      const challengeCode = "123456";
+
+      event.response.challengeMetadata = "TOKEN_CHECK";
+
+      event.response.publicChallengeParameters = {
+        trigger: "true",
+        code: challengeCode,
+      };
+
+      event.response.privateChallengeParameters = { trigger: "true" };
+      event.response.privateChallengeParameters.answer = challengeCode;
+      return event;
+    },
+    defineAuthChallenge: (event) => {
+      // Check if this is the first authentication attempt
+      if (event.request.session.length === 0) {
+        // For the first attempt, we start with the custom challenge
+        event.response.issueTokens = false;
+        event.response.failAuthentication = false;
+        event.response.challengeName = "CUSTOM_CHALLENGE";
+      } else if (
+        event.request.session.length === 1 &&
+        event.request.session[0].challengeName === "CUSTOM_CHALLENGE" &&
+        event.request.session[0].challengeResult === true
+      ) {
+        // If this is the second attempt (session length 1),
+        // it was a CUSTOM_CHALLENGE, and the result was successful
+        event.response.issueTokens = true;
+        event.response.failAuthentication = false;
+      } else {
+        // If we reach here, it means either:
+        // 1. The custom challenge failed
+        // 2. We've gone through more attempts than expected
+        // In either case, we fail the authentication
+        event.response.issueTokens = false;
+        event.response.failAuthentication = true;
+      }
+      return event;
+    },
+    verifyAuthChallengeResponse: (event) => {
+      // Verify the challenge response
+      event.response.answerCorrect = true;
+      return event;
+    },
+  },
+};
+
+// Configure Amplify
+Amplify.configure({
+  Auth: auth,
+});
+
+// Use the withAuthenticator component to wrap your app
+const App = () => {
+  // Your app content
+};
+
+export default withAuthenticator(App);
+```

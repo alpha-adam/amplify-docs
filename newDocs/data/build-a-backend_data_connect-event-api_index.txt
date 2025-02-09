@@ -1,0 +1,204 @@
+To connect to AWS AppSync Events using the Amplify library, you need to create a secure and performant serverless WebSocket API that can broadcast real-time event data to millions of subscribers. This feature allows you to build multi-user features such as collaborative document editors, chat apps, and live polling systems.
+
+First, if you don't have an existing Amplify backend, you'll need to create an Event API via the AWS Console and take note of the HTTP endpoint, region, and API Key. Then, you can configure the Amplify library in your React application by providing the Event API endpoint, region, and API Key.
+
+Here's an example of how to configure the Amplify library in a React application:
+
+```jsx
+import { Amplify } from 'aws-amplify';
+import { events } from 'aws-amplify/data';
+
+Amplify.configure({
+  API: {
+    Events: {
+      endpoint: 'https://your-event-api-endpoint.us-east-1.amazonaws.com/event',
+      region: 'us-east-1',
+      defaultAuthMode: 'apiKey',
+      apiKey: 'your-api-key'
+    }
+  }
+});
+```
+
+Next, you can connect to the Event API and subscribe to a channel to receive events in real-time. Here's an example of how to do this in a React application:
+
+```jsx
+import { useState, useEffect } from 'react';
+import { events } from 'aws-amplify/data';
+
+export default function App() {
+  const [myEvents, setMyEvents] = useState([]);
+
+  useEffect(() => {
+    let channel;
+
+    const connectAndSubscribe = async () => {
+      channel = await events.connect('default/channel');
+
+      channel.subscribe({
+        next: (data) => {
+          console.log('received', data);
+          setMyEvents((prev) => [data,...prev]);
+        },
+        error: (err) => console.error('error', err)
+      });
+    };
+
+    connectAndSubscribe();
+
+    return () => channel && channel.close();
+  }, []);
+
+  async function publishEvent() {
+    await events.post('default/channel', { some: 'data' });
+  }
+
+  return (
+    <>
+      <button onClick={publishEvent}>Publish Event</button>
+      <ul>
+        {myEvents.map((data) => (
+          <li key={data.id}>{JSON.stringify(data.event)}</li>
+        ))}
+      </ul>
+    </>
+  );
+}
+```
+
+If you have an existing Amplify backend, you can add an Event API to it by updating the backend definition. First, you need to add a new Event API to your backend definition using the Amplify CLI. Then, you can deploy the updated backend and connect your frontend application to the Event API.
+
+To add an Event API to an existing Amplify backend, you need to update the backend definition by creating a new stack for the Event API resources and adding a new Event API to the stack. You also need to configure the User Pool as the auth provider for the Event API and attach a policy to the authenticated user role to grant access to the Event API.
+
+Here's an example of how to update the backend definition to add an Event API:
+
+```typescript
+import { defineBackend } from '@aws-amplify/backend';
+import { auth } from './auth/resource';
+import {
+  CfnApi,
+  CfnChannelNamespace,
+  AuthorizationType,
+} from 'aws-cdk-lib/aws-appsync';
+import { Policy, PolicyStatement } from 'aws-cdk-lib/aws-iam';
+
+const backend = defineBackend({
+  auth,
+});
+
+const customResources = backend.createStack('custom-resources');
+
+const cfnEventAPI = new CfnApi(customResources, 'CfnEventAPI', {
+  name: 'my-event-api',
+  eventConfig: {
+    authProviders: [
+      {
+        authType: AuthorizationType.USER_POOL,
+        cognitoConfig: {
+          awsRegion: customResources.region,
+          userPoolId: backend.auth.resources.userPool.userPoolId,
+        },
+      },
+    ],
+    connectionAuthModes: [{ authType: AuthorizationType.USER_POOL }],
+    defaultPublishAuthModes: [{ authType: AuthorizationType.USER_POOL }],
+    defaultSubscribeAuthModes: [{ authType: AuthorizationType.USER_POOL }],
+  },
+});
+
+const namespace = new CfnChannelNamespace(
+  customResources,
+  'CfnEventAPINamespace',
+  {
+    apiId: cfnEventAPI.attrApiId,
+    name: 'default',
+  }
+);
+
+backend.auth.resources.authenticatedUserIamRole.attachInlinePolicy(
+  new Policy(customResources, 'AppSyncEventPolicy', {
+    statements: [
+      new PolicyStatement({
+        actions: [
+          'appsync:EventConnect',
+          'appsync:EventSubscribe',
+          'appsync:EventPublish',
+        ],
+        resources: [`${cfnEventAPI.attrApiArn}/*`, `${cfnEventAPI.attrApiArn}`],
+      }),
+    ],
+  })
+);
+
+backend.addOutput({
+  custom: {
+    events: {
+      url: `https://${cfnEventAPI.getAtt('Dns.Http').toString()}/event`,
+      aws_region: customResources.region,
+      default_authorization_type: AuthorizationType.USER_POOL,
+    },
+  },
+});
+```
+
+After deploying the updated backend, you can connect your frontend application to the Event API using the Amplify Authenticator component to sign in to the Cognito User Pool.
+
+Here's an example of how to connect your frontend application to the Event API:
+
+```jsx
+import { Amplify } from 'aws-amplify';
+import { events, type EventsChannel } from 'aws-amplify/data';
+import { Authenticator } from '@aws-amplify/ui-react';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure(outputs);
+
+export default function App() {
+  const [myEvents, setMyEvents] = useState([]);
+
+  useEffect(() => {
+    let channel;
+
+    const connectAndSubscribe = async () => {
+      channel = await events.connect('default/channel');
+
+      channel.subscribe({
+        next: (data) => {
+          console.log('received', data);
+          setMyEvents((prev) => [data,...prev]);
+        },
+        error: (err) => console.error('error', err),
+      });
+    };
+
+    connectAndSubscribe();
+
+    return () => channel && channel.close();
+  }, []);
+
+  async function publishEvent() {
+    await events.post('default/channel', { some: 'data' });
+  }
+
+  return (
+    <Authenticator>
+      {({ signOut, user }) => (
+        <>
+          <div>
+            <h1>Welcome, {user.username}</h1>
+            <button onClick={signOut}>Sign Out</button>
+          </div>
+          <div>
+            <button onClick={publishEvent}>Publish Event</button>
+            <ul>
+              {myEvents.map((data) => (
+                <li key={data.id}>{JSON.stringify(data.event)}</li>
+              ))}
+            </ul>
+          </div>
+        </>
+      )}
+    </Authenticator>
+  );
+}
+```

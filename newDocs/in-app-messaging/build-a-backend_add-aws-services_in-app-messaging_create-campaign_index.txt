@@ -1,0 +1,53 @@
+To create an in-app messaging campaign on the AWS Console, you can follow these steps. This is an alternative to writing AWS Cloud Development Kit (CDK) code. 
+
+1. Log in to the AWS Console and search for Pinpoint.
+2. Click on your project from the list of available projects. Your project name would be the name you provided when you created the Pinpoint project using CDK.
+3. Click on Campaigns from the left navigation menu, and then click on Create a campaign.
+4. Add a name to your campaign and select the following options: 
+   - Campaign type: Standard campaign
+   - Channel: In-App messaging
+   - Set prioritization: Fairly important
+   Then click Next.
+5. Click on the Create a segment radio button, add a name for your segment, and then click Next. 
+   You can add as many segments as needed to the campaign. For this quickstart, you can use Include any audiences under the Segment group 1 section.
+   You can also add criteria to your segments to ensure that audiences that satisfy that criteria can receive the in-app message.
+6. Click on the Create a new in-app message radio button.
+7. You can customize the following attributes of the in-app message: 
+   - Layout: Which includes all of the different messaging layout options.
+   - Header: Title of the in-app message, including the text color/alignment.
+   - Message: The body of the message, including the text color/alignment.
+   - Background: Control the background color of the in-app message.
+   - Image URL: Add an image to be displayed as part of the in-app message body.
+   - Primary button: Allows the addition of a button to add functionality to the in-app message.
+   - Secondary button: Allows the addition of an extra button for additional functionality.
+   - Custom Data: Allows the in-app message to pass additional data to the frontend app once it is triggered by an event.
+8. Create a simple message and click on Next.
+9. Under Trigger events, add the name of the analytics trigger that will be sent from your frontend app. 
+   You can customize the trigger to allow only certain attributes or metrics that are passed with the analytics event to trigger the in-app message.
+10. Update the threshold for the number of messages shown per session if necessary.
+11. Review your campaign and then click on Launch campaign.
+
+Note that the campaign start time must be at least 15 minutes in the future. In-app messages can only be synced to a local device once the campaign becomes active. 
+
+When configuring In-App Messaging for React Native, note that SVG rendering is not supported out of the box. For SVG image support with In-App Messaging, a custom UI implementation is required. 
+
+To implement this in your React app, you would need to set up an analytics trigger that will be sent from your frontend app to trigger the in-app message, and then handle the in-app message display in your app. This could be done by adding an event listener to your app to listen for the analytics trigger, and then displaying the in-app message when the trigger is received. 
+
+For example, in your React app, you might have a function to handle the display of in-app messages:
+```javascript
+function handleInAppMessage(message) {
+  // Display the in-app message to the user
+  // This could involve rendering a modal or alert with the message
+}
+```
+Then, when the analytics trigger is received, you would call this function to display the in-app message:
+```javascript
+// Set up an event listener to listen for the analytics trigger
+window.addEventListener('analyticsTrigger', (event) => {
+  // Get the in-app message from the event data
+  const message = event.detail.message;
+  
+  // Call the function to display the in-app message
+  handleInAppMessage(message);
+});
+```

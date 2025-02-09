@@ -1,0 +1,30 @@
+To confirm uploading files in AWS Amplify Gen 2, you can use a trigger. This is done by defining a storage function with an onUpload trigger. 
+
+First, you need to install the @types/aws-lambda package, which can be done by running the command `npm add --save @types/aws-lambda` in your terminal.
+
+Next, you need to update your storage definition to include the onUpload trigger. This can be done by defining a storage function like so:
+```javascript
+import { defineFunction, defineStorage } from "@aws-amplify/backend";
+
+export const storage = defineStorage({
+  name: 'myProjectFiles',
+  triggers: {
+    onUpload: defineFunction({
+      entry: './on-upload-handler.ts'
+      resourceGroupName: 'storage',
+    })
+  }
+});
+```
+
+Then, create a file named on-upload-handler.ts and add the following code to log the object keys whenever an object is uploaded to the bucket. You can also add your custom logic to this function as needed.
+```javascript
+import type { S3Handler } from 'aws-lambda';
+
+export const handler = async (event) => {
+  const objectKeys = event.Records.map((record) => record.s3.object.key);
+  console.log(`Upload handler invoked for objects [${objectKeys.join(', ')}]`);
+};
+```
+
+When you deploy your backend, this function will be invoked whenever an object is uploaded to the bucket, allowing you to confirm the upload and add any custom logic as needed.

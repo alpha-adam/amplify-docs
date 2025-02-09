@@ -1,0 +1,38 @@
+For advanced use cases where Amplify does not provide the functionality, you can retrieve an escape hatch to access the underlying Amazon Cognito client.
+
+To access the escape hatch in React, you would use the AWS Amplify Auth API to get the AWSCognitoAuthPlugin instance and then retrieve the escape hatch.
+
+Here is a React example of how to get the escape hatch:
+```javascript
+import { Auth } from 'aws-amplify';
+
+const getEscapeHatch = async () => {
+  try {
+    const authPlugin = await Auth.getPlugin('awsCognitoAuthPlugin');
+    const escapeHatch = authPlugin.getEscapeHatch();
+    // Use the escape hatch to access the underlying Amazon Cognito client
+    const cognitoIdentityProviderClient = escapeHatch.cognitoIdentityProviderClient;
+    // Use the cognitoIdentityProviderClient to make requests to Amazon Cognito
+  } catch (error) {
+    console.error('Error getting escape hatch:', error);
+  }
+};
+```
+You can then use the escape hatch to access the underlying Amazon Cognito client and make requests to Amazon Cognito. For example, to resend a confirmation code:
+```javascript
+const resendCodeUsingEscapeHatch = async () => {
+  try {
+    const authPlugin = await Auth.getPlugin('awsCognitoAuthPlugin');
+    const escapeHatch = authPlugin.getEscapeHatch();
+    const cognitoIdentityProviderClient = escapeHatch.cognitoIdentityProviderClient;
+    const request = {
+      ClientId: 'xxxxxxxxxxxxxxxx',
+      Username: 'user1',
+    };
+    const response = await cognitoIdentityProviderClient.resendConfirmationCode(request);
+    console.log('Response:', response);
+  } catch (error) {
+    console.error('Error resending code:', error);
+  }
+};
+```

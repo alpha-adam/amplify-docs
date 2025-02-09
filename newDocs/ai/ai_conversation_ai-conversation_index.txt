@@ -1,0 +1,73 @@
+The AIConversation component is a customizable chat interface built for the Amplify AI kit. It is highly customizable to fit into any application and works with the useAIConversation hook, which manages the state and lifecycle of the component. The component requires some props, including messages, an array of the messages in the conversation, and handleSendMessage, a handler that is called when a user message is sent.
+
+To get started, you need to follow the getting started guide for the Amplify AI kit to set up your Amplify AI backend. Conversations require a logged-in user, so it is recommended to use the Authenticator component to easily add authentication flows to your app.
+
+Here is an example of how to use the AIConversation component:
+```tsx
+import { Amplify } from 'aws-amplify';
+import { generateClient } from "aws-amplify/api";
+import { Authenticator } from "@aws-amplify/ui-react";
+import { AIConversation, createAIHooks } from '@aws-amplify/ui-react-ai';
+import '@aws-amplify/ui-react/styles.css';
+import outputs from "../amplify_outputs.json";
+import { Schema } from "../amplify/data/resource";
+
+Amplify.configure(outputs);
+
+const client = generateClient<Schema>({ authMode: "userPool" });
+const { useAIConversation } = createAIHooks(client);
+
+export default function App() {
+  const [
+    {
+      data: { messages },
+      isLoading,
+    },
+    handleSendMessage,
+  ] = useAIConversation('chat');
+  // 'chat' is based on the key for the conversation route in your schema.
+
+  return (
+    <Authenticator>
+      <AIConversation
+        messages={messages}
+        isLoading={isLoading}
+        handleSendMessage={handleSendMessage}
+      />
+    </Authenticator>
+  );
+}
+```
+
+The AIConversation component also supports markdown rendering, image rendering, and customizing the timestamp display. You can customize the usernames and avatars used in the component by using the avatars prop.
+
+Response components are a way to define custom UI components that the LLM can respond with in the conversation. You can define a response component by giving it a name, description, and defining the props the LLM should know.
+
+Here is an example of how to define a response component:
+```tsx
+<AIConversation
+  responseComponents={{
+    WeatherCard: {
+      description: 'Used to display the weather of a given city to the user',
+      component: ({ city }) => {
+        return <Card>{city}</Card>;
+      },
+      props: {
+        city: {
+          type: 'string',
+          required: true,
+        },
+      },
+    },
+  }}
+/>
+```
+
+You can also add a fallback component if no component is found based on the name by using the FallbackResponseComponent prop.
+```tsx
+<AIConversation
+  FallbackResponseComponent={(props) => (
+    <Card variation="outlined">{JSON.stringify(props, null, 2)}</Card>
+  )}
+/>
+```

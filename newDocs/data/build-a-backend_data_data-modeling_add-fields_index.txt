@@ -1,0 +1,110 @@
+Amplify Data supports various field types, including built-in and custom types. The built-in types include:
+
+* ID: a unique identifier for an object, serialized as a string but not meant to be human-readable
+* String: a UTF-8 character sequence
+* Integer: an integer value between -(2^31) and 2^31-1
+* Float: an IEEE 754 floating point value
+* Boolean: a Boolean value, either true or false
+* Date: an extended ISO 8601 date string in the format YYYY-MM-DD
+* Time: an extended ISO 8601 time string in the format hh:mm:ss.sss
+* Datetime: an extended ISO 8601 date and time string in the format YYYY-MM-DDThh:mm:ss.sssZ
+* Timestamp: an integer value representing the number of seconds before or after 1970-01-01-T00:00Z
+* Email: an email address in the format local-part@domain-part as defined by RFC 822
+* JSON: a JSON string, automatically parsed and loaded in the resolver code as maps, lists, or scalar values
+* Phone: a phone number, stored as a string and validated on the service side
+* URL: a URL as defined by RFC 1738, with type enforcement on the schema part
+* IP Address: a valid IPv4 or IPv6 address, with type enforcement for IPv4 and IPv6 patterns
+
+You can specify custom field types in your schema. There are two ways to define custom types: inline and explicit. 
+
+Inline definition: you can define a custom type directly in the model definition. For example:
+```javascript
+const schema = {
+  Post: {
+    location: {
+      lat: 'float',
+      long: 'float',
+    },
+    content: 'string',
+  },
+}
+```
+Explicit definition: you can define a custom type separately and reference it in the model definition. For example:
+```javascript
+const schema = {
+  Location: {
+    lat: 'float',
+    long: 'float',
+  },
+  Post: {
+    location: 'Location',
+    content: 'string',
+  },
+}
+```
+You can also define enum field types, which have a similar developer experience to custom types. Enums can be defined using the short-hand or long-form approach.
+
+Short-hand approach:
+```javascript
+const schema = {
+  Post: {
+    privacySetting: ['PRIVATE', 'FRIENDS_ONLY', 'PUBLIC'],
+    content: 'string',
+  },
+}
+```
+Long-form approach:
+```javascript
+const schema = {
+  PrivacySetting: ['PRIVATE', 'FRIENDS_ONLY', 'PUBLIC'],
+  Post: {
+    content: 'string',
+    privacySetting: 'PrivacySetting',
+  },
+}
+```
+When creating a new item client-side, the enums are also type-enforced. For example:
+```javascript
+client.models.Post.create({
+  content: 'hello',
+  privacySetting: 'PRIVATE', // WORKS - value auto-completed
+  // privacySetting: 'NOT_PUBLIC', // DOES NOT WORK - TYPE ERROR
+})
+```
+You can list available enum values client-side using the `client.enums.<ENUM_NAME>.values()` API.
+
+You can mark fields as required using the `.required()` modifier. For example:
+```javascript
+const schema = {
+  Todo: {
+    content: {
+      type: 'string',
+      required: true,
+    },
+  },
+}
+```
+You can mark fields as arrays using the `.array()` modifier. For example:
+```javascript
+const schema = {
+  Todo: {
+    content: 'string',
+    notes: {
+      type: 'string',
+      array: true,
+    },
+  },
+}
+```
+You can assign default values for fields using the `.default(...)` modifier. For example:
+```javascript
+const schema = {
+  Todo: {
+    content: {
+      type: 'string',
+      default: 'My new Todo',
+    },
+  },
+}
+```
+Note that the `.default(...)` modifier cannot be applied to required fields.

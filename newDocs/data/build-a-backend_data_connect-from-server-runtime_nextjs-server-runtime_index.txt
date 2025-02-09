@@ -1,0 +1,72 @@
+To connect to Amplify Data from a Next.js server runtime, you need to follow these steps:
+
+First, make sure you have a Next.js application created, Amplify libraries installed and configured for Next.js, and Amplify Data resources deployed or set up using AWS AppSync.
+
+There are two types of data clients for Next.js server runtimes: one that uses cookies and another that uses NextRequest and NextResponse. The choice of data client depends on your Next.js Router and use case.
+
+For the App Router, use the `generateServerClientUsingCookies()` function for React Server Components, Server Actions, and Route Handlers, and `generateServerClientUsingReqRes()` for Middleware.
+
+For the Pages Router, use `generateServerClientUsingReqRes()` for server-side component code, API Routes, and Middleware.
+
+To generate a Data client using cookies, provide your Amplify configuration and the cookies function from Next.js. 
+
+```javascript
+import { generateServerClientUsingCookies } from '@aws-amplify/adapter-nextjs/data';
+import outputs from './amplify_outputs.json';
+import { cookies } from 'next/headers';
+
+const cookieBasedClient = generateServerClientUsingCookies({
+  config: outputs,
+  cookies,
+});
+```
+
+To generate a Data client using NextRequest and NextResponse, provide your Amplify configuration. 
+
+```javascript
+import { generateServerClientUsingReqRes } from '@aws-amplify/adapter-nextjs/data';
+import outputs from './amplify_outputs.json';
+
+const reqResBasedClient = generateServerClientUsingReqRes({
+  config: outputs,
+});
+```
+
+Then, import the generated client in your Next.js React Server Components, Server Actions, or Route Handlers, and make API requests using the client.
+
+```javascript
+const fetchTodos = async () => {
+  const { data: todos, errors } = await cookieBasedClient.models.Todo.list();
+
+  if (!errors) {
+    return todos;
+  }
+};
+```
+
+For NextRequest/NextResponse-based clients, import the client in your Next.js server runtime code and make API requests within the `runWithAmplifyServerContext` function.
+
+```javascript
+import { runWithAmplifyServerContext, reqResBasedClient } from './amplifyServerUtils';
+
+type ResponseData = {
+  todos: any[];
+};
+
+export default async function handler(
+  request: any,
+  response: any
+) {
+  const todos = await runWithAmplifyServerContext({
+    nextServerContext: { request, response },
+    operation: async (contextSpec) => {
+      const { data: todos } = await reqResBasedClient.models.Todo.list(
+        contextSpec
+      );
+      return todos;
+    },
+  });
+
+  response.status(200).json({ todos });
+}
+```

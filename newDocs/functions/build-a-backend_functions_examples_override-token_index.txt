@@ -1,0 +1,58 @@
+To override ID token claims in AWS Amplify, you can use the `defineAuth` and `defineFunction` features to create an Amazon Cognito Pre token generation AWS Lambda trigger. This trigger allows you to add new claims or modify the user's group membership in the ID token.
+
+To get started, you need to create a new Lambda function. First, install the required package. 
+
+Then, create a new directory and file to define the function. 
+
+In this file, you define the function with a name and resource group name. 
+
+Next, create a corresponding handler file with the function that will handle the pre-token generation event. This event is where you can add new claims or modify the user's group membership. 
+
+The handler function takes an event object as input and returns the modified event object. In this function, you can override the claims by specifying the claims to add or override. 
+
+You can also override the user's group membership by specifying the groups to override. 
+
+Finally, you need to set the newly created function resource on your auth resource. 
+
+After deploying the changes, the ID token of the user will be modified according to the trigger. You can verify this by checking the ID token, which should now contain the new claims and group membership. 
+
+For example, you can add a new claim called "amplfy_attribute" to the ID token, and also add the user to a Cognito group called "amplify_group_1". 
+
+To achieve this in React, you can define the function and handler in a JavaScript file, like this:
+```javascript
+import { defineFunction } from '@aws-amplify/backend';
+
+const preTokenGeneration = defineFunction({
+  name: 'pre-token-generation',
+  resourceGroupName: 'auth'
+});
+
+export const handler = async (event) => {
+  event.response = {
+    claimsOverrideDetails: {
+      groupOverrideDetails: {
+        groupsToOverride: ["amplify_group_1"],
+      },
+      claimsToAddOrOverride: {
+        amplfy_attribute: "amplify_gen_2",
+      },
+    },
+  };
+  return event;
+};
+```
+
+And then set the newly created function resource on your auth resource:
+```javascript
+import { defineAuth } from '@aws-amplify/backend';
+import { preTokenGeneration } from './pre-token-generation/resource';
+
+const auth = defineAuth({
+  loginWith: {
+    email: true,
+  },
+  triggers: {
+    preTokenGeneration
+  }
+});
+```

@@ -1,0 +1,53 @@
+The Amplify AI kit automatically and securely stores conversation history per user so you can easily resume past conversations. 
+
+If you are looking for a quick way to get started with conversation history, an example project has a similar interface to ChatGPT or Claude where users see past conversations in a sidebar they can manage. 
+
+When you define a conversation route in your Amplify data schema, the Amplify AI kit turns that into two data models: Conversation and Message. The Conversation model functions mostly the same way as other data models defined in your schema. You can list and filter them and you can get a specific conversation by ID. Then once you have a conversation instance you can load the messages in it if there are any, send messages to it, and subscribe to the stream events being sent back.
+
+To list all the conversations a user has you can use the list method. It works the same way as any other Amplify data model would. You can optionally pass a limit or nextToken. 
+```javascript
+const { data: conversations } = await client.conversations.chat.list()
+```
+The updatedAt field gets updated when new messages are sent, so you can use that to see which conversation had the most recent message. Conversations retrieved via list are sorted in descending order by updatedAt.
+
+For pagination, the result of list contains a nextToken property. This can be used to retrieve subsequent pages of conversations.
+```javascript
+const { data: conversations, nextToken } = await client.conversations.chat.list();
+
+// retrieve next page
+if (nextToken) { 
+  const { data: nextPageConversations } = await client.conversations.chat.list({ 
+    nextToken 
+  });
+}
+```
+Conversations also have name and metadata fields you can use to more easily find and resume past conversations. Name is a string and metadata is a JSON object so you can store any extra information you need.
+
+You can resume a conversation by calling the get method with a conversation ID. Both create and get return the conversation instance. 
+
+To list all conversations a user has, make sure the user has been authenticated with Amplify Auth, then
+```javascript
+const conversationList = await client.conversations.conversation.list();
+
+// Retrieve a specific conversation
+const { data: conversation } = await client.conversations.chat.get({ id: conversationList[0].id });
+
+// list the existing messages in the conversation
+const { data: messages } = await conversation.listMessages();
+
+// You can now send a message to the conversation
+conversation.sendMessage({
+  content: [
+    {text: "hello"}
+  ]
+})
+```
+For a react component, you can use the useAIConversation hook to get the conversation data and handle sending messages
+```javascript
+export function Chat({ id }) {
+  const [
+    data: { messages },
+    handleSendMessage,
+  ] = useAIConversation('chat', { id })
+}
+```

@@ -1,0 +1,83 @@
+In this guide, you will learn how to create, update, and delete conversations, as well as send messages and subscribe to assistant responses in your React application using AWS Amplify Gen 2.
+
+Conversations and their associated messages are persisted in Amazon DynamoDB. This means the previous messages for a conversation are automatically included in the history sent to the LLM. Access to conversations and messages are scoped to individual users through the owner-based authorization strategy.
+
+There are two main types within the conversation flow, Conversation and Message. 
+A Conversation is an instance of a chat session between an application user and an LLM. It contains data and methods for interacting with the conversation. 
+A conversation has a one-to-many relationship with its messages.
+
+The Conversation type has the following properties and methods:
+- id: a unique identifier for the conversation
+- name: the name of the conversation
+- metadata: metadata associated with the conversation
+- createdAt: the date and time when the conversation was created
+- updatedAt: the date and time when the last user message was sent
+- sendMessage(): sends a message to the AI assistant
+- listMessages(): lists all messages for the conversation
+- onStreamEvent(): subscribes to assistant responses
+
+A Message is a single chat message between an application user and an LLM. Each message has a role property that indicates whether the message is from the user or the assistant. 
+The Message type has the following properties:
+- id: a unique identifier for the message
+- conversationId: the ID of the conversation this message belongs to
+- associatedUserMessageId: for assistant messages, the ID of the user message that triggered the response
+- content: the content of the message
+- role: whether the message is from the user or assistant
+- createdAt: the date and time when the message was created
+
+To interact with conversations, follow these steps:
+1. Create a new conversation with the create method or get an existing one with the get method.
+2. Subscribe to assistant responses for a conversation with the onStreamEvent method.
+3. Send messages to the conversation with the sendMessage method.
+
+Here is an example of how to create a conversation, subscribe to assistant responses, and send a message:
+```javascript
+const client = // initialize your client
+
+// Create a conversation
+const { data: chat, errors } = await client.conversations.chat.create();
+
+// Subscribe to assistant responses
+const subscription = chat.onStreamEvent({
+  next: (event) => {
+    console.log(event);
+  },
+  error: (error) => {
+    console.error(error);
+  },
+});
+
+// Send a message to the conversation
+const { data: message, errors } = await chat.sendMessage('Hello, world!');
+```
+
+Conversations can be managed by creating, getting, listing, updating, and deleting them. 
+- Create a conversation by calling the create method on your conversation route.
+- Get an existing conversation by calling the get method on your conversation route with the conversation's id.
+- List conversations by calling the list method on your conversation route.
+- Update a conversation by calling the update method on your conversation route.
+- Delete a conversation by calling the delete method on your conversation route.
+
+Once you have a conversation instance, you can interact with it by calling methods on the instance. 
+- Send a message to the AI assistant by calling the sendMessage method.
+- Subscribe to assistant responses by calling the onStreamEvent method.
+- List messages for a conversation by calling the listMessages method.
+
+The sendMessage method can be customized by passing additional arguments. 
+- You can pass a content object with a content property to send different types of content to the AI assistant.
+- You can pass an aiContext object to attach arbitrary data to the message.
+- You can pass a toolConfiguration object to pass a client tool configuration to the AI assistant with a user message.
+
+Assistant responses are streamed back to the client as they are generated. 
+- Subscribe to assistant responses by calling the onStreamEvent method on your conversation instance.
+- The onStreamEvent method takes two callback functions as arguments: next and error.
+- The next callback is invoked with each assistant response.
+- The error callback is invoked if there's an error while processing messages.
+
+The next callback is invoked with a ConversationStreamEvent object. 
+- There are several types of ConversationStreamEvent objects, including ConversationStreamTextEvent, ConversationStreamDoneAtIndexEvent, ConversationStreamTurnDoneEvent, and ConversationStreamToolUseEvent.
+- Each type of ConversationStreamEvent object has its own set of properties.
+
+You can list messages for a conversation by calling the listMessages method on your conversation instance. 
+- Retrieved messages are paginated, so you can use the nextToken value to paginate through messages.
+- You can optionally specify a limit to limit the number of messages returned.

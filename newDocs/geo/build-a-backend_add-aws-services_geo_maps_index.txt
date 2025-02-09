@@ -1,0 +1,89 @@
+To work with maps in your application, you need to provision an Amazon Location Service Map resource and configure your app using the instructions in the guides for setting up maps or using existing resources. Here's how you can display a map in your React app:
+
+First, you need to install the required libraries. You can do this by running the following command in your terminal:
+```
+npm add maplibre-gl maplibre-gl-js-amplify
+```
+Then, you need to import the library into your application:
+```javascript
+import { createMap } from 'maplibre-gl-js-amplify';
+import 'maplibre-gl/dist/maplibre-gl.css';
+```
+Next, you need to create and render the map with the help of the `createMap` function:
+```javascript
+async function initializeMap() {
+  const map = await createMap({
+    container: 'map', 
+    center: [-123.1187, 49.2819], 
+    zoom: 11
+  });
+}
+
+initializeMap();
+```
+Make sure you have a `div` with an `id="map"` in your HTML file before making the call to `createMap`.
+
+To render a map using a class name or something other than the ID, you can pass in a reference to the HTML element itself:
+```javascript
+const element = document.getElementsByClassName("class")[0];
+
+const map = await createMap({
+  container: element,
+ ...
+})
+```
+The MapLibre canvas requires a defined height to display properly. You can add some CSS to set the height of the map component. For example:
+```css
+html,
+body,
+#root {
+  height: 100%;
+}
+
+#map {
+  height: 50%;
+}
+```
+To display markers on a map, you can use the `drawPoints` function. This function expects the source name, coordinate data, and a maplibre-gl-js map:
+```javascript
+import { drawPoints } from 'maplibre-gl-js-amplify';
+
+map.on('load', function () {
+  drawPoints(
+    'mySourceName', 
+    [
+      {
+        coordinates: [-122.483696, 37.833818], 
+        title: 'Golden Gate Bridge',
+        address: 'A suspension bridge spanning the Golden Gate'
+      },
+      {
+        coordinates: [-122.477, 37.8105] 
+      }
+    ], 
+    map,
+    {
+      showCluster: true,
+      unclusteredOptions: {
+        showMarkerPopup: true
+      },
+      clusterOptions: {
+        showCount: true
+      }
+    }
+  );
+});
+```
+If you want to display different map styles, you can use the `getAvailableMaps` API to fetch information for all maps that are available to be displayed. Then, you can set a different style to your map using the `setStyle` method:
+```javascript
+const availableMaps = await Geo.getAvailableMaps();
+
+map.setStyle(availableMaps[0].mapName);
+```
+Note that when changing a map with Amplify and MapLibre, the `setStyle` function should be called with the name of the Location Service map, not the style.
+
+Finally, when it's time to remove the map from the DOM, you can use the `remove` method of the generated map:
+```javascript
+map.remove();
+```
+This will clean up and release all resources associated with the map. After calling `remove`, you must not call any other methods on the map.
